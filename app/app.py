@@ -1,5 +1,6 @@
 from flask import Flask
 
+from controller.index import index
 from controller.user import user
 
 
@@ -18,3 +19,4 @@ def create_app():
 
 def init_blueprint(app):
     app.register_blueprint(user)
+    app.register_blueprint(index)
