@@ -1,5 +1,7 @@
 class Config(object):
-    db_url = "mysql+pymysql://root:123456@localhost:3306/tomas?charset=utf8"
+    db_url = "mysql+pymysql://root:123456@localhost:3306/mumunote?charset=utf8"
+    page_count = 10
+    article_header_image_path = "/images/article/header/"
 
 
 class TestConfig(Config):

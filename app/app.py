@@ -7,9 +7,9 @@ from controller.user import user
 def create_app():
     app = Flask(
         __name__,
-        template_folder="../templates",
+        template_folder="../template",
         static_url_path="/",
-        static_folder="../resources",
+        static_folder="../resource",
     )
 
     init_blueprint(app)
