@@ -1,0 +1,15 @@
+2026-03-09 12:40:51,913:INFO:base.py:1846 SELECT DATABASE()
+2026-03-09 12:40:51,913:INFO:base.py:1846 [raw sql] {}
+2026-03-09 12:40:51,924:INFO:base.py:1846 SELECT @@sql_mode
+2026-03-09 12:40:51,924:INFO:base.py:1846 [raw sql] {}
+2026-03-09 12:40:51,927:INFO:base.py:1846 SELECT @@lower_case_table_names
+2026-03-09 12:40:51,927:INFO:base.py:1846 [raw sql] {}
+2026-03-09 12:40:52,032:INFO:base.py:2710 BEGIN (implicit)
+2026-03-09 12:40:52,032:INFO:base.py:1846 SHOW CREATE TABLE `users`
+2026-03-09 12:40:52,032:INFO:base.py:1846 [raw sql] {}
+2026-03-09 12:40:52,133:INFO:base.py:2713 ROLLBACK
+2026-03-09 12:40:52,140:INFO:main.py:51 Starting the application...
+2026-03-09 12:40:52,140:DEBUG:main.py:52 Debugging information: Application is about to run.
+2026-03-09 12:40:52,152:INFO:_internal.py:97 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2026-03-09 12:40:52,152:INFO:_internal.py:97 [33mPress CTRL+C to quit[0m
