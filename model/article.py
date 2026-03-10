@@ -11,7 +11,7 @@ class Article(Base):
     __table__ = Table("article", Base.metadata, autoload_with=engine)
 
     def find_article(self, page, article_type="recommend"):
-        if page < 1:
+        if int(page) < 1:
             page = 1
         count = int(page) * config[env].page_count
         if article_type == "recommend":
