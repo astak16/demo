@@ -1,5 +1,5 @@
-from flask import Blueprint
-
+from flask import Blueprint, make_response, session
+from common.utils import ImageCode
 from model.user import User
 
 
@@ -12,3 +12,12 @@ def get_one():
     result = user.get_one()
     print(result)
     return "获取用户成功"
+
+
+@user.route("/vcode")
+def vcode():
+    code, bstring = ImageCode().get_code()
+    response = make_response(bstring)
+    response.headers["Content-Type"] = "image/jpeg"
+    session["vcode"] = code.lower()
+    return response

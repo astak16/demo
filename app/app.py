@@ -1,5 +1,5 @@
+import os
 from flask import Flask
-
 from controller.index import index
 from controller.user import user
 
@@ -13,7 +13,7 @@ def create_app():
     )
 
     init_blueprint(app)
-
+    app.config["SECRET_KEY"] = os.urandom(24)
     return app
 
 
