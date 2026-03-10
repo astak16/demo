@@ -28,8 +28,24 @@ class Article(Base):
                 db_session.query(Article, User.nickname)
                 .join(User, User.user_id == Article.user_id)
                 .filter(Article.label_name == article_type, Article.drafted == 1)
-                .order_by(Article.created_time.desc())
+                .order_by(Article.create_time.desc())
                 .limit(count)
                 .all()
             )
+        return result
+
+    def search_article(self, page, keyword):
+        if int(page) < 1:
+            page = 1
+        count = int(page) * config[env].page_count
+        result = (
+            db_session.query(Article, User.nickname)
+            .join(User, User.user_id == Article.user_id)
+            .filter(
+                Article.article_content.like("%" + keyword + "%"), Article.drafted == 1
+            )
+            .order_by(Article.browse_num.desc())
+            .limit(count)
+            .all()
+        )
         return result

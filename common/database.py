@@ -5,7 +5,9 @@ from app.config.config import config
 
 
 def db_connect():
-    engine = create_engine(config[env].db_url, echo=config[env].if_echo)
+    engine = create_engine(
+        config[env].db_url, echo=config[env].if_echo, pool_size=10, max_overflow=30
+    )
     session = sessionmaker(engine)
     db_session = scoped_session(session)
     Base = declarative_base()

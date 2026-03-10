@@ -28,7 +28,12 @@ def home():
     if article_type is None:
         article_type = "recommend"
 
-    db_result = Article().find_article(page, article_type)
+    search_keyword = request.args.get("keyword")
+    if search_keyword is not None:
+        db_result = Article().search_article(page, search_keyword)
+    else:
+        db_result = Article().find_article(page, article_type)
+
     logging.debug("db_result: %s", db_result)
 
     for article, nickname in db_result:
