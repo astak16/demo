@@ -1,7 +1,7 @@
 import hashlib
 import json
 import re
-from flask import Blueprint, make_response, session, request
+from flask import Blueprint, make_response, session, request, url_for
 from common import response_message
 from common.email_utils import gen_email_code, send_email
 from common.utils import ImageCode
@@ -98,4 +98,13 @@ def login():
     session["picture"] = config[env].user_header_image_path + result[0].picture
     response = make_response(response_message.UserMessage.success("登录成功"))
     response.set_cookie("username", username, max_age=30 * 24 * 3600)
+    return response
+
+
+@user.route("/logout")
+def logout():
+    session.clear()
+    response = make_response(response_message.UserMessage.success("退出登录成功"), 302)
+    response.headers["Location"] = url_for("index.home")
+    response.delete_cookie("username")
     return response
