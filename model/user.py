@@ -1,5 +1,7 @@
 from sqlalchemy import Table
 from common.database import db_connect
+from app.config.config import config
+from app.settings import env
 
 db_session, Base, engine = db_connect()
 
@@ -27,3 +29,9 @@ class User(Base):
         db_session.add(user)
         db_session.commit()
         return user
+
+    def find_by_user_id(self, user_id):
+        user_info = db_session.query(User).filter_by(user_id=user_id).first()
+        if user_info:
+            user_info.picture = config[env].user_header_image_path + user_info.picture
+        return user_info
