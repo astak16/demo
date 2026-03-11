@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 import string
 from io import BytesIO
@@ -48,3 +49,13 @@ class ImageCode:
         image.save(buf, "jpeg")
         image_b_string = buf.getvalue()
         return code, image_b_string
+
+
+def model_to_json(result):
+    dict = {}
+    for k, v in result.__dict__.items():
+        if not k.startswith("_sa_"):
+            if isinstance(v, datetime):
+                v = v.strftime("%Y-%m-%d %H:%M:%S")
+            dict[k] = v
+    return dict

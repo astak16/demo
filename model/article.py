@@ -57,6 +57,6 @@ class Article(Base):
         return (
             db_session.query(Article)
             .filter_by(label_name=label_name, drafted=1)
-            .order_by(Article.browse_nu.desc())
+            .order_by(Article.browse_num.desc())
             .limit(5)
         )

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session
 from common import response_message
 from model.article import Article
+from model.feedback import Feedback
 from model.user import User
 from model.favorite import Favorite
 
@@ -22,11 +23,14 @@ def article_detail():
     user = User()
     user_info = user.find_by_user_id(article_content.user_id)
 
+    feedback_data_list = Feedback().get_feedback_user_list(article_id)
+
     is_favorite = 1
     if session.get("is_login") == "true":
         user_id = session.get("user_id")
         is_favorite = Favorite().user_if_favorite(user_id, article_id)
 
+    feedback_count = Feedback().get_article_feedback_count(article_id)
     about_article = article.find_about_article(article_content.label_name)
 
     return render_template(
@@ -36,4 +40,6 @@ def article_detail():
         is_favorite=is_favorite,
         article_tag_list=article_tag_list,
         about_article=about_article,
+        feedback_data_list=feedback_data_list,
+        feedback_count=feedback_count,
     )

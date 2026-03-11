@@ -33,5 +33,7 @@ class User(Base):
     def find_by_user_id(self, user_id):
         user_info = db_session.query(User).filter_by(user_id=user_id).first()
         if user_info:
+            if user_info.picture.startswith(config[env].user_header_image_path):
+                return user_info
             user_info.picture = config[env].user_header_image_path + user_info.picture
         return user_info
