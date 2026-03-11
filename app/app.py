@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from controller.feedback import feedback
 from controller.index import index
 from controller.user import user
 from controller.article import article
@@ -24,3 +25,4 @@ def init_blueprint(app):
     app.register_blueprint(index)
     app.register_blueprint(article)
     app.register_blueprint(favorite)
+    app.register_blueprint(feedback)
