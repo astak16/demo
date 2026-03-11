@@ -1,12 +1,13 @@
 import hashlib
 import json
 import re
-
 from flask import Blueprint, make_response, session, request
 from common import response_message
 from common.email_utils import gen_email_code, send_email
 from common.utils import ImageCode
 from model.user import User
+from app.config.config import config
+from app.settings import env
 
 
 user = Blueprint("user", __name__)
@@ -54,12 +55,6 @@ def register():
     password = request_data.get("password")
     second_password = request_data.get("second_password")
     ecode = request_data.get("ecode")
-    print(
-        "username: {}, password: {}, second_password: {}, ecode: {}".format(
-            username, password, second_password, ecode
-        ),
-        "session ecode: {}".format(session.get("ecode")),
-    )
     if ecode.lower() != session.get("ecode"):
         return response_message.UserMessage.error("邮箱验证码错误")
     if not re.match(r".+@.+\..+", username):
@@ -76,3 +71,31 @@ def register():
     result = user.do_register(username=username, password=password)
 
     return response_message.UserMessage.success("注册成功")
+
+
+@user.route("/login", methods=["post"])
+def login():
+    request_data = json.loads(request.data)
+    username = request_data.get("username")
+    password = request_data.get("password")
+    vcode = request_data.get("vcode")
+    if vcode.lower() != session.get("vcode"):
+        return response_message.UserMessage.error("验证码错误")
+
+    password = hashlib.md5(password.encode()).hexdigest()
+    user = User()
+    result = user.find_by_username(username=username)
+
+    if len(result) == 0:
+        return response_message.UserMessage.error("用户名不存在")
+    if result[0].password != password:
+        return response_message.UserMessage.error("密码错误")
+
+    session["is_login"] = "true"
+    session["user_id"] = result[0].user_id
+    session["username"] = username
+    session["nickname"] = result[0].nickname
+    session["picture"] = config[env].user_header_image_path + result[0].picture
+    response = make_response(response_message.UserMessage.success("登录成功"))
+    response.set_cookie("username", username, max_age=30 * 24 * 3600)
+    return response
