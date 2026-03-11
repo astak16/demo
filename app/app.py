@@ -3,6 +3,7 @@ from flask import Flask
 from controller.index import index
 from controller.user import user
 from controller.article import article
+from controller.favorite import favorite
 
 
 def create_app():
@@ -22,3 +23,4 @@ def init_blueprint(app):
     app.register_blueprint(user)
     app.register_blueprint(index)
     app.register_blueprint(article)
+    app.register_blueprint(favorite)
