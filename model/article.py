@@ -52,3 +52,11 @@ class Article(Base):
 
     def get_article_detail(self, article_id):
         return db_session.query(Article).filter_by(id=article_id).first()
+
+    def find_about_article(self, label_name):
+        return (
+            db_session.query(Article)
+            .filter_by(label_name=label_name, drafted=1)
+            .order_by(Article.browse_nu.desc())
+            .limit(5)
+        )

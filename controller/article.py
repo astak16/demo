@@ -27,10 +27,13 @@ def article_detail():
         user_id = session.get("user_id")
         is_favorite = Favorite().user_if_favorite(user_id, article_id)
 
+    about_article = article.find_about_article(article_content.label_name)
+
     return render_template(
         "article-info.html",
         article_content=article_content,
         user_info=user_info,
         is_favorite=is_favorite,
         article_tag_list=article_tag_list,
+        about_article=about_article,
     )
