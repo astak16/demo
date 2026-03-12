@@ -41,3 +41,18 @@ class FavoriteMessage:
     @staticmethod
     def other(data):
         return {"status": 3001, "message": "other", "data": data}
+
+
+class FeedbackMessage:
+
+    @staticmethod
+    def success(data):
+        return {"status": 4000, "message": "success", "data": data}
+
+    @staticmethod
+    def error(data):
+        return {"status": 4002, "message": "error", "data": data}
+
+    @staticmethod
+    def other(data):
+        return {"status": 4001, "message": "other", "data": data}

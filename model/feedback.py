@@ -1,9 +1,6 @@
-from sqlalchemy import Table
+from sqlalchemy import Table, func
 from common.database import db_connect
-from app.config.config import config
-from app.settings import env
 from common.utils import model_to_json
-from model.favorite import Favorite
 from model.user import User
 
 db_session, Base, engine = db_connect()
@@ -71,3 +68,41 @@ class Feedback(Base):
             .filter_by(article_id=article_id, reply_id=0, base_reply_id=0)
             .count()
         )
+
+    def insert_comment(self, user_id, article_id, content, ipaddr):
+        max_floor = (
+            db_session.query(func.max(Feedback.floor_number).label("max_floor"))
+            .filter_by(article_id=article_id)
+            .scalar()
+        )
+        next_floor = 1 if max_floor in (None, 0) else int(max_floor) + 1
+
+        feedback = Feedback(
+            user_id=user_id,
+            article_id=article_id,
+            content=content,
+            ipaddr=ipaddr,
+            floor_number=next_floor,
+            reply_id=0,
+            base_reply_id=0,
+        )
+        db_session.add(feedback)
+        db_session.commit()
+        db_session.refresh(feedback)
+        return feedback
+
+    def insert_reply(
+        self, article_id, user_id, content, ipaddr, reply_id, base_reply_id
+    ):
+        feedback = Feedback(
+            user_id=user_id,
+            article_id=article_id,
+            content=content,
+            ipaddr=ipaddr,
+            reply_id=reply_id,
+            base_reply_id=base_reply_id,
+        )
+        db_session.add(feedback)
+        db_session.commit()
+        db_session.refresh(feedback)
+        return feedback
