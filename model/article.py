@@ -60,3 +60,35 @@ class Article(Base):
             .order_by(Article.browse_num.desc())
             .limit(5)
         )
+
+    def insert_article(self, user_id, title, article_content, drafted):
+        new_article = Article(
+            user_id=user_id,
+            title=title,
+            article_content=article_content,
+            drafted=drafted,
+        )
+        db_session.add(new_article)
+        db_session.commit()
+        return new_article.id
+
+    def update_article(
+        self,
+        article_id,
+        title,
+        article_content,
+        drafted,
+        label_name="",
+        article_tag="",
+        article_type="",
+    ):
+        row = db_session.query(Article).filter_by(id=article_id).first()
+        if row:
+            row.title = title
+            row.article_content = article_content
+            row.drafted = drafted
+            row.label_name = label_name
+            row.article_tag = article_tag
+            row.article_type = article_type
+            db_session.commit()
+        return article_id
