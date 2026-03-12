@@ -1,5 +1,4 @@
 from datetime import datetime
-from fileinput import filename
 import random
 import json
 from flask import Blueprint, jsonify, make_response, render_template, request, session
@@ -9,9 +8,15 @@ from model.article import Article
 from model.feedback import Feedback
 from model.user import User
 from model.favorite import Favorite
+from app.config.config import config
+from app.settings import env
 
 
 article = Blueprint("article", __name__)
+
+label_types = config[env].label_types
+article_types = config[env].article_types
+article_tags = config[env].article_tags
 
 
 @article.before_request
@@ -56,7 +61,12 @@ def article_detail():
 
 @article.route("/article/new")
 def article_new():
-    return render_template("new-article.html")
+    return render_template(
+        "new-article.html",
+        label_types=label_types,
+        article_types=article_types,
+        article_tags=article_tags,
+    )
 
 
 @article.route("/article/save", methods=["post"])
@@ -128,7 +138,7 @@ def update_article_header_image():
     return jsonify(result)
 
 
-@article.route("/article/random/header/image", methods=["post"])
+@article.route("/article/random/article_header_image", methods=["post"])
 def random_article_header_image():
     name = random.randint(1, 4)
     newname = str(name) + ".jpg"

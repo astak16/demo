@@ -5,6 +5,39 @@ class Config(object):
     user_header_image_path = "/images/headers/"
     email_name = "xx"
     passwd = "bbb"
+    label_types = {
+        "recommend": {"name": "推荐", "selected": "selected"},
+        "auto_test": {"name": "自动化测试", "selected": "selected"},
+        "python": {"name": "Python", "selected": "selected"},
+        "java": {"name": "Java", "selected": "selected"},
+        "perf_test": {"name": "性能测试", "selected": "selected"},
+        "function_test": {"name": "功能测试", "selected": "selected"},
+        "funny": {"name": "幽默段子", "selected": "selected"},
+    }
+    article_types = {
+        "recommend": {"name": "请选择", "selected": "selected"},
+        "first": {"name": "首发", "selected": "no-selected"},
+        "original": {"name": "原创", "selected": "no-selected"},
+        "other": {"name": "其它", "selected": "no-selected"},
+    }
+    article_tags = [
+        "Html5",
+        "Angular",
+        "JS",
+        "CSS3",
+        "Sass/Less",
+        "JAVA",
+        "Python",
+        "Go",
+        "C++",
+        "C#",
+        "MySQL",
+        "Oracle",
+        "MongoDB",
+        "Android",
+        "Unity 3",
+        "DCocos2d-x",
+    ]
 
 
 class TestConfig(Config):
