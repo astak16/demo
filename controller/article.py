@@ -1,6 +1,10 @@
+from datetime import datetime
+from fileinput import filename
+import random
 import json
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, jsonify, make_response, render_template, request, session
 from common import response_message
+from common.utils import compress_image
 from model.article import Article
 from model.feedback import Feedback
 from model.user import User
@@ -96,3 +100,45 @@ def get_article_request_param(request_data):
     title = request_data.get("title")
     article_content = request_data.get("article_content")
     return user, title, article_content
+
+
+@article.route("/article/update/article_header_image", methods=["post"])
+def update_article_header_image():
+    f = request.files.get("header-image-file")
+    if f is None:
+        return response_message.ArticleMessage.error("请上传图片")
+    filename = f.filename
+    if not filename:
+        return make_response("文件不存在")
+    suffix = filename.split(".")[-1]
+    newname = datetime.now().strftime("%Y%m%d_%H%M%S.") + suffix
+    newname = "article-header-" + newname
+    f.save("resource/upload/" + newname)
+    source = dest = "resource/upload/" + newname
+    compress_image(source, dest, 2000)
+
+    article_id = request.form.get("article_id")
+    Article().update_article_header_image(article_id, newname)
+
+    result = {}
+    result["state"] = "SUCCESS"
+    result["url"] = "/upload/" + newname
+    result["title"] = filename
+    result["original"] = filename
+    return jsonify(result)
+
+
+@article.route("/article/random/header/image", methods=["post"])
+def random_article_header_image():
+    name = random.randint(1, 4)
+    newname = str(name) + ".jpg"
+
+    article_id = request.form.get("article_id")
+    Article().update_article_header_image(article_id, newname)
+
+    result = {}
+    result["state"] = "SUCCESS"
+    result["url"] = "/images/headers/" + newname
+    result["title"] = newname
+    result["original"] = newname
+    return jsonify(result)

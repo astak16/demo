@@ -92,3 +92,10 @@ class Article(Base):
             row.article_type = article_type
             db_session.commit()
         return article_id
+
+    def update_article_header_image(self, article_id, article_image):
+        row = db_session.query(Article).filter_by(id=article_id).first()
+        if row:
+            row.header_image = article_image
+            db_session.commit()
+        return article_id
