@@ -99,3 +99,19 @@ class Article(Base):
             row.header_image = article_image
             db_session.commit()
         return article_id
+
+    def get_all_article_drafted(self, user_id):
+        return (
+            db_session.query(Article)
+            .filter_by(user_id=user_id, drafted=0)
+            .order_by(Article.create_time.desc())
+            .all()
+        )
+
+    def get_one_article_drafted(self, article_id):
+        return (
+            db_session.query(Article)
+            .filter_by(id=article_id, drafted=0)
+            .order_by(Article.create_time.desc())
+            .first()
+        )

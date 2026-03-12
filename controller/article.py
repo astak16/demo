@@ -1,9 +1,17 @@
 from datetime import datetime
 import random
 import json
-from flask import Blueprint, jsonify, make_response, render_template, request, session
+from flask import (
+    Blueprint,
+    jsonify,
+    make_response,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from common import response_message
-from common.utils import compress_image
+from common.utils import compress_image, model_to_json
 from model.article import Article
 from model.feedback import Feedback
 from model.user import User
@@ -20,7 +28,13 @@ article_tags = config[env].article_tags
 
 
 @article.before_request
-def article_before_request(): ...
+def article_before_request():
+    url = request.path
+    is_login = session.get("is_login")
+    if url.startswith("/article") and "new" in url and is_login != "true":
+        response = make_response("登录重定向", 302)
+        response.headers["Location"] = url_for("index.home")
+        return response
 
 
 @article.route("/detail")
@@ -61,12 +75,22 @@ def article_detail():
 
 @article.route("/article/new")
 def article_new():
+    user_id = session.get("user_id")
+    all_drafted = Article().get_all_article_drafted(user_id)
     return render_template(
         "new-article.html",
         label_types=label_types,
         article_types=article_types,
         article_tags=article_tags,
+        all_drafted=all_drafted,
     )
+
+
+@article.route("/article/drafted", methods=["post"])
+def get_drafted_detail():
+    request_data = json.loads(request.data)
+    result = Article().get_one_article_drafted(request_data.get("article_id"))
+    return response_message.ArticleMessage.success(model_to_json(result))
 
 
 @article.route("/article/save", methods=["post"])
