@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from controller.personal import personal
 from controller.feedback import feedback
 from controller.index import index
 from controller.user import user
@@ -26,3 +27,4 @@ def init_blueprint(app):
     app.register_blueprint(article)
     app.register_blueprint(favorite)
     app.register_blueprint(feedback)
+    app.register_blueprint(personal)

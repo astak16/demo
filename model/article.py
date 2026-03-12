@@ -1,14 +1,27 @@
-from sqlalchemy import Table
+from sqlalchemy import Table, distinct
 from common.database import db_connect
 from app.config.config import config
 from app.settings import env
+from model.favorite import Favorite
+from model.feedback import Feedback
 from model.user import User
 
 db_session, Base, engine = db_connect()
+DEFAULT_ARTICLE_IMAGE_PATH = "/images/article-header.jpg"
 
 
 class Article(Base):
     __table__ = Table("article", Base.metadata, autoload_with=engine)
+
+    @staticmethod
+    def build_article_image_path(article_image):
+        if not article_image:
+            return DEFAULT_ARTICLE_IMAGE_PATH
+        if article_image.startswith("/"):
+            return article_image
+        if article_image.startswith(config[env].article_header_image_path):
+            return article_image
+        return config[env].article_header_image_path + article_image
 
     def find_article(self, page, article_type="recommend"):
         if int(page) < 1:
@@ -96,7 +109,7 @@ class Article(Base):
     def update_article_header_image(self, article_id, article_image):
         row = db_session.query(Article).filter_by(id=article_id).first()
         if row:
-            row.header_image = article_image
+            row.article_image = article_image
             db_session.commit()
         return article_id
 
@@ -115,3 +128,38 @@ class Article(Base):
             .order_by(Article.create_time.desc())
             .first()
         )
+
+    def get_article_by_user_id(self, user_id):
+        return self.app_path(
+            db_session.query(Article)
+            .filter_by(user_id=user_id, drafted=1)
+            .order_by(Article.create_time.desc())
+            .all()
+        )
+
+    def get_favorite_article_by_user_id(self, user_id):
+        return self.app_path(
+            db_session.query(Article)
+            .join(Favorite, Favorite.article_id == Article.id)
+            .filter(Favorite.user_id == user_id, Article.drafted == 1)
+            .order_by(Article.create_time.desc())
+            .all()
+        )
+
+    def get_feedback_article_by_user_id(self, user_id):
+        article_id_list = (
+            db_session.query(distinct(Feedback.article_id))
+            .filter(Feedback.user_id == user_id)
+            .subquery()
+        )
+        return self.app_path(
+            db_session.query(Article)
+            .filter(Article.id.in_(article_id_list), Article.drafted == 1)
+            .order_by(Article.create_time.desc())
+            .all()
+        )
+
+    def app_path(self, article_list):
+        for article in article_list:
+            article.article_image = self.build_article_image_path(article.article_image)
+        return article_list

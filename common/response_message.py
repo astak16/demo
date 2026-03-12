@@ -65,3 +65,18 @@ class FeedbackMessage:
     @staticmethod
     def other(data):
         return {"status": 4001, "message": "other", "data": data}
+
+
+class PersonalMessage:
+
+    @staticmethod
+    def success(data):
+        return {"status": 5000, "message": "success", "data": data}
+
+    @staticmethod
+    def error(data):
+        return {"status": 5002, "message": "error", "data": data}
+
+    @staticmethod
+    def other(data):
+        return {"status": 5001, "message": "other", "data": data}
