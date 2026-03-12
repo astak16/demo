@@ -98,7 +98,9 @@ function createArticle(drafted) {
       article_tag: articleTag,
     })
     .then((res) => {
-      articleId = res.data.article_id;
+      if (res.data.article_id !== null && res.data.article_id !== undefined) {
+        articleId = res.data.article_id;
+      }
       alert(res.data.data);
       // 如果是文章发布的逻辑，那么我们需要默认跳转到文章详情页面
       if (drafted == 1) {
@@ -290,12 +292,14 @@ function toDrafted(draftedId) {
   // 把article_content的内容放上去
   axios
     .post("/article/drafted", {
-      id: draftedId,
+      article_id: draftedId,
     })
     .then((res) => {
       articleHeader.value = res.data.data.title;
       ue.body.innerHTML = res.data.data.article_content;
       // 千万不要忘记我们此时编辑的是哪个草稿
-      articleId = res.data.data.id;
+      if (res.data.data && res.data.data.id !== undefined) {
+        articleId = res.data.data.id;
+      }
     });
 }

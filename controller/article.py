@@ -96,8 +96,11 @@ def get_drafted_detail():
 @article.route("/article/save", methods=["post"])
 def article_save():
     request_data = json.loads(request.data)
-    article_id = request_data.get("article_id")
-    drafted = request_data.get("drafted")
+    article_id = parse_int_param(request_data.get("article_id"), default=-1)
+    drafted = parse_int_param(request_data.get("drafted"))
+    if article_id is None or drafted not in (0, 1):
+        return response_message.ArticleMessage.error("请求参数错误")
+
     if article_id == -1 and drafted == 0:
         user, title, article_content = get_article_request_param(request_data)
         if title == "":
@@ -127,6 +130,15 @@ def article_save():
         return response_message.ArticleMessage.save_success("更新文章成功", article_id)
     else:
         return response_message.ArticleMessage.error("请求参数错误")
+
+
+def parse_int_param(value, default=None):
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def get_article_request_param(request_data):
