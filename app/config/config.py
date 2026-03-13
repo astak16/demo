@@ -38,6 +38,12 @@ class Config(object):
         "Unity 3",
         "DCocos2d-x",
     ]
+    REDIS_HOST = "localhost"
+    REDIS_PORT = 6379
+    REDIS_PASSWORD = ""
+    REDIS_POLL = 10
+    REDIS_DB = 2
+    REDIS_DECODE_RESPONSES = True
 
 
 class TestConfig(Config):

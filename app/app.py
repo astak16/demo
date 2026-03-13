@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from controller.redis_user import redis_user
 from controller.personal import personal
 from controller.feedback import feedback
 from controller.index import index
@@ -28,3 +29,4 @@ def init_blueprint(app):
     app.register_blueprint(favorite)
     app.register_blueprint(feedback)
     app.register_blueprint(personal)
+    app.register_blueprint(redis_user)
