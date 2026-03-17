@@ -23,3 +23,15 @@ class ServerError(APIException):
     code = 500
     msg = "sorry, we made a mistake (>﹏<)∠))"
     error_code = 999
+
+
+class NotFound(APIException):
+    code = 404
+    msg = "the resource are not found"
+    error_code = 1001
+
+
+class AuthFailed(APIException):
+    code = 401
+    msg = "authorization failed"
+    error_code = 1005

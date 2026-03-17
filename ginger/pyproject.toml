@@ -12,5 +12,6 @@ dependencies = [
     "flask-httpauth>=4.8.0",
     "flask-sqlalchemy>=3.1.1",
     "flask-wtf>=1.2.2",
+    "itsdangerous>=2.2.0",
     "requests>=2.32.5",
 ]
