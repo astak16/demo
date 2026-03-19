@@ -1,8 +1,9 @@
-from flask import jsonify
-from app.libs.error_code import NotFound
+from flask import jsonify, g
+from app.libs.error_code import AuthFailed, DeleteSuccess, NotFound
 from app.libs.redprint import Redprint
 from app.libs.token_auth import auth
 from app.models.user import User
+from app.models.base import db
 
 api = Redprint("user")
 
@@ -19,7 +20,32 @@ class Uccs:
 
 @api.route("/<int:uid>", methods=["GET"])
 @auth.login_required
-def get_user(uid):
-    user = User.query.get_or_404(uid)
-
+def super_get_user(uid):
+    # is_admin = g.user.is_admin
+    # if not is_admin:
+    #     raise AuthFailed()
+    user = User.query.filter_by(id=uid).first_or_404()
     return jsonify(user)
+
+
+@api.route("", methods=["GET"])
+@auth.login_required
+def get_user():
+    uid = g.user.id
+    user = User.query.filter_by(id=uid).first_or_404()
+    return jsonify(user)
+
+
+@api.route("/<int:uid>", methods=["DELETE"])
+def super_delete_user(uid): ...
+
+
+@api.route("/<int:uid>", methods=["DELETE"])
+@auth.login_required
+def delete_user(uid):
+    uid = g.user.id
+
+    with db.auto_commit():
+        user = User.query.filter_by(id=uid).first_or_404()
+        user.delete()
+    return DeleteSuccess()

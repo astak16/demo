@@ -38,7 +38,8 @@ class User(Base):
         #     raise NotFound(msg="user not found")
         if not user.check_password(password):
             raise AuthFailed()
-        return {"uid": user.id, "scope": user.auth}
+        scope = "AdminScope" if user.auth == 2 else "UserScope"
+        return {"uid": user.id, "scope": scope}
 
     def check_password(self, raw):
         password_value = getattr(self, "_password", None)

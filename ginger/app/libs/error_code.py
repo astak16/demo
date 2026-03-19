@@ -7,6 +7,11 @@ class Success(APIException):
     error_code = 0
 
 
+class DeleteSuccess(Success):
+    code = 202
+    error_code = 1
+
+
 class ClientTypeError(APIException):
     code = 400
     msg = "client is invalid"
@@ -35,3 +40,9 @@ class AuthFailed(APIException):
     code = 401
     msg = "authorization failed"
     error_code = 1005
+
+
+class Forbidden(APIException):
+    code = 403
+    msg = "forbidden, you don't have permission to access this resource"
+    error_code = 1004
