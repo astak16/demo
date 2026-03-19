@@ -11,6 +11,9 @@ class User(Base):
     auth = Column(SmallInteger, default=1)
     _password = Column("password", String(255))
 
+    def keys(self):
+        return ["id", "email", "nickname", "auth"]
+
     @property
     def password(self):
         return self._password
@@ -30,9 +33,9 @@ class User(Base):
 
     @staticmethod
     def verify(email, password):
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            raise NotFound(msg="user not found")
+        user = User.query.filter_by(email=email).first_or_404()
+        # if not user:
+        #     raise NotFound(msg="user not found")
         if not user.check_password(password):
             raise AuthFailed()
         return {"uid": user.id, "scope": user.auth}
