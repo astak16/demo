@@ -1,8 +1,15 @@
+from flask import jsonify
+from sqlalchemy import or_
 from app.libs.redprint import Redprint
+from app.models.book import Book
+from app.validators.forms import BookSearchForm
 
 api = Redprint("book")
 
 
-@api.route("/get")
-def get_book():
-    return "get book"
+@api.route("/search")
+def search():
+    form = BookSearchForm().validate_for_api()
+    q = "%{}%".format(form.q.data)
+    books = Book.query.filter(or_(Book.title.like(q), Book.publisher.like(q))).all()
+    return jsonify(books)
