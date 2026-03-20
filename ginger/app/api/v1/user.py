@@ -8,14 +8,14 @@ from app.models.base import db
 api = Redprint("user")
 
 
-class Uccs:
-    name = "uccs"
-    age = 18
+# class Uccs:
+#     name = "uccs"
+#     age = 18
 
-    def __init__(
-        self,
-    ):
-        self.name = "astak"
+#     def __init__(
+#         self,
+#     ):
+#         self.name = "astak"
 
 
 @api.route("/<int:uid>", methods=["GET"])
@@ -31,7 +31,7 @@ def super_get_user(uid):
 @api.route("", methods=["GET"])
 @auth.login_required
 def get_user():
-    uid = g.user.id
+    uid = g.user.uid
     user = User.query.filter_by(id=uid).first_or_404()
     return jsonify(user)
 
@@ -40,10 +40,10 @@ def get_user():
 def super_delete_user(uid): ...
 
 
-@api.route("/<int:uid>", methods=["DELETE"])
+@api.route("", methods=["DELETE"])
 @auth.login_required
-def delete_user(uid):
-    uid = g.user.id
+def delete_user():
+    uid = g.user.uid
 
     with db.auto_commit():
         user = User.query.filter_by(id=uid).first_or_404()
