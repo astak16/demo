@@ -31,6 +31,3 @@ class Book(Base):
             "summary",
             "image",
         ]
-
-    def keys(self):
-        return self.fields

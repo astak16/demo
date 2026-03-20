@@ -2,7 +2,7 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy as _SQLAlchemy
 from flask_sqlalchemy.query import Query as BaseQuery
-from sqlalchemy import inspect, Integer, SmallInteger, orm
+from sqlalchemy import Integer, SmallInteger, orm
 from contextlib import contextmanager
 
 from app.libs.error_code import NotFound
@@ -45,6 +45,7 @@ class Base(db.Model):
     __abstract__ = True
     create_time: orm.Mapped[int] = orm.mapped_column(Integer)
     status: orm.Mapped[int] = orm.mapped_column(SmallInteger, default=1)
+    fields = []
 
     def __init__(self):
         self.create_time = int(datetime.now().timestamp())
@@ -67,18 +68,18 @@ class Base(db.Model):
     def delete(self):
         self.status = 0
 
-    # def keys(self):
-    #     return self.fields
+    def keys(self):
+        return self.fields
 
-    # def hide(self, *keys):
-    #     for key in keys:
-    #         self.fields.remove(key)
-    #     return self
+    def hide(self, *keys):
+        for key in keys:
+            self.fields.remove(key)
+        return self
 
-    # def append(self, *keys):
-    #     for key in keys:
-    #         self.fields.append(key)
-    #     return self
+    def append(self, *keys):
+        for key in keys:
+            self.fields.append(key)
+        return self
 
 
 class MixinJSONSerializer:
