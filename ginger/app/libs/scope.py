@@ -26,7 +26,7 @@ class AdminScope(Scope):
 
 
 class UserScope(Scope):
-    allow_api = ["v1.user+get_user", "v1.user+delete_user"]
+    allow_api = ["v1.user+get_user", "v1.user+delete_user", "v1.gift+create"]
     # forbidden = ["v1.super_get_user", "v1.super_delete_user"]
     # allow_module = ["v1.user"]
 

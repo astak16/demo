@@ -46,3 +46,9 @@ class Forbidden(APIException):
     code = 403
     msg = "forbidden, you don't have permission to access this resource"
     error_code = 1004
+
+
+class DuplicateGift(APIException):
+    code = 400
+    msg = "you have already added this book as a gift"
+    error_code = 2001
