@@ -1,17 +1,28 @@
+from app.forms.book import SearchForm
 from helper import is_isbn_or_key
-from yushu_book import YuShuBook
-from flask import Blueprint, request
+from spider.yushu_book import YuShuBook
+from flask import jsonify, request
 from . import web
 
 
-@web.route("/book/search/<q>/<page>")
-def search(q, page):
-    q = request.args["q"]
-    page = request.args["page"]
-    isbn_or_key = is_isbn_or_key(q)
-    if isbn_or_key == "isbn":
-        YuShuBook.search_by_isbn(q)
-    else:
-        YuShuBook.search_by_keyword(q)
+@web.route("/book/search")
+def search():
+    form = SearchForm(request.args)
+    if form.validate():
+        q = form.q.data
+        if q:
+            q = q.strip()
 
-    return f"search {isbn_or_key} {q} page {page}"
+        page = form.page.data
+        if not page:
+            page = 1
+
+        isbn_or_key = is_isbn_or_key(q)
+        if isbn_or_key == "isbn":
+            result = YuShuBook.search_by_isbn(q)
+        else:
+            result = YuShuBook.search_by_keyword(q, page)
+
+        return jsonify(result)
+    else:
+        return jsonify(form.errors)
