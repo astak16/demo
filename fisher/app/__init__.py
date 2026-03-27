@@ -4,8 +4,8 @@ from app.models.book import db
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object("secure")
-    app.config.from_object("setting")
+    app.config.from_object("app.secure")
+    app.config.from_object("app.setting")
     register_blueprints(app)
     db.init_app(app)
     with app.app_context():
@@ -17,6 +17,3 @@ def register_blueprints(app):
     from app.web.book import web
 
     app.register_blueprint(web)
-
-
-# id, author: string[], binding, category, image, images: {large: string}, isbn, pages, price,pubdate,publisher,subtitle,summary,title,translator:[]

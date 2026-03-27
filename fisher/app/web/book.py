@@ -2,7 +2,7 @@ from app.forms.book import SearchForm
 from app.view_models.book import BookCollection
 from helper import is_isbn_or_key
 from spider.yushu_book import YuShuBook
-from flask import jsonify, request
+from flask import jsonify, render_template, request, flash
 from . import web
 import json
 
@@ -29,6 +29,20 @@ def search():
         book.fill(yushu_book, q)
 
         # return jsonify(book)
-        return json.dumps(book, default=lambda o: o.__dict)
+        # return json.dumps(book, default=lambda o: o.__dict)
+        return render_template(
+            "search_result.html",
+            books=book.books,
+            total=book.total,
+            keyword=book.keyword,
+        )
     else:
-        return jsonify(form.errors)
+        # return jsonify(form.errors)
+        flash("搜索的关键字不符合要求，请重新输入")
+        return render_template("search_result.html", books=[], total=0, keyword="")
+
+
+@web.route("/book/<isbn>/detail")
+def book_detail(isbn):
+
+    return render_template("book_detail.html", book=[])
