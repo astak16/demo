@@ -1,16 +1,22 @@
+from flask_login import login_required
+from app.models.gift import Gift
 from . import web
-
-__author__ = "七月"
+from app.models.base import db
 
 
 @web.route("/my/gifts")
+@login_required
 def my_gifts():
     return "我的赠送页面"
 
 
 @web.route("/gifts/book/<isbn>")
 def save_to_gifts(isbn):
-    return "添加到赠送清单页面，书籍isbn是%s" % isbn
+    gift = Gift()
+    gift.isbn = isbn
+    db.session.add(gift)
+    db.session.commit()
+    return "添加到赠送清单的页面，书籍isbn是%s" % isbn
 
 
 @web.route("/gifts/<gid>/redraw")

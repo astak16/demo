@@ -1,10 +1,8 @@
 from sqlalchemy import Integer, String, Column
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from .base import Base
 
 
-class Book(db.Model):
+class Book(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(50), nullable=False)
     _author = Column("author", String(30), default="未名")
