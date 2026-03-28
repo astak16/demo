@@ -1,8 +1,9 @@
 # from app.libs.enums import PendingStatus
 # from app.models.drift import Drift
-# from app.models.gift import Gift
-# from app.models.wish import Wish
-# from app.libs.helper import is_isbn_or_key
+from app.models.gift import Gift
+from app.models.wish import Wish
+from app.libs.helper import is_isbn_or_key
+
 # from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask_login import UserMixin
 from app import login_manager
@@ -13,6 +14,7 @@ from sqlalchemy import String, Unicode, DateTime, Boolean
 from sqlalchemy import SmallInteger, Integer, Float
 from sqlalchemy.orm import relationship
 from .base import Base
+from spider.yushu_book import YuShuBook
 
 
 class User(UserMixin, Base):
@@ -68,19 +70,22 @@ class User(UserMixin, Base):
     #     ).count()
     #     return False if success_gifts <= success_receive - 2 else True
 
-    # def can_save_to_list(self, isbn):
-    #     if is_isbn_or_key(isbn) != "isbn":
-    #         return False
-    #     yushu_book = YushuBook()
-    #     yushu_book.search_by_isbn(isbn)
-    #     if not yushu_book.first:
-    #         return False
-    #     gifting = Gift.query.filter_by(uid=self.id, isbn=isbn, launched=False).first()
-    #     wishing = Wish.query.filter_by(uid=self.id, isbn=isbn, launched=False).first()
-    #     if not gifting and not wishing:
-    #         return True
-    #     else:
-    #         return False
+    def can_save_to_list(self, isbn):
+        if is_isbn_or_key(isbn) != "isbn":
+            return False
+        yushu_book = YuShuBook()
+        yushu_book.search_by_isbn(isbn)
+        if not yushu_book.first:
+            return False
+        # 不允许一个用户同时赠送多本相同的图书
+        gifting = Gift.query.filter_by(uid=self.id, isbn=isbn, launched=False).first()
+        # 一个用户不可能同时成为赠送者和索要者
+        wishing = Wish.query.filter_by(uid=self.id, isbn=isbn, launched=False).first()
+        # 既不在赠送清单，也不在心愿清单才能添加
+        if not gifting and not wishing:
+            return True
+        else:
+            return False
 
     # def confirm(self, token):
     #     s = Serializer(current_app.config["SECRET_KEY"])
