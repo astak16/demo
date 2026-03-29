@@ -1,6 +1,7 @@
-from flask import current_app, flash, redirect, url_for
+from flask import current_app, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 from app.models.wish import Wish
+from app.view_models.trade import MyTrades
 from app.web import gift
 from . import web
 from app.models.base import db
@@ -8,7 +9,12 @@ from app.models.base import db
 
 @web.route("/my/wish")
 def my_wish():
-    return "我的心愿页面"
+    uid = current_user.id
+    wishes_of_mine = Wish.get_user_wishes(uid)
+    isbn_list = [wish.isbn for wish in wishes_of_mine]
+    gift_count_list = Wish.get_gift_counts(isbn_list)
+    view_model = MyTrades(wishes_of_mine, gift_count_list)
+    return render_template("my_wishes.html", wishes=view_model.trades)
 
 
 @web.route("/wish/book/<isbn>")
