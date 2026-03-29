@@ -1,7 +1,8 @@
 from flask import current_app
+from typing import cast
 from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, desc, func
 from sqlalchemy.orm import relationship
-from app.libs.enums import PendingStatus
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.wish import Wish
 from spider.yushu_book import YuShuBook
 from .base import Base, db
@@ -45,9 +46,9 @@ class Gift(Base):
         count_list = (
             db.session.query(func.count(Wish.id), Wish.isbn)
             .filter(
-                Wish.launched == False,
+                Wish.launched.is_(False),
                 Wish.isbn.in_(isbn_list),
-                Wish.status == 1,
+                cast(ColumnElement[bool], Wish.status == 1),
             )
             .group_by(Wish.isbn)
             .all()

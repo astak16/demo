@@ -1,7 +1,9 @@
 from app.models.gift import Gift
 from spider.yushu_book import YuShuBook
+from typing import cast
 from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, desc, func
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql.elements import ColumnElement
 from app.models.base import Base, db
 
 
@@ -33,7 +35,11 @@ class Wish(Base):
     def get_gift_counts(cls, isbn_list):
         count_list = (
             db.session.query(func.count(Gift.id), Gift.isbn)
-            .filter(Gift.launched == False, Gift.isbn.in_(isbn_list), Gift.status == 1)
+            .filter(
+                Gift.launched.is_(False),
+                Gift.isbn.in_(isbn_list),
+                cast(ColumnElement[bool], Gift.status == 1),
+            )
             .group_by(Gift.isbn)
             .all()
         )
