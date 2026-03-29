@@ -28,11 +28,8 @@ db = SQLAlchemy(query_class=Query)
 
 class Base(db.Model):
     __abstract__ = True
-    create_time = Column("create_time", Integer)
+    create_time = Column("create_time", Integer, default=lambda: int(datetime.now().timestamp()))
     status = Column(SmallInteger, default=1)
-
-    def __init__(self):
-        self.create_time = int(datetime.now().timestamp())
 
     def set_attrs(self, attrs_dict):
         for key, value in attrs_dict.items():
