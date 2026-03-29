@@ -1,6 +1,7 @@
 from flask import current_app
 from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, desc, func
 from sqlalchemy.orm import relationship
+from app.libs.enums import PendingStatus
 from app.models.wish import Wish
 from spider.yushu_book import YuShuBook
 from .base import Base, db
@@ -22,8 +23,7 @@ class Gift(Base):
     launched = Column(Boolean, default=False)
 
     def is_yourself_gift(self, uid):
-        if self.uid == uid:
-            return True
+        return True if self.uid == uid else False
 
     @property
     def book(self):
@@ -44,7 +44,11 @@ class Gift(Base):
     def get_wish_counts(cls, isbn_list):
         count_list = (
             db.session.query(func.count(Wish.id), Wish.isbn)
-            .filter(Wish.launched == False, Wish.isbn.in_(isbn_list), Wish.status == 1)
+            .filter(
+                Wish.launched == False,
+                Wish.isbn.in_(isbn_list),
+                Wish.status == 1,
+            )
             .group_by(Wish.isbn)
             .all()
         )
@@ -53,14 +57,14 @@ class Gift(Base):
         return count_list
 
     @classmethod
-    @cache.memoize(timeout=600)
+    # @cache.memoize(timeout=600)
     def recent(cls):
         gift_list = (
             cls.query.filter_by(launched=False)
             .order_by(desc(Gift.create_time))
-            .group_by(Gift.book_id)
+            .group_by(Gift.isbn)
             .limit(current_app.config["RECENT_BOOK_PER_PAGE"])
             .all()
         )
-        view_model = GiftsViewModel.recent(gift_list)
-        return view_model
+        # view_model = GiftsViewModel.recent(gift_list)
+        return gift_list

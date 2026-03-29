@@ -1,8 +1,9 @@
-from flask import current_app, flash, redirect, render_template, url_for
+from flask import flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
+from app.libs.email import send_mail
+from app.models.gift import Gift
 from app.models.wish import Wish
 from app.view_models.trade import MyTrades
-from app.web import gift
 from . import web
 from app.models.base import db
 
@@ -37,10 +38,28 @@ def save_to_wish(isbn):
 
 
 @web.route("/satisfy/wish/<int:wid>")
+@login_required
 def satisfy_wish(wid):
-    return "满足心愿页面，心愿id是%d" % wid
+    wish = Wish.query.get_or_404(wid)
+    gift = Gift.query.filter_by(uid=current_user.id, isbn=wish.isbn).first()
+    if not gift:
+        flash("你还没有赠送此书，请点击添加到赠送清单添加此书")
+    else:
+        send_mail(
+            wish.user.email,
+            "有人想要一本书",
+            "email/satisfy_wish.html",
+            wisher=wish.user,
+            gift=gift,
+        )
+        flash("一封邮件已发送给愿意赠送者， 如果他同意赠送，你将收到一个鱼漂")
+    return redirect(url_for("web.book_detail", isbn=wish.isbn))
 
 
 @web.route("/wish/book/<isbn>/redraw")
+@login_required
 def redraw_from_wish(isbn):
-    return "从心愿清单中撤销页面，书籍isbn是%s" % isbn
+    wish = Wish.query.filter_by(isbn=isbn, launched=False).first_or_404()
+    with db.auto_commit():
+        wish.delete()
+    return redirect(url_for("web.my_wish"))

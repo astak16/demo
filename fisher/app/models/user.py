@@ -1,5 +1,9 @@
 # from app.libs.enums import PendingStatus
 # from app.models.drift import Drift
+from math import floor
+
+from app.libs.enums import PendingStatus
+from app.models.drift import Drift
 from app.models.gift import Gift
 from app.models.wish import Wish
 from app.libs.helper import is_isbn_or_key
@@ -70,6 +74,19 @@ class User(UserMixin, Base):
     #         Drift.pending == PendingStatus.success, Drift.requester_id == self.id
     #     ).count()
     #     return False if success_gifts <= success_receive - 2 else True
+    def can_send_drift(self):
+        beans = db.session.query(User.beans).filter_by(id=self.id).scalar()
+        if beans < 1:
+            return False
+        success_gifts_count = Gift.query.filter_by(uid=self.id, launched=True).count()
+        success_receive_count = Drift.query.filter_by(
+            requester_id=self.id, pending=PendingStatus.success
+        ).count()
+        return (
+            True
+            if floor(success_gifts_count / 2) <= floor(success_receive_count)
+            else False
+        )
 
     def can_save_to_list(self, isbn):
         if is_isbn_or_key(isbn) != "isbn":
@@ -126,14 +143,14 @@ class User(UserMixin, Base):
         # db.session.commit()
         return True
 
-    # @property
-    # def summary(self):
-    #     return dict(
-    #         nickname=self.nickname,
-    #         beans=self.beans,
-    #         email=self.email,
-    #         send_receive=str(self.send_counter) + "/" + str(self.receive_counter),
-    #     )
+    @property
+    def summary(self):
+        return dict(
+            nickname=self.nickname,
+            beans=self.beans,
+            email=self.email,
+            send_receive=str(self.send_counter) + "/" + str(self.receive_counter),
+        )
 
 
 @login_manager.user_loader

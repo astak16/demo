@@ -28,7 +28,9 @@ db = SQLAlchemy(query_class=Query)
 
 class Base(db.Model):
     __abstract__ = True
-    create_time = Column("create_time", Integer, default=lambda: int(datetime.now().timestamp()))
+    create_time = Column(
+        "create_time", Integer, default=lambda: int(datetime.now().timestamp())
+    )
     status = Column(SmallInteger, default=1)
 
     def set_attrs(self, attrs_dict):
@@ -42,3 +44,6 @@ class Base(db.Model):
             return datetime.fromtimestamp(cast(int, self.create_time))
         else:
             return None
+
+    def delete(self):
+        self.status = 0
