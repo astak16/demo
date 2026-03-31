@@ -1,6 +1,21 @@
-import "@/styles/globals.css";
+import "../styles/globals.css";
 import type { AppProps } from "next/app";
+import { MantineProvider, ColorSchemeProvider, ColorScheme } from "@mantine/core";
+import { useState } from "react";
+import { Notifications } from "@mantine/notifications";
 
 export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+  const [colorScheme, setColorScheme] = useState<ColorScheme>("light");
+  const toggleColorScheme = (value?: ColorScheme) => {
+    setColorScheme(value || (colorScheme === "dark" ? "light" : "dark"));
+  };
+
+  return (
+    <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+      <MantineProvider theme={{ colorScheme, primaryColor: "green" }} withNormalizeCSS withGlobalStyles>
+        <Notifications position="top-right" zIndex={2077} />
+        <Component {...pageProps} />
+      </MantineProvider>
+    </ColorSchemeProvider>
+  );
 }
