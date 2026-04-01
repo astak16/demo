@@ -3,11 +3,11 @@ import { useState, KeyboardEvent } from "react";
 import { IconSend, IconEraser, IconSendOff } from "@tabler/icons-react";
 import { getCompletion } from "@/utils/getCompletion";
 import chatService from "@/utils/chatService";
-import { clearChatLogs, updateChatLogs } from "@/utils/chatStorage";
+import { clearMessage, updateMessage } from "@/utils/chatStorage";
 import clsx from "clsx";
 const LOCAL_KEY = "ai_demo";
 
-export const Chat = () => {
+export const Message = () => {
   const [prompt, setPrompt] = useState("");
   const [completion, setCompletion] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -39,13 +39,13 @@ export const Chat = () => {
     }
   };
   const onClear = () => {
-    clearChatLogs(LOCAL_KEY);
+    clearMessage(LOCAL_KEY);
     setChatList([]);
   };
 
   const setMessages = (msg: MessageList) => {
     setChatList(msg);
-    updateChatLogs(LOCAL_KEY, msg);
+    updateMessage(LOCAL_KEY, msg);
   };
 
   const onSubmit = () => {
