@@ -1,10 +1,12 @@
+type Role = "user" | "assistant" | "system";
+
 type ChatLogType = {
-  role: string;
+  role: Role;
   content: string;
 };
 
-type ChatLogsType = ChatLogType[];
+type MessageList = ChatLogType[];
 
 type ChatLogsStorageType = {
-  [key: string]: ChatLogsType;
+  [key: string]: MessageList;
 };

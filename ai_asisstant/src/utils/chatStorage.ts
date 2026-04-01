@@ -16,7 +16,7 @@ export const getChatLogs = (id: string) => {
   return logs[id] || [];
 };
 
-export const updateChatLogs = (id: string, log: ChatLogsType) => {
+export const updateChatLogs = (id: string, log: MessageList) => {
   const logs = getChatLogsContainer();
   logs[id] = log;
   setLocal(CHAT_LOGS_KEY, logs);
