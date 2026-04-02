@@ -17,3 +17,17 @@ type Session = {
 };
 
 type SessionList = Session[];
+
+type Assistant = {
+  id: string;
+  name: string;
+  description?: string;
+  prompt: string;
+  temperature: number;
+  max_log: number;
+  max_tokens: number;
+};
+
+type AssistantList = Assistant[];
+
+type EditAssistant = Omit<Assistant, "id"> & Partial<Pick<Assistant, "id">>;
