@@ -1,5 +1,6 @@
 import { MESSAGE_STORE, SESSION_STORE } from "./constant";
 import { getLocal, setLocal } from "./storage";
+import * as assistantStore from "./assistantStore";
 
 export const getMessageStore = () => {
   let list = getLocal<ChatLogsStorageType>(MESSAGE_STORE);
@@ -32,7 +33,7 @@ export const clearMessage = (id: string) => {
 export const getSessionStore = (): SessionList => {
   let list = getLocal<SessionList>(SESSION_STORE);
   if (!list) {
-    const session = { name: "chat", id: Date.now().toString() };
+    const session = { name: "chat", id: Date.now().toString(), assistant: assistantStore.getList()[0].id };
     list = [session];
     updateMessage(session.id, []);
     setLocal(SESSION_STORE, list);
@@ -51,9 +52,18 @@ export const addSession = (session: Session) => {
   return list;
 };
 
-export const getSession = (id: string) => {
+export const getSession = (id: string): SessionInfo | null => {
   const list = getSessionStore();
-  return list.find((session) => session.id === id) || {};
+  const session = list.find((session) => session.id === id);
+  if (!session) return null;
+  const { assistant } = session;
+
+  let assistantInfo = assistantStore.getAssistant(assistant);
+  if (!assistantInfo) {
+    assistantInfo = assistantStore.getList()[0];
+    updateSession(session.id, { assistant: assistantInfo.id });
+  }
+  return { ...session, assistant: assistantInfo };
 };
 
 export const updateSession = (id: string, data: Partial<Omit<Session, "id">>): SessionList => {

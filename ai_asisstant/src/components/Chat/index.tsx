@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as chatStorage from "@/utils/chatStorage";
 import { Message } from "../Message";
 import Session from "../Session";
+import { MediaQuery } from "@mantine/core";
 
 const Chat = () => {
   const [sessionId, setSessionId] = useState<string>("");
@@ -17,8 +18,12 @@ const Chat = () => {
   }, []);
   return (
     <div className="h-screen flex w-screen">
-      <Session sessionId={sessionId} onChange={setSessionId} />
-      <Message sessionId={sessionId} />
+      <MediaQuery smallerThan="md" styles={{ width: "0 !important", padding: "0 !important", overflow: "hidden" }}>
+        <>
+          <Session sessionId={sessionId} onChange={setSessionId} />
+          <Message sessionId={sessionId} />
+        </>
+      </MediaQuery>
     </div>
   );
 };

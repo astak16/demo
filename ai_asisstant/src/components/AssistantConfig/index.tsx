@@ -68,6 +68,18 @@ const AssistantConfig = ({ assistant, save, remove }: Props) => {
             onChange={(value) => onNumberChange(value, "max_log")}
           />
         </Wrapper>
+        <Wrapper label="回复长度" description="回复内容的长度限制">
+          <NumberInput
+            type="number"
+            variant="filled"
+            max={2000}
+            min={50}
+            step={50}
+            value={data.max_tokens}
+            name="max_tokens"
+            onChange={(value) => onNumberChange(value, "max_tokens")}
+          />
+        </Wrapper>
         <div className="flex justify-around mt-4">
           <Button type="submit" leftIcon={<IconDeviceFloppy size="1.2rem" />}>
             Save

@@ -22,6 +22,8 @@
     "eslint": "8.39.0",
     "eslint-config-next": "13.3.4",
     "eventsource-parser": "1.0.0",
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.5",
     "next": "13.3.4",
     "postcss": "8.4.23",
     "react": "18.2.0",

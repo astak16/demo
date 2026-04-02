@@ -8,6 +8,7 @@ import { EditTableText } from "../EdittableText";
 type Props = {
   sessionId: string;
   onChange: (arg: string) => void;
+  className?: string;
 };
 
 const itemBaseClasses = "flex cursor-pointer h-[2.4rem] items-center justify-around group px-4 rounded-md";
@@ -22,7 +23,7 @@ const generateItemClasses = (id: string, sessionId: string, colorScheme: string)
     "bg-zinc-800/90": id === sessionId && colorScheme === "dark",
   });
 
-const Session = ({ sessionId, onChange }: Props) => {
+const Session = ({ sessionId, onChange, className }: Props) => {
   const [sessionList, setSessionList] = useState<SessionList>([]);
   const { colorScheme } = useMantineColorScheme();
 
@@ -39,6 +40,7 @@ const Session = ({ sessionId, onChange }: Props) => {
     const newSession = {
       name: `session-${sessionList.length + 1}`,
       id: Date.now().toString(),
+      assistant: chatStorage.getSessionStore()[0].assistant,
     };
     onChange(newSession.id);
     const list = chatStorage.addSession(newSession);
@@ -67,8 +69,9 @@ const Session = ({ sessionId, onChange }: Props) => {
         "flex",
         "flex-col",
         "px-2",
+        className,
       )}>
-      <div className="flex justify-between py-2 w-full">
+      <div className="flex justify-between items-center py-2 w-full">
         <ActionIcon onClick={createSession} size="sm" color="green">
           <IconMessagePlus size="1rem" />
         </ActionIcon>

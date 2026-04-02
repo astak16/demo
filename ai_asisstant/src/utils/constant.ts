@@ -11,3 +11,8 @@ export const ASSISTANT_INIT = [
     max_tokens: 800,
   },
 ];
+
+export const USERMAP: Record<string, string> = {
+  user: "你",
+  assistant: "AI 助手",
+};

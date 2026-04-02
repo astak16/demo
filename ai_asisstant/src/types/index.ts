@@ -14,7 +14,10 @@ type ChatLogsStorageType = {
 type Session = {
   name: string;
   id: string;
+  assistant: string;
 };
+
+type SessionInfo = Omit<Session, "assistant"> & { assistant: Assistant };
 
 type SessionList = Session[];
 

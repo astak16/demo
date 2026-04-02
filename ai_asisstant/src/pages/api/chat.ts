@@ -14,12 +14,14 @@ type StreamPayload = {
 
 export default async function handler(req: NextRequest) {
   const { prompt, history = [], options = {} } = await req.json();
+  const { max_tokens, temperature } = options;
 
   const data = {
     model: "MiniMax-M2.7",
     stream: true,
-    messages: [{ role: "system", content: "you are ai assistant" }, ...history, { role: "user", content: prompt }],
-    ...options,
+    messages: [{ role: "system", content: options.prompt }, ...history, { role: "user", content: prompt }],
+    max_tokens: +max_tokens || 1000,
+    temperature: +temperature || 0.7,
   };
   const stream = await requestStream(data);
   return new Response(stream);
