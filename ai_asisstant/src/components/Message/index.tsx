@@ -1,32 +1,49 @@
 import { ActionIcon, Textarea } from "@mantine/core";
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useEffect } from "react";
 import { IconSend, IconEraser, IconSendOff } from "@tabler/icons-react";
 import { getCompletion } from "@/utils/getCompletion";
 import chatService from "@/utils/chatService";
-import { clearMessage, updateMessage } from "@/utils/chatStorage";
+import * as chatStorage from "@/utils/chatStorage";
 import clsx from "clsx";
-const LOCAL_KEY = "ai_demo";
+// const sessionId = "ai_demo";
 
-export const Message = () => {
+type Props = {
+  sessionId: string;
+};
+
+export const Message = ({ sessionId }: Props) => {
   const [prompt, setPrompt] = useState("");
   const [completion, setCompletion] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [chatList, setChatList] = useState<MessageList>([]);
+  const [message, setMessage] = useState<MessageList>([]);
 
   chatService.actions = {
     onCompleting: (sug) => setSuggestion(sug),
     onCompleted: (sug) => setLoading(false),
   };
 
+  useEffect(() => {
+    const msg = chatStorage.getMessage(sessionId);
+    setMessage(msg);
+    if (loading) {
+      chatService.cancel();
+    }
+  }, [sessionId]);
+
+  const updateMessage = (msg: MessageList) => {
+    setMessage(msg);
+    chatStorage.updateMessage(sessionId, msg);
+  };
+
   const setSuggestion = (suggestion: string) => {
     if (suggestion === "") return;
-    const len = chatList.length;
-    const lastMessage = len ? chatList[len - 1] : null;
+    const len = message.length;
+    const lastMessage = len ? message[len - 1] : null;
     let newList: MessageList = [];
     if (lastMessage?.role === "assistant") {
-      newList = [...chatList.slice(0, len - 1), { ...lastMessage, content: suggestion }];
+      newList = [...message.slice(0, len - 1), { ...lastMessage, content: suggestion }];
     } else {
-      newList = [...chatList, { role: "assistant", content: suggestion }];
+      newList = [...message, { role: "assistant", content: suggestion }];
     }
     setMessages(newList);
   };
@@ -39,13 +56,14 @@ export const Message = () => {
     }
   };
   const onClear = () => {
-    clearMessage(LOCAL_KEY);
-    setChatList([]);
+    // chatStorage.clearMessage(sessionId);
+    // setMessage([]);
+    updateMessage([]);
   };
 
   const setMessages = (msg: MessageList) => {
-    setChatList(msg);
-    updateMessage(LOCAL_KEY, msg);
+    setMessage(msg);
+    chatStorage.updateMessage(sessionId, msg);
   };
 
   const onSubmit = () => {
@@ -53,7 +71,7 @@ export const Message = () => {
       return chatService.cancel();
     }
     if (!prompt.trim()) return;
-    let list: MessageList = [...chatList, { role: "user", content: prompt }];
+    let list: MessageList = [...message, { role: "user", content: prompt }];
     setMessages(list);
     setLoading(true);
     chatService.getStream({
@@ -90,9 +108,9 @@ export const Message = () => {
   // };
 
   return (
-    <div className="h-screen flex flex-col items-center">
+    <div className="h-screen flex flex-col items-center w-full">
       <div className={clsx(["flex-col", "h-[calc(100vh-10rem)]", "w-full", "overflow-y-auto", "rounded-sm", "px-8"])}>
-        {chatList.map((item, idx) => (
+        {message.map((item, idx) => (
           <div
             key={`${item.role}-${idx}`}
             className={clsx(
