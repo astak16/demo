@@ -2,7 +2,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 
+import agent
 from config import WORKSPACE
+from logger import Logger
 
 console = Console()
 
@@ -27,6 +29,7 @@ def main():
     )
 
     messages: list[dict] = []
+    logger = Logger()
 
     while True:
         try:
@@ -42,9 +45,12 @@ def main():
             break
         if user_input.lower() == "/new":
             messages.clear()
-            # logger = SessionLogger()
+            logger = Logger()
             console.print("[dim]── 新会话已开始 ──[/dim]")
             continue
+
+        agent.run(user_input, messages)
+        logger.log(messages)
 
 
 if __name__ == "__main__":
