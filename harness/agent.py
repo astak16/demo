@@ -74,7 +74,7 @@ def run(user_input: str, messages: list[dict]):
 
     memories = _load_memories()
     if memories:
-        system = f"\n\n# 长期记忆\n以下是你之前被要求记住的信息：\n\n{memories}"
+        system += f"\n\n# 长期记忆\n以下是你之前被要求记住的信息：\n\n{memories}"
 
     for _ in range(MAX_ITERATIONS):
         _compact_if_needed(messages)

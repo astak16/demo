@@ -3,7 +3,7 @@ from typing import Callable
 from pathlib import Path
 
 # 工具注册表：{name: handler_function}
-_handlers: dict[str, callable] = {}
+_handlers: dict[str, Callable] = {}
 # 工具定义列表（OpenAI function calling 格式
 _definitions: list[dict] = []
 

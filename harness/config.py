@@ -2,7 +2,7 @@ from pathlib import Path
 
 BASE_URL = "https://api.minimaxi.com/v1"
 API_KEY = "sk-cp-_rVEbvkT5uaz6M7hLodT9EGTzFRvN7a393FOaawhU-CCdyMqOHEkv6ShNZAeGipmvFBs11FJd6l8exK9Zl7mKPMoMTbyQBdgTi5dtT1s9yNx0X7SeoeEsII"
-MODEL = "MiniMax-M2.7"
+MODEL = "MiniMax-M3"
 MAX_TOKENS = 8192
 TEMPERATURE = 0.7
 
