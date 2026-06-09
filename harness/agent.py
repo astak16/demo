@@ -381,7 +381,7 @@ def _execute_tool(tc: llm.ToolCall) -> str:
 
     # 结果裁剪显示
     lines = result.splitlines()
-    if len(lines) > RESULT_DISPLAY_LIMIT or len(lines) > 10:
+    if len(result) > RESULT_DISPLAY_LIMIT or len(lines) > 10:
         preview = "\n".join(lines[:8])
         if len(preview) > RESULT_DISPLAY_LIMIT:
             preview = preview[:RESULT_DISPLAY_LIMIT]

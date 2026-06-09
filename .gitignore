@@ -10,3 +10,4 @@ wheels/
 .venv
 log/
 .DS_Store
+*/sessions
