@@ -566,3 +566,126 @@ test("POST /users/editCheckAll rejects a request without a login cookie", async 
   });
   assert.equal(findUser.mock.callCount(), 0);
 });
+
+test("POST /users/addAddress adds a default address and clears the previous default", async () => {
+  const existingAddress = {
+    addressId: "A001",
+    userName: "Alice",
+    streetName: "Old Street",
+    postCode: 100000,
+    tel: 13800000000,
+    isDefault: true,
+  };
+  const user = {
+    addressList: [existingAddress],
+    cartList: [],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/addAddress")
+    .set("Cookie", "userId=U001")
+    .send({
+      userName: "Alice",
+      streetName: "New Street",
+      postCode: 200000,
+      tel: 13900000000,
+      isDefault: "true",
+    });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.equal(existingAddress.isDefault, false);
+  assert.equal(user.addressList.length, 2);
+  assert.deepEqual(user.addressList[1], {
+    addressId: user.addressList[1]!.addressId,
+    userName: "Alice",
+    streetName: "New Street",
+    postCode: 200000,
+    tel: 13900000000,
+    isDefault: true,
+  });
+  assert.match(user.addressList[1]!.addressId!, /^\d+$/);
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/addAddress preserves the current default when adding a non-default address", async () => {
+  const existingAddress = {
+    addressId: "A001",
+    isDefault: true,
+  };
+  const user = {
+    addressList: [existingAddress],
+    cartList: [],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/addAddress")
+    .set("Cookie", "userId=U001")
+    .send({
+      userName: "Bob",
+      streetName: "Second Street",
+      postCode: 300000,
+      tel: 13700000000,
+      isDefault: false,
+    });
+
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.equal(existingAddress.isDefault, true);
+  assert.equal(user.addressList[1]!.isDefault, false);
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/addAddress returns a business error when saving fails", async () => {
+  const user = {
+    addressList: [],
+    cartList: [],
+    save: mock.fn(async () => {
+      throw new Error("database unavailable");
+    }),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/addAddress")
+    .set("Cookie", "userId=U001")
+    .send({ userName: "Alice", streetName: "New Street" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/addAddress rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    save: mock.fn(async () => {}),
+  }));
+
+  const response = await request(app)
+    .post("/users/addAddress")
+    .send({ userName: "Alice", streetName: "New Street" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});

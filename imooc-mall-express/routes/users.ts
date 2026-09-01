@@ -105,4 +105,31 @@ router.post("/editCheckAll", requireLogin, async (req, res) => {
   }
 });
 
+router.post("/addAddress", requireLogin, async (req, res) => {
+  const userInfo = res.locals.userInfo;
+  const { userName, streetName, postCode, tel } = req.body;
+  const isDefault = req.body.isDefault === true || req.body.isDefault === "true";
+  try {
+    const address = {
+      addressId: `${Date.now()}${Math.floor(Math.random() * 1000)}`,
+      userName,
+      streetName,
+      postCode,
+      tel,
+      isDefault,
+    };
+
+    if (isDefault) {
+      userInfo.addressList.forEach((item) => {
+        item.isDefault = false;
+      });
+    }
+    userInfo.addressList.push(address);
+    await userInfo.save();
+    res.json({ status: "0", msg: "", result: "suc" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
 export default router;
