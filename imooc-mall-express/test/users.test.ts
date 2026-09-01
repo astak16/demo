@@ -942,3 +942,153 @@ test("POST /users/delAddress rejects a request without a login cookie", async ()
   assert.equal(findUser.mock.callCount(), 0);
   assert.equal(updateUser.mock.callCount(), 0);
 });
+
+test("POST /users/payMent creates and saves an order with selected goods", async () => {
+  const address = { addressId: "A001", streetName: "First Street" };
+  const selectedGood = { productId: "P001", productNum: 2, checked: "1" };
+  const unselectedGood = { productId: "P002", productNum: 1, checked: "0" };
+  const user = {
+    addressList: [address],
+    cartList: [selectedGood, unselectedGood],
+    orderList: [] as unknown[],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001", orderTotal: 598 });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.status, "0");
+  assert.equal(response.body.msg, "");
+  assert.equal(response.body.result.orderTotal, 598);
+  assert.match(response.body.result.orderId, /^622\d{16}$/);
+  assert.equal(user.orderList.length, 1);
+  assert.deepEqual(user.orderList[0], {
+    orderId: response.body.result.orderId,
+    orderTotal: 598,
+    addressInfo: address,
+    goodsList: [selectedGood],
+    orderStatus: "1",
+    createDate: (user.orderList[0] as { createDate: string }).createDate,
+  });
+  assert.match(
+    (user.orderList[0] as { createDate: string }).createDate,
+    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
+  );
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/payMent rejects a missing address id", async () => {
+  const user = {
+    addressList: [],
+    cartList: [],
+    orderList: [] as unknown[],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .set("Cookie", "userId=U001")
+    .send({ orderTotal: 598 });
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "addressId 不能为空",
+    result: "",
+  });
+  assert.equal(user.orderList.length, 0);
+  assert.equal(user.save.mock.callCount(), 0);
+});
+
+test("POST /users/payMent rejects an unknown address", async () => {
+  const user = {
+    addressList: [{ addressId: "A001" }],
+    cartList: [{ productId: "P001", productNum: 1, checked: "1" }],
+    orderList: [] as unknown[],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "missing", orderTotal: 299 });
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "地址不存在",
+    result: "",
+  });
+  assert.equal(user.orderList.length, 0);
+  assert.equal(user.save.mock.callCount(), 0);
+});
+
+test("POST /users/payMent rejects an order without selected goods", async () => {
+  const user = {
+    addressList: [{ addressId: "A001" }],
+    cartList: [{ productId: "P001", productNum: 1, checked: "0" }],
+    orderList: [] as unknown[],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001", orderTotal: 299 });
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "请选择结算商品",
+    result: "",
+  });
+  assert.equal(user.orderList.length, 0);
+  assert.equal(user.save.mock.callCount(), 0);
+});
+
+test("POST /users/payMent returns a business error when saving fails", async () => {
+  const user = {
+    addressList: [{ addressId: "A001" }],
+    cartList: [{ productId: "P001", productNum: 1, checked: 1 }],
+    orderList: [] as unknown[],
+    save: mock.fn(async () => {
+      throw new Error("database unavailable");
+    }),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001", orderTotal: 299 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/payMent rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [],
+  }));
+
+  const response = await request(app)
+    .post("/users/payMent")
+    .send({ addressId: "A001", orderTotal: 299 });
+
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});

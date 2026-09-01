@@ -5,6 +5,16 @@ import { getErrorMessage } from "../utils/error";
 
 const router = express.Router();
 
+function formatDate(date: Date, separator = ""): string {
+  const datePart = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(separator);
+  const timePart = [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(separator ? ":" : "");
+  return `${datePart}${separator ? " " : ""}${timePart}`;
+}
+
 router.post("/login", async (req, res) => {
   const { userName, userPwd } = req.body;
   const param = { userName, userPwd };
@@ -178,6 +188,46 @@ router.post("/delAddress", requireLogin, async (req, res) => {
       return;
     }
     res.json({ status: "0", msg: "", result: "" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
+router.post("/payMent", requireLogin, async (req, res) => {
+  const { orderTotal, addressId } = req.body;
+  if (!addressId) {
+    res.json({ status: "1", msg: "addressId 不能为空", result: "" });
+    return;
+  }
+  const userInfo = res.locals.userInfo;
+  const address = userInfo.addressList.find((item) => item.addressId === addressId);
+  if (!address) {
+    res.json({ status: "1", msg: "地址不存在", result: "" });
+    return;
+  }
+
+  const goodsList = userInfo.cartList.filter(
+    (item) => item.checked === 1 || item.checked === "1",
+  );
+  if (goodsList.length === 0) {
+    res.json({ status: "1", msg: "请选择结算商品", result: "" });
+    return;
+  }
+
+  try {
+    const now = new Date();
+    const orderId = `622${Math.floor(Math.random() * 10)}${formatDate(now)}${Math.floor(Math.random() * 10)}`;
+    const order = {
+      orderId,
+      orderTotal,
+      addressInfo: address,
+      goodsList,
+      orderStatus: "1",
+      createDate: formatDate(now, "-"),
+    };
+    userInfo.orderList.push(order);
+    await userInfo.save();
+    res.json({ status: "0", msg: "", result: { orderId, orderTotal } });
   } catch (error) {
     res.json({ status: "1", msg: getErrorMessage(error), result: "" });
   }
