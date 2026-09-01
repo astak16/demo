@@ -375,3 +375,82 @@ test("POST /users/cardEdit rejects a request without a login cookie", async () =
   });
   assert.equal(updateUser.mock.callCount(), 0);
 });
+
+test("POST /users/cardDel removes the matching cart item", async () => {
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardDel")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "P001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.deepEqual(updateUser.mock.calls[0]!.arguments, [
+    { userId: "U001", "cartList.productId": "P001" },
+    { $pull: { cartList: { productId: "P001" } } },
+  ]);
+});
+
+test("POST /users/cardDel returns a business error when the cart item is not found", async () => {
+  mock.method(Users, "updateOne", async () => ({
+    matchedCount: 0,
+    modifiedCount: 0,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardDel")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "missing" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "商品不存在",
+    result: "",
+  });
+});
+
+test("POST /users/cardDel returns a business error when the update fails", async () => {
+  mock.method(Users, "updateOne", async () => {
+    throw new Error("database unavailable");
+  });
+
+  const response = await request(app)
+    .post("/users/cardDel")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "P001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/cardDel rejects a request without a login cookie", async () => {
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardDel")
+    .send({ productId: "P001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(updateUser.mock.callCount(), 0);
+});

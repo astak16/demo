@@ -88,4 +88,22 @@ router.post("/cardEdit", requireLogin, async (req, res) => {
   }
 });
 
+router.post("/cardDel", requireLogin, async (req, res) => {
+  const userId = res.locals.userId;
+  const { productId } = req.body;
+  try {
+    const result = await Users.updateOne(
+      { userId, "cartList.productId": productId },
+      { $pull: { cartList: { productId } } },
+    );
+    if (result.matchedCount === 0) {
+      res.json({ status: "1", msg: "商品不存在", result: "" });
+      return;
+    }
+    res.json({ status: "0", msg: "", result: "suc" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
 export default router;
