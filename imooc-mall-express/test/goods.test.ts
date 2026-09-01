@@ -63,6 +63,28 @@ test("GET /goods/list returns a business error when the query fails", async () =
   });
 });
 
+test("GET /goods/list uses pagination defaults for invalid string values", async () => {
+  const query = {
+    sort: mock.fn(() => query),
+    skip: mock.fn(() => query),
+    limit: mock.fn(async () => []),
+  };
+  mock.method(Goods, "find", () => query);
+
+  const response = await request(app)
+    .get("/goods/list")
+    .query({ page: 0, pageSize: "invalid" });
+
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: { count: 0, list: [] },
+  });
+  assert.deepEqual(query.sort.mock.calls[0]!.arguments, [{ salePrice: 1 }]);
+  assert.deepEqual(query.skip.mock.calls[0]!.arguments, [0]);
+  assert.deepEqual(query.limit.mock.calls[0]!.arguments, [5]);
+});
+
 test("POST /goods/addCart rejects an unknown user", async () => {
   const findUser = mock.method(Users, "findOne", async () => null);
 
@@ -118,6 +140,47 @@ test("POST /goods/addCart adds a new product with cart defaults", async () => {
   assert.equal(user.save.mock.callCount(), 1);
 });
 
+test("POST /goods/addCart preserves the product image for a new cart item", async () => {
+  const user = { cartList: [], save: mock.fn(async () => {}) };
+  const good = {
+    productId: "P003",
+    productName: "Camera",
+    salePrice: 499,
+    productImage: "camera.jpg",
+  };
+  mock.method(Users, "findOne", async () => user);
+  mock.method(Goods, "findOne", async () => good);
+
+  const response = await request(app)
+    .post("/goods/addCart")
+    .send({ productId: "P003" });
+
+  assert.deepEqual(response.body, { status: "0", msg: "", result: "suc" });
+  assert.deepEqual(user.cartList, [
+    {
+      productId: "P003",
+      productName: "Camera",
+      salePrice: 499,
+      productImage: "camera.jpg",
+      productNum: 1,
+      checked: 1,
+    },
+  ]);
+});
+
+test("POST /goods/addCart normalizes a non-string product id", async () => {
+  const user = { cartList: [], save: mock.fn(async () => {}) };
+  mock.method(Users, "findOne", async () => user);
+  const findGood = mock.method(Goods, "findOne", async () => null);
+
+  const response = await request(app)
+    .post("/goods/addCart")
+    .send({ productId: 123 });
+
+  assert.deepEqual(response.body, { status: "1", msg: "商品不存在" });
+  assert.deepEqual(findGood.mock.calls[0]!.arguments, [{ productId: "" }]);
+});
+
 test("POST /goods/addCart rejects an unknown product", async () => {
   const user = { cartList: [], save: mock.fn(async () => {}) };
   mock.method(Users, "findOne", async () => user);
@@ -141,6 +204,18 @@ test("POST /goods/addCart returns a business error when persistence fails", asyn
     .send({ productId: "P001" });
 
   assert.deepEqual(response.body, { status: "1", msg: "write failed" });
+});
+
+test("POST /goods/addCart returns an unknown error for a non-Error failure", async () => {
+  mock.method(Users, "findOne", async () => {
+    throw "write failed";
+  });
+
+  const response = await request(app)
+    .post("/goods/addCart")
+    .send({ productId: "P001" });
+
+  assert.deepEqual(response.body, { status: "1", msg: "未知错误" });
 });
 
 test("GET an unknown route returns a 404 response", async () => {
