@@ -27,4 +27,19 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/logout", (req, res) => {
+  res.cookie("userId", "", { path: "/", maxAge: -1 })
+  res.cookie("userName", "", { path: "/", maxAge: -1 })
+  res.json({ status: "0", msg: "", result: '' })
+})
+
+router.get("/checkLogin", (req, res) => {
+  if (req.cookies.userId) {
+    res.json({ status: "0", msg: '', result: req.cookies.userName })
+  } else {
+    res.json({ status: "1", msg: "未登录", result: "" })
+  }
+
+})
+
 export default router;

@@ -77,3 +77,46 @@ test("POST /users/login returns a business error when the user query fails", asy
   });
   assert.equal(response.headers["set-cookie"], undefined);
 });
+
+test("POST /users/logout clears login cookies and returns success", async () => {
+  const response = await request(app)
+    .post("/users/logout")
+    .set("Cookie", ["userId=U001", "userName=alice"]);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "",
+  });
+
+  const cookies = response.headers["set-cookie"] as unknown as string[];
+  assert.ok(cookies.some((cookie) => cookie.startsWith("userId=;")));
+  assert.ok(cookies.some((cookie) => cookie.startsWith("userName=;")));
+  assert.ok(cookies.every((cookie) => cookie.includes("Path=/")));
+  assert.ok(cookies.every((cookie) => cookie.includes("Max-Age=-1")));
+});
+
+test("GET /users/checkLogin returns the user name when login cookies are present", async () => {
+  const response = await request(app)
+    .get("/users/checkLogin")
+    .set("Cookie", ["userId=U001", "userName=alice"]);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "alice",
+  });
+});
+
+test("GET /users/checkLogin returns a business error without login cookies", async () => {
+  const response = await request(app).get("/users/checkLogin");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "未登录",
+    result: "",
+  });
+});
