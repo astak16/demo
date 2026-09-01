@@ -1,0 +1,35 @@
+{
+  "name": "imooc-mall-express",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx ./bin/www.ts",
+    "dev": "tsx watch ./bin/www.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test",
+    "coverage": "c8 node --import tsx --test"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~5.2.1",
+    "http-errors": "~1.6.3",
+    "mongoose": "^9.9.4",
+    "morgan": "~1.9.1"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/debug": "^4.1.12",
+    "@types/express": "^5.0.6",
+    "@types/http-errors": "^2.0.5",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
+    "c8": "^12.0.0",
+    "supertest": "^7.2.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
