@@ -59,4 +59,18 @@ router.get("/getCartCount", requireLogin, async (_req, res) => {
   }
 })
 
+router.get("/cartList", requireLogin, async (req, res) => {
+  const userId = res.locals.userId
+  try {
+    const userInfo = await Users.findOne({ userId })
+    if (!userInfo) {
+      res.json({ status: "1", msg: "未查到用户信息", result: "" })
+      return
+    }
+    res.json({ status: "0", msg: "", result: userInfo.cartList })
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" })
+  }
+})
+
 export default router;

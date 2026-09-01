@@ -201,3 +201,91 @@ test("GET /users/getCartCount returns a business error without a login cookie", 
     result: "",
   });
 });
+
+test("GET /users/cartList returns the logged-in user's cart", async () => {
+  const cartList = [
+    {
+      productId: "P001",
+      productName: "Keyboard",
+      salePrice: 299,
+      productNum: 2,
+      checked: 1,
+    },
+  ];
+  const findUser = mock.method(Users, "findOne", async () => ({ cartList }));
+
+  const response = await request(app)
+    .get("/users/cartList")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: cartList,
+  });
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userId: "U001" }]);
+});
+
+test("GET /users/cartList returns an empty list for an empty cart", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
+
+  const response = await request(app)
+    .get("/users/cartList")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: [],
+  });
+});
+
+test("GET /users/cartList returns a business error for an unknown user", async () => {
+  mock.method(Users, "findOne", async () => null);
+
+  const response = await request(app)
+    .get("/users/cartList")
+    .set("Cookie", "userId=missing");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "未查到用户信息",
+    result: "",
+  });
+});
+
+test("GET /users/cartList returns a business error when the user query fails", async () => {
+  mock.method(Users, "findOne", async () => {
+    throw new Error("database unavailable");
+  });
+
+  const response = await request(app)
+    .get("/users/cartList")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("GET /users/cartList rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [],
+  }));
+
+  const response = await request(app).get("/users/cartList");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});
