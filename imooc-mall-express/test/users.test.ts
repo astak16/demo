@@ -115,8 +115,89 @@ test("GET /users/checkLogin returns a business error without login cookies", asy
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+});
+
+test("GET /users/getCartCount returns the total quantity for the logged-in user", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [
+      { productId: "P001", productNum: 2 },
+      { productId: "P002", productNum: 3 },
+    ],
+  }));
+
+  const response = await request(app)
+    .get("/users/getCartCount")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    result: 5,
+    msg: "",
+  });
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userId: "U001" }]);
+});
+
+test("GET /users/getCartCount returns zero for an empty cart", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
+
+  const response = await request(app)
+    .get("/users/getCartCount")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    result: 0,
+    msg: "",
+  });
+});
+
+test("GET /users/getCartCount returns a business error for an unknown user", async () => {
+  mock.method(Users, "findOne", async () => null);
+
+  const response = await request(app)
+    .get("/users/getCartCount")
+    .set("Cookie", "userId=missing");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
     status: "1",
-    msg: "未登录",
+    msg: "未查到用户信息",
+    result: "",
+  });
+});
+
+test("GET /users/getCartCount returns a business error when the user query fails", async () => {
+  mock.method(Users, "findOne", async () => {
+    throw new Error("database unavailable");
+  });
+
+  const response = await request(app)
+    .get("/users/getCartCount")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("GET /users/getCartCount returns a business error without a login cookie", async () => {
+  const response = await request(app)
+    .get("/users/getCartCount")
+    .timeout({ response: 200 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
     result: "",
   });
 });

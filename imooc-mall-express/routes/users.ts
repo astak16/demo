@@ -1,4 +1,5 @@
 import express from "express";
+import { requireLogin } from "../middleware/auth";
 import Users from "../models/users";
 import { getErrorMessage } from "../utils/error";
 
@@ -37,9 +38,25 @@ router.get("/checkLogin", (req, res) => {
   if (req.cookies.userId) {
     res.json({ status: "0", msg: '', result: req.cookies.userName })
   } else {
-    res.json({ status: "1", msg: "未登录", result: "" })
+    res.json({ status: "10001", msg: "当前未登录", result: "" })
   }
+})
 
+router.get("/getCartCount", requireLogin, async (_req, res) => {
+  try {
+    const userInfo = await Users.findOne({ userId: res.locals.userId })
+    if (!userInfo) {
+      res.json({ status: "1", msg: "未查到用户信息", result: "" })
+      return
+    }
+    const cartCount = userInfo.cartList.reduce(
+      (total, item) => total + Number(item.productNum),
+      0,
+    )
+    res.json({ status: "0", result: cartCount, msg: "" })
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" })
+  }
 })
 
 export default router;
