@@ -64,7 +64,7 @@ router.get("/cartList", requireLogin, (_req, res) => {
   res.json({ status: "0", msg: "", result: res.locals.userInfo.cartList });
 });
 
-router.post("/cardEdit", requireLogin, async (req, res) => {
+router.post("/cartEdit", requireLogin, async (req, res) => {
   const userId = res.locals.userId;
   const { productId, productNum, checked } = req.body;
   try {
@@ -82,7 +82,7 @@ router.post("/cardEdit", requireLogin, async (req, res) => {
   }
 });
 
-router.post("/cardDel", requireLogin, async (req, res) => {
+router.post("/cartDel", requireLogin, async (req, res) => {
   const userId = res.locals.userId;
   const { productId } = req.body;
   try {

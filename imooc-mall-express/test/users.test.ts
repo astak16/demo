@@ -25,9 +25,7 @@ test("POST /users/login returns the user and sets login cookies for valid creden
     userName: "alice",
   }));
 
-  const response = await request(app)
-    .post("/users/login")
-    .send({ userName: "alice", userPwd: "secret" });
+  const response = await request(app).post("/users/login").send({ userName: "alice", userPwd: "secret" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -35,9 +33,7 @@ test("POST /users/login returns the user and sets login cookies for valid creden
     result: { userName: "alice" },
     msg: "",
   });
-  assert.deepEqual(findUser.mock.calls[0]!.arguments, [
-    { userName: "alice", userPwd: "secret" },
-  ]);
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userName: "alice", userPwd: "secret" }]);
 
   const cookies = response.headers["set-cookie"] as unknown as string[];
   assert.ok(cookies.some((cookie) => cookie.startsWith("userId=U001;")));
@@ -49,9 +45,7 @@ test("POST /users/login returns the user and sets login cookies for valid creden
 test("POST /users/login returns a business error for invalid credentials", async () => {
   mock.method(Users, "findOne", async () => null);
 
-  const response = await request(app)
-    .post("/users/login")
-    .send({ userName: "alice", userPwd: "wrong" });
+  const response = await request(app).post("/users/login").send({ userName: "alice", userPwd: "wrong" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -67,9 +61,7 @@ test("POST /users/login returns a business error when the user query fails", asy
     throw new Error("database unavailable");
   });
 
-  const response = await request(app)
-    .post("/users/login")
-    .send({ userName: "alice", userPwd: "secret" });
+  const response = await request(app).post("/users/login").send({ userName: "alice", userPwd: "secret" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -81,9 +73,7 @@ test("POST /users/login returns a business error when the user query fails", asy
 });
 
 test("POST /users/logout clears login cookies and returns success", async () => {
-  const response = await request(app)
-    .post("/users/logout")
-    .set("Cookie", ["userId=U001", "userName=alice"]);
+  const response = await request(app).post("/users/logout").set("Cookie", ["userId=U001", "userName=alice"]);
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -100,9 +90,7 @@ test("POST /users/logout clears login cookies and returns success", async () => 
 });
 
 test("GET /users/checkLogin returns the user name when login cookies are present", async () => {
-  const response = await request(app)
-    .get("/users/checkLogin")
-    .set("Cookie", ["userId=U001", "userName=alice"]);
+  const response = await request(app).get("/users/checkLogin").set("Cookie", ["userId=U001", "userName=alice"]);
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -131,9 +119,7 @@ test("GET /users/getCartCount returns the total quantity for the logged-in user"
     ],
   }));
 
-  const response = await request(app)
-    .get("/users/getCartCount")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/getCartCount").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -147,9 +133,7 @@ test("GET /users/getCartCount returns the total quantity for the logged-in user"
 test("GET /users/getCartCount returns zero for an empty cart", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
 
-  const response = await request(app)
-    .get("/users/getCartCount")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/getCartCount").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -162,9 +146,7 @@ test("GET /users/getCartCount returns zero for an empty cart", async () => {
 test("GET /users/getCartCount returns a business error for an unknown user", async () => {
   mock.method(Users, "findOne", async () => null);
 
-  const response = await request(app)
-    .get("/users/getCartCount")
-    .set("Cookie", "userId=missing");
+  const response = await request(app).get("/users/getCartCount").set("Cookie", "userId=missing");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -179,9 +161,7 @@ test("GET /users/getCartCount returns a business error when the user query fails
     throw new Error("database unavailable");
   });
 
-  const response = await request(app)
-    .get("/users/getCartCount")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/getCartCount").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -192,9 +172,7 @@ test("GET /users/getCartCount returns a business error when the user query fails
 });
 
 test("GET /users/getCartCount returns a business error without a login cookie", async () => {
-  const response = await request(app)
-    .get("/users/getCartCount")
-    .timeout({ response: 200 });
+  const response = await request(app).get("/users/getCartCount").timeout({ response: 200 });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -216,9 +194,7 @@ test("GET /users/cartList returns the logged-in user's cart", async () => {
   ];
   const findUser = mock.method(Users, "findOne", async () => ({ cartList }));
 
-  const response = await request(app)
-    .get("/users/cartList")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/cartList").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -232,9 +208,7 @@ test("GET /users/cartList returns the logged-in user's cart", async () => {
 test("GET /users/cartList returns an empty list for an empty cart", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
 
-  const response = await request(app)
-    .get("/users/cartList")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/cartList").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -247,9 +221,7 @@ test("GET /users/cartList returns an empty list for an empty cart", async () => 
 test("GET /users/cartList returns a business error for an unknown user", async () => {
   mock.method(Users, "findOne", async () => null);
 
-  const response = await request(app)
-    .get("/users/cartList")
-    .set("Cookie", "userId=missing");
+  const response = await request(app).get("/users/cartList").set("Cookie", "userId=missing");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -264,9 +236,7 @@ test("GET /users/cartList returns a business error when the user query fails", a
     throw new Error("database unavailable");
   });
 
-  const response = await request(app)
-    .get("/users/cartList")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/cartList").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -292,7 +262,7 @@ test("GET /users/cartList rejects a request without a login cookie", async () =>
   assert.equal(findUser.mock.callCount(), 0);
 });
 
-test("POST /users/cardEdit updates the matching cart item", async () => {
+test("POST /users/cartEdit updates the matching cart item", async () => {
   const findUser = mock.method(Users, "findOne", async () => ({
     cartList: [],
   }));
@@ -302,7 +272,7 @@ test("POST /users/cardEdit updates the matching cart item", async () => {
   }));
 
   const response = await request(app)
-    .post("/users/cardEdit")
+    .post("/users/cartEdit")
     .set("Cookie", "userId=U001")
     .send({ productId: "P001", productNum: 3, checked: 0 });
 
@@ -324,7 +294,7 @@ test("POST /users/cardEdit updates the matching cart item", async () => {
   ]);
 });
 
-test("POST /users/cardEdit returns a business error when the cart item is not found", async () => {
+test("POST /users/cartEdit returns a business error when the cart item is not found", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => ({
     matchedCount: 0,
@@ -332,7 +302,7 @@ test("POST /users/cardEdit returns a business error when the cart item is not fo
   }));
 
   const response = await request(app)
-    .post("/users/cardEdit")
+    .post("/users/cartEdit")
     .set("Cookie", "userId=U001")
     .send({ productId: "missing", productNum: 1, checked: 1 });
 
@@ -344,14 +314,14 @@ test("POST /users/cardEdit returns a business error when the cart item is not fo
   });
 });
 
-test("POST /users/cardEdit returns a business error when the update fails", async () => {
+test("POST /users/cartEdit returns a business error when the update fails", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => {
     throw new Error("database unavailable");
   });
 
   const response = await request(app)
-    .post("/users/cardEdit")
+    .post("/users/cartEdit")
     .set("Cookie", "userId=U001")
     .send({ productId: "P001", productNum: 3, checked: 0 });
 
@@ -363,7 +333,7 @@ test("POST /users/cardEdit returns a business error when the update fails", asyn
   });
 });
 
-test("POST /users/cardEdit rejects a request without a login cookie", async () => {
+test("POST /users/cartEdit rejects a request without a login cookie", async () => {
   const findUser = mock.method(Users, "findOne", async () => ({
     cartList: [],
   }));
@@ -372,9 +342,7 @@ test("POST /users/cardEdit rejects a request without a login cookie", async () =
     modifiedCount: 1,
   }));
 
-  const response = await request(app)
-    .post("/users/cardEdit")
-    .send({ productId: "P001", productNum: 3, checked: 0 });
+  const response = await request(app).post("/users/cartEdit").send({ productId: "P001", productNum: 3, checked: 0 });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -386,7 +354,7 @@ test("POST /users/cardEdit rejects a request without a login cookie", async () =
   assert.equal(updateUser.mock.callCount(), 0);
 });
 
-test("POST /users/cardDel removes the matching cart item", async () => {
+test("POST /users/cartDel removes the matching cart item", async () => {
   const findUser = mock.method(Users, "findOne", async () => ({
     cartList: [{ productId: "P001" }],
   }));
@@ -395,10 +363,7 @@ test("POST /users/cardDel removes the matching cart item", async () => {
     modifiedCount: 1,
   }));
 
-  const response = await request(app)
-    .post("/users/cardDel")
-    .set("Cookie", "userId=U001")
-    .send({ productId: "P001" });
+  const response = await request(app).post("/users/cartDel").set("Cookie", "userId=U001").send({ productId: "P001" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -413,7 +378,7 @@ test("POST /users/cardDel removes the matching cart item", async () => {
   ]);
 });
 
-test("POST /users/cardDel returns a business error when the cart item is not found", async () => {
+test("POST /users/cartDel returns a business error when the cart item is not found", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => ({
     matchedCount: 0,
@@ -421,7 +386,7 @@ test("POST /users/cardDel returns a business error when the cart item is not fou
   }));
 
   const response = await request(app)
-    .post("/users/cardDel")
+    .post("/users/cartDel")
     .set("Cookie", "userId=U001")
     .send({ productId: "missing" });
 
@@ -433,16 +398,13 @@ test("POST /users/cardDel returns a business error when the cart item is not fou
   });
 });
 
-test("POST /users/cardDel returns a business error when the update fails", async () => {
+test("POST /users/cartDel returns a business error when the update fails", async () => {
   mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => {
     throw new Error("database unavailable");
   });
 
-  const response = await request(app)
-    .post("/users/cardDel")
-    .set("Cookie", "userId=U001")
-    .send({ productId: "P001" });
+  const response = await request(app).post("/users/cartDel").set("Cookie", "userId=U001").send({ productId: "P001" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -452,7 +414,7 @@ test("POST /users/cardDel returns a business error when the update fails", async
   });
 });
 
-test("POST /users/cardDel rejects a request without a login cookie", async () => {
+test("POST /users/cartDel rejects a request without a login cookie", async () => {
   const findUser = mock.method(Users, "findOne", async () => ({
     cartList: [],
   }));
@@ -461,9 +423,7 @@ test("POST /users/cardDel rejects a request without a login cookie", async () =>
     modifiedCount: 1,
   }));
 
-  const response = await request(app)
-    .post("/users/cardDel")
-    .send({ productId: "P001" });
+  const response = await request(app).post("/users/cartDel").send({ productId: "P001" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -483,10 +443,7 @@ test("POST /users/editCheckAll checks every cart item", async () => {
   const user = { cartList, save: mock.fn(async () => {}) };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/editCheckAll")
-    .set("Cookie", "userId=U001")
-    .send({ checkAll: true });
+  const response = await request(app).post("/users/editCheckAll").set("Cookie", "userId=U001").send({ checkAll: true });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -535,10 +492,7 @@ test("POST /users/editCheckAll returns a business error when saving fails", asyn
   };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/editCheckAll")
-    .set("Cookie", "userId=U001")
-    .send({ checkAll: true });
+  const response = await request(app).post("/users/editCheckAll").set("Cookie", "userId=U001").send({ checkAll: true });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -554,9 +508,7 @@ test("POST /users/editCheckAll rejects a request without a login cookie", async 
     save: mock.fn(async () => {}),
   }));
 
-  const response = await request(app)
-    .post("/users/editCheckAll")
-    .send({ checkAll: true });
+  const response = await request(app).post("/users/editCheckAll").send({ checkAll: true });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -583,16 +535,13 @@ test("POST /users/addAddress adds a default address and clears the previous defa
   };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/addAddress")
-    .set("Cookie", "userId=U001")
-    .send({
-      userName: "Alice",
-      streetName: "New Street",
-      postCode: 200000,
-      tel: 13900000000,
-      isDefault: "true",
-    });
+  const response = await request(app).post("/users/addAddress").set("Cookie", "userId=U001").send({
+    userName: "Alice",
+    streetName: "New Street",
+    postCode: 200000,
+    tel: 13900000000,
+    isDefault: "true",
+  });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -626,16 +575,13 @@ test("POST /users/addAddress preserves the current default when adding a non-def
   };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/addAddress")
-    .set("Cookie", "userId=U001")
-    .send({
-      userName: "Bob",
-      streetName: "Second Street",
-      postCode: 300000,
-      tel: 13700000000,
-      isDefault: false,
-    });
+  const response = await request(app).post("/users/addAddress").set("Cookie", "userId=U001").send({
+    userName: "Bob",
+    streetName: "Second Street",
+    postCode: 300000,
+    tel: 13700000000,
+    isDefault: false,
+  });
 
   assert.deepEqual(response.body, {
     status: "0",
@@ -677,9 +623,7 @@ test("POST /users/addAddress rejects a request without a login cookie", async ()
     save: mock.fn(async () => {}),
   }));
 
-  const response = await request(app)
-    .post("/users/addAddress")
-    .send({ userName: "Alice", streetName: "New Street" });
+  const response = await request(app).post("/users/addAddress").send({ userName: "Alice", streetName: "New Street" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -691,14 +635,10 @@ test("POST /users/addAddress rejects a request without a login cookie", async ()
 });
 
 test("GET /users/addressList returns the logged-in user's addresses", async () => {
-  const addressList = [
-    { addressId: "A001", streetName: "First Street", isDefault: true },
-  ];
+  const addressList = [{ addressId: "A001", streetName: "First Street", isDefault: true }];
   mock.method(Users, "findOne", async () => ({ addressList, cartList: [] }));
 
-  const response = await request(app)
-    .get("/users/addressList")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/addressList").set("Cookie", "userId=U001");
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -711,9 +651,7 @@ test("GET /users/addressList returns the logged-in user's addresses", async () =
 test("GET /users/addressList returns an empty address list", async () => {
   mock.method(Users, "findOne", async () => ({ addressList: [], cartList: [] }));
 
-  const response = await request(app)
-    .get("/users/addressList")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/addressList").set("Cookie", "userId=U001");
 
   assert.deepEqual(response.body, { status: "0", result: [], msg: "" });
 });
@@ -764,10 +702,7 @@ test("POST /users/setDefault rejects a missing address id", async () => {
   };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/setDefault")
-    .set("Cookie", "userId=U001")
-    .send({});
+  const response = await request(app).post("/users/setDefault").set("Cookie", "userId=U001").send({});
 
   assert.deepEqual(response.body, {
     status: "1003",
@@ -826,9 +761,7 @@ test("POST /users/setDefault rejects a request without a login cookie", async ()
     save: mock.fn(async () => {}),
   }));
 
-  const response = await request(app)
-    .post("/users/setDefault")
-    .send({ addressId: "A001" });
+  const response = await request(app).post("/users/setDefault").send({ addressId: "A001" });
 
   assert.deepEqual(response.body, {
     status: "10001",
@@ -869,10 +802,7 @@ test("POST /users/delAddress rejects a missing address id", async () => {
     modifiedCount: 1,
   }));
 
-  const response = await request(app)
-    .post("/users/delAddress")
-    .set("Cookie", "userId=U001")
-    .send({});
+  const response = await request(app).post("/users/delAddress").set("Cookie", "userId=U001").send({});
 
   assert.deepEqual(response.body, {
     status: "1003",
@@ -930,9 +860,7 @@ test("POST /users/delAddress rejects a request without a login cookie", async ()
     modifiedCount: 1,
   }));
 
-  const response = await request(app)
-    .post("/users/delAddress")
-    .send({ addressId: "A001" });
+  const response = await request(app).post("/users/delAddress").send({ addressId: "A001" });
 
   assert.deepEqual(response.body, {
     status: "10001",
@@ -974,10 +902,7 @@ test("POST /users/payMent creates and saves an order with selected goods", async
     orderStatus: "1",
     createDate: (user.orderList[0] as { createDate: string }).createDate,
   });
-  assert.match(
-    (user.orderList[0] as { createDate: string }).createDate,
-    /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
-  );
+  assert.match((user.orderList[0] as { createDate: string }).createDate, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
   assert.equal(user.save.mock.callCount(), 1);
 });
 
@@ -990,10 +915,7 @@ test("POST /users/payMent rejects a missing address id", async () => {
   };
   mock.method(Users, "findOne", async () => user);
 
-  const response = await request(app)
-    .post("/users/payMent")
-    .set("Cookie", "userId=U001")
-    .send({ orderTotal: 598 });
+  const response = await request(app).post("/users/payMent").set("Cookie", "userId=U001").send({ orderTotal: 598 });
 
   assert.deepEqual(response.body, {
     status: "1",
@@ -1081,9 +1003,7 @@ test("POST /users/payMent rejects a request without a login cookie", async () =>
     orderList: [],
   }));
 
-  const response = await request(app)
-    .post("/users/payMent")
-    .send({ addressId: "A001", orderTotal: 299 });
+  const response = await request(app).post("/users/payMent").send({ addressId: "A001", orderTotal: 299 });
 
   assert.deepEqual(response.body, {
     status: "10001",
@@ -1100,10 +1020,7 @@ test("GET /users/orderDetail returns the matching order summary", async () => {
     orderList: [{ orderId: "O001", orderTotal: 598 }],
   }));
 
-  const response = await request(app)
-    .get("/users/orderDetail")
-    .set("Cookie", "userId=U001")
-    .query({ orderId: "O001" });
+  const response = await request(app).get("/users/orderDetail").set("Cookie", "userId=U001").query({ orderId: "O001" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -1123,10 +1040,7 @@ test("GET /users/orderDetail finds an order after non-matching orders", async ()
     ],
   }));
 
-  const response = await request(app)
-    .get("/users/orderDetail")
-    .set("Cookie", "userId=U001")
-    .query({ orderId: "O002" });
+  const response = await request(app).get("/users/orderDetail").set("Cookie", "userId=U001").query({ orderId: "O002" });
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.body, {
@@ -1143,9 +1057,7 @@ test("GET /users/orderDetail rejects a missing order id", async () => {
     orderList: [],
   }));
 
-  const response = await request(app)
-    .get("/users/orderDetail")
-    .set("Cookie", "userId=U001");
+  const response = await request(app).get("/users/orderDetail").set("Cookie", "userId=U001");
 
   assert.deepEqual(response.body, {
     status: "1",
@@ -1161,10 +1073,7 @@ test("GET /users/orderDetail reports when the user has no orders", async () => {
     orderList: [],
   }));
 
-  const response = await request(app)
-    .get("/users/orderDetail")
-    .set("Cookie", "userId=U001")
-    .query({ orderId: "O001" });
+  const response = await request(app).get("/users/orderDetail").set("Cookie", "userId=U001").query({ orderId: "O001" });
 
   assert.deepEqual(response.body, {
     status: "120001",
@@ -1199,9 +1108,7 @@ test("GET /users/orderDetail rejects a request without a login cookie", async ()
     orderList: [],
   }));
 
-  const response = await request(app)
-    .get("/users/orderDetail")
-    .query({ orderId: "O001" });
+  const response = await request(app).get("/users/orderDetail").query({ orderId: "O001" });
 
   assert.deepEqual(response.body, {
     status: "10001",
