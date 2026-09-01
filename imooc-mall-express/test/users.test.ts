@@ -689,3 +689,151 @@ test("POST /users/addAddress rejects a request without a login cookie", async ()
   });
   assert.equal(findUser.mock.callCount(), 0);
 });
+
+test("GET /users/addressList returns the logged-in user's addresses", async () => {
+  const addressList = [
+    { addressId: "A001", streetName: "First Street", isDefault: true },
+  ];
+  mock.method(Users, "findOne", async () => ({ addressList, cartList: [] }));
+
+  const response = await request(app)
+    .get("/users/addressList")
+    .set("Cookie", "userId=U001");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    result: addressList,
+    msg: "",
+  });
+});
+
+test("GET /users/addressList returns an empty address list", async () => {
+  mock.method(Users, "findOne", async () => ({ addressList: [], cartList: [] }));
+
+  const response = await request(app)
+    .get("/users/addressList")
+    .set("Cookie", "userId=U001");
+
+  assert.deepEqual(response.body, { status: "0", result: [], msg: "" });
+});
+
+test("GET /users/addressList rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+  }));
+
+  const response = await request(app).get("/users/addressList");
+
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});
+
+test("POST /users/setDefault changes the default address", async () => {
+  const addressList = [
+    { addressId: "A001", isDefault: true },
+    { addressId: "A002", isDefault: false },
+  ];
+  const user = { addressList, cartList: [], save: mock.fn(async () => {}) };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/setDefault")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A002" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { status: "0", msg: "", result: "" });
+  assert.deepEqual(
+    addressList.map((address) => address.isDefault),
+    [false, true],
+  );
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/setDefault rejects a missing address id", async () => {
+  const user = {
+    addressList: [{ addressId: "A001", isDefault: true }],
+    cartList: [],
+    save: mock.fn(async () => {}),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/setDefault")
+    .set("Cookie", "userId=U001")
+    .send({});
+
+  assert.deepEqual(response.body, {
+    status: "1003",
+    msg: "addressId 不存在",
+    result: "",
+  });
+  assert.equal(user.save.mock.callCount(), 0);
+});
+
+test("POST /users/setDefault preserves the current default for an unknown address", async () => {
+  const addressList = [{ addressId: "A001", isDefault: true }];
+  const user = { addressList, cartList: [], save: mock.fn(async () => {}) };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/setDefault")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "missing" });
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "地址不存在",
+    result: "",
+  });
+  assert.equal(addressList[0]!.isDefault, true);
+  assert.equal(user.save.mock.callCount(), 0);
+});
+
+test("POST /users/setDefault returns a business error when saving fails", async () => {
+  const user = {
+    addressList: [{ addressId: "A001", isDefault: false }],
+    cartList: [],
+    save: mock.fn(async () => {
+      throw new Error("database unavailable");
+    }),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/setDefault")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/setDefault rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    save: mock.fn(async () => {}),
+  }));
+
+  const response = await request(app)
+    .post("/users/setDefault")
+    .send({ addressId: "A001" });
+
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});

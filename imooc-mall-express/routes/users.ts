@@ -132,4 +132,33 @@ router.post("/addAddress", requireLogin, async (req, res) => {
   }
 });
 
+router.get("/addressList", requireLogin, (_req, res) => {
+  res.json({ status: "0", result: res.locals.userInfo.addressList, msg: "" });
+});
+
+router.post("/setDefault", requireLogin, async (req, res) => {
+  const userInfo = res.locals.userInfo;
+  const { addressId } = req.body;
+  const addressList = userInfo.addressList;
+  if (!addressId) {
+    res.json({ status: "1003", msg: "addressId 不存在", result: "" });
+    return;
+  }
+  const defaultAddress = addressList.find((item) => item.addressId === addressId);
+  if (!defaultAddress) {
+    res.json({ status: "1", msg: "地址不存在", result: "" });
+    return;
+  }
+
+  try {
+    addressList.forEach((item) => {
+      item.isDefault = item.addressId === addressId;
+    });
+    await userInfo.save();
+    res.json({ status: "0", msg: "", result: "" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
 export default router;
