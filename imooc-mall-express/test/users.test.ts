@@ -8,9 +8,11 @@ import app from "../app";
 import Users from "../models/users";
 
 const originalUsersFindOne = Users.findOne;
+const originalUsersUpdateOne = Users.updateOne;
 
 afterEach(() => {
   Users.findOne = originalUsersFindOne;
+  Users.updateOne = originalUsersUpdateOne;
 });
 
 after(async () => {
@@ -288,4 +290,88 @@ test("GET /users/cartList rejects a request without a login cookie", async () =>
     result: "",
   });
   assert.equal(findUser.mock.callCount(), 0);
+});
+
+test("POST /users/cardEdit updates the matching cart item", async () => {
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardEdit")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "P001", productNum: 3, checked: 0 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.deepEqual(updateUser.mock.calls[0]!.arguments, [
+    { userId: "U001", "cartList.productId": "P001" },
+    {
+      $set: {
+        "cartList.$.productNum": 3,
+        "cartList.$.checked": 0,
+      },
+    },
+  ]);
+});
+
+test("POST /users/cardEdit returns a business error when the cart item is not found", async () => {
+  mock.method(Users, "updateOne", async () => ({
+    matchedCount: 0,
+    modifiedCount: 0,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardEdit")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "missing", productNum: 1, checked: 1 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "用户或购物车商品不存在",
+    result: "",
+  });
+});
+
+test("POST /users/cardEdit returns a business error when the update fails", async () => {
+  mock.method(Users, "updateOne", async () => {
+    throw new Error("database unavailable");
+  });
+
+  const response = await request(app)
+    .post("/users/cardEdit")
+    .set("Cookie", "userId=U001")
+    .send({ productId: "P001", productNum: 3, checked: 0 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/cardEdit rejects a request without a login cookie", async () => {
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/cardEdit")
+    .send({ productId: "P001", productNum: 3, checked: 0 });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(updateUser.mock.callCount(), 0);
 });
