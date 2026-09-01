@@ -293,6 +293,9 @@ test("GET /users/cartList rejects a request without a login cookie", async () =>
 });
 
 test("POST /users/cardEdit updates the matching cart item", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [],
+  }));
   const updateUser = mock.method(Users, "updateOne", async () => ({
     matchedCount: 1,
     modifiedCount: 1,
@@ -309,6 +312,7 @@ test("POST /users/cardEdit updates the matching cart item", async () => {
     msg: "",
     result: "suc",
   });
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userId: "U001" }]);
   assert.deepEqual(updateUser.mock.calls[0]!.arguments, [
     { userId: "U001", "cartList.productId": "P001" },
     {
@@ -321,6 +325,7 @@ test("POST /users/cardEdit updates the matching cart item", async () => {
 });
 
 test("POST /users/cardEdit returns a business error when the cart item is not found", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => ({
     matchedCount: 0,
     modifiedCount: 0,
@@ -340,6 +345,7 @@ test("POST /users/cardEdit returns a business error when the cart item is not fo
 });
 
 test("POST /users/cardEdit returns a business error when the update fails", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => {
     throw new Error("database unavailable");
   });
@@ -358,6 +364,9 @@ test("POST /users/cardEdit returns a business error when the update fails", asyn
 });
 
 test("POST /users/cardEdit rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [],
+  }));
   const updateUser = mock.method(Users, "updateOne", async () => ({
     matchedCount: 1,
     modifiedCount: 1,
@@ -373,10 +382,14 @@ test("POST /users/cardEdit rejects a request without a login cookie", async () =
     msg: "当前未登录",
     result: "",
   });
+  assert.equal(findUser.mock.callCount(), 0);
   assert.equal(updateUser.mock.callCount(), 0);
 });
 
 test("POST /users/cardDel removes the matching cart item", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [{ productId: "P001" }],
+  }));
   const updateUser = mock.method(Users, "updateOne", async () => ({
     matchedCount: 1,
     modifiedCount: 1,
@@ -393,6 +406,7 @@ test("POST /users/cardDel removes the matching cart item", async () => {
     msg: "",
     result: "suc",
   });
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userId: "U001" }]);
   assert.deepEqual(updateUser.mock.calls[0]!.arguments, [
     { userId: "U001", "cartList.productId": "P001" },
     { $pull: { cartList: { productId: "P001" } } },
@@ -400,6 +414,7 @@ test("POST /users/cardDel removes the matching cart item", async () => {
 });
 
 test("POST /users/cardDel returns a business error when the cart item is not found", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => ({
     matchedCount: 0,
     modifiedCount: 0,
@@ -419,6 +434,7 @@ test("POST /users/cardDel returns a business error when the cart item is not fou
 });
 
 test("POST /users/cardDel returns a business error when the update fails", async () => {
+  mock.method(Users, "findOne", async () => ({ cartList: [] }));
   mock.method(Users, "updateOne", async () => {
     throw new Error("database unavailable");
   });
@@ -437,6 +453,9 @@ test("POST /users/cardDel returns a business error when the update fails", async
 });
 
 test("POST /users/cardDel rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [],
+  }));
   const updateUser = mock.method(Users, "updateOne", async () => ({
     matchedCount: 1,
     modifiedCount: 1,
@@ -452,5 +471,98 @@ test("POST /users/cardDel rejects a request without a login cookie", async () =>
     msg: "当前未登录",
     result: "",
   });
+  assert.equal(findUser.mock.callCount(), 0);
   assert.equal(updateUser.mock.callCount(), 0);
+});
+
+test("POST /users/editCheckAll checks every cart item", async () => {
+  const cartList = [
+    { productId: "P001", productNum: 1, checked: 0 },
+    { productId: "P002", productNum: 2, checked: "0" },
+  ];
+  const user = { cartList, save: mock.fn(async () => {}) };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/editCheckAll")
+    .set("Cookie", "userId=U001")
+    .send({ checkAll: true });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.deepEqual(
+    cartList.map((item) => item.checked),
+    ["1", "1"],
+  );
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/editCheckAll unchecks every cart item", async () => {
+  const cartList = [
+    { productId: "P001", productNum: 1, checked: 1 },
+    { productId: "P002", productNum: 2, checked: "1" },
+  ];
+  const user = { cartList, save: mock.fn(async () => {}) };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/editCheckAll")
+    .set("Cookie", "userId=U001")
+    .send({ checkAll: false });
+
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: "suc",
+  });
+  assert.deepEqual(
+    cartList.map((item) => item.checked),
+    ["0", "0"],
+  );
+  assert.equal(user.save.mock.callCount(), 1);
+});
+
+test("POST /users/editCheckAll returns a business error when saving fails", async () => {
+  const user = {
+    cartList: [{ productId: "P001", productNum: 1, checked: 0 }],
+    save: mock.fn(async () => {
+      throw new Error("database unavailable");
+    }),
+  };
+  mock.method(Users, "findOne", async () => user);
+
+  const response = await request(app)
+    .post("/users/editCheckAll")
+    .set("Cookie", "userId=U001")
+    .send({ checkAll: true });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/editCheckAll rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    cartList: [],
+    save: mock.fn(async () => {}),
+  }));
+
+  const response = await request(app)
+    .post("/users/editCheckAll")
+    .send({ checkAll: true });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
 });

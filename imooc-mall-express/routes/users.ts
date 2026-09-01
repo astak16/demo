@@ -43,31 +43,15 @@ router.get("/checkLogin", (req, res) => {
 });
 
 router.get("/getCartCount", requireLogin, async (_req, res) => {
-  try {
-    const userInfo = await Users.findOne({ userId: res.locals.userId });
-    if (!userInfo) {
-      res.json({ status: "1", msg: "未查到用户信息", result: "" });
-      return;
-    }
-    const cartCount = userInfo.cartList.reduce((total, item) => total + Number(item.productNum), 0);
-    res.json({ status: "0", result: cartCount, msg: "" });
-  } catch (error) {
-    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
-  }
+  const cartCount = res.locals.userInfo.cartList.reduce(
+    (total: number, item: { productNum: number }) => total + Number(item.productNum),
+    0,
+  );
+  res.json({ status: "0", result: cartCount, msg: "" });
 });
 
-router.get("/cartList", requireLogin, async (req, res) => {
-  const userId = res.locals.userId;
-  try {
-    const userInfo = await Users.findOne({ userId });
-    if (!userInfo) {
-      res.json({ status: "1", msg: "未查到用户信息", result: "" });
-      return;
-    }
-    res.json({ status: "0", msg: "", result: userInfo.cartList });
-  } catch (error) {
-    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
-  }
+router.get("/cartList", requireLogin, (_req, res) => {
+  res.json({ status: "0", msg: "", result: res.locals.userInfo.cartList });
 });
 
 router.post("/cardEdit", requireLogin, async (req, res) => {
@@ -100,6 +84,21 @@ router.post("/cardDel", requireLogin, async (req, res) => {
       res.json({ status: "1", msg: "商品不存在", result: "" });
       return;
     }
+    res.json({ status: "0", msg: "", result: "suc" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
+router.post("/editCheckAll", requireLogin, async (req, res) => {
+  const userInfo = res.locals.userInfo;
+  const checkAll = req.body.checkAll ? "1" : "0";
+  try {
+    const cartList = userInfo.cartList;
+    cartList.forEach((item) => {
+      item.checked = checkAll;
+    });
+    await userInfo.save();
     res.json({ status: "0", msg: "", result: "suc" });
   } catch (error) {
     res.json({ status: "1", msg: getErrorMessage(error), result: "" });

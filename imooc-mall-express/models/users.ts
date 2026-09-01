@@ -18,7 +18,7 @@ interface Address {
   isDefault?: boolean;
 }
 
-interface User {
+export interface User {
   userId?: string;
   userName?: string;
   userPwd?: string;

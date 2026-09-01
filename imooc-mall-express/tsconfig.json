@@ -12,6 +12,14 @@
     "noUncheckedIndexedAccess": true,
     "sourceMap": true
   },
-  "include": ["app.ts", "bin/**/*.ts", "db/**/*.ts", "models/**/*.ts", "routes/**/*.ts"],
+  "include": [
+    "app.ts",
+    "bin/**/*.ts",
+    "db/**/*.ts",
+    "middleware/**/*.ts",
+    "models/**/*.ts",
+    "routes/**/*.ts",
+    "types/**/*.d.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }
