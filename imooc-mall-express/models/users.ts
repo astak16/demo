@@ -9,7 +9,7 @@ export interface CartItem {
   productNum: number;
 }
 
-interface Address {
+export interface Address {
   addressId?: string;
   userName?: string;
   streetName?: string;
@@ -18,11 +18,20 @@ interface Address {
   isDefault?: boolean;
 }
 
+export interface Order {
+  orderId: string;
+  orderTotal: number;
+  addressInfo: Address;
+  goodsList: CartItem[];
+  orderStatus: string;
+  createDate: string;
+}
+
 export interface User {
   userId?: string;
   userName?: string;
   userPwd?: string;
-  orderList: unknown[];
+  orderList: Order[];
   cartList: CartItem[];
   addressList: Address[];
 }
@@ -51,11 +60,23 @@ const addressSchema = new Schema<Address>(
   { _id: false },
 );
 
+const orderSchema = new Schema<Order>(
+  {
+    orderId: String,
+    orderTotal: Number,
+    addressInfo: addressSchema,
+    goodsList: { type: [cartItemSchema], default: [] },
+    orderStatus: String,
+    createDate: String,
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema<User>({
   userId: String,
   userName: String,
   userPwd: String,
-  orderList: { type: [Schema.Types.Mixed], default: [] },
+  orderList: { type: [orderSchema], default: [] },
   cartList: { type: [cartItemSchema], default: [] },
   addressList: { type: [addressSchema], default: [] },
 });

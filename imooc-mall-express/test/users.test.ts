@@ -1092,3 +1092,121 @@ test("POST /users/payMent rejects a request without a login cookie", async () =>
   });
   assert.equal(findUser.mock.callCount(), 0);
 });
+
+test("GET /users/orderDetail returns the matching order summary", async () => {
+  mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [{ orderId: "O001", orderTotal: 598 }],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .set("Cookie", "userId=U001")
+    .query({ orderId: "O001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: { orderId: "O001", orderTotal: 598 },
+  });
+});
+
+test("GET /users/orderDetail finds an order after non-matching orders", async () => {
+  mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [
+      { orderId: "O001", orderTotal: 100 },
+      { orderId: "O002", orderTotal: 299 },
+    ],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .set("Cookie", "userId=U001")
+    .query({ orderId: "O002" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "0",
+    msg: "",
+    result: { orderId: "O002", orderTotal: 299 },
+  });
+});
+
+test("GET /users/orderDetail rejects a missing order id", async () => {
+  mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .set("Cookie", "userId=U001");
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "orderId不能为空",
+    result: "",
+  });
+});
+
+test("GET /users/orderDetail reports when the user has no orders", async () => {
+  mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .set("Cookie", "userId=U001")
+    .query({ orderId: "O001" });
+
+  assert.deepEqual(response.body, {
+    status: "120001",
+    msg: "当前用户未创建订单",
+    result: "",
+  });
+});
+
+test("GET /users/orderDetail reports an unknown order", async () => {
+  mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [{ orderId: "O001", orderTotal: 598 }],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .set("Cookie", "userId=U001")
+    .query({ orderId: "missing" });
+
+  assert.deepEqual(response.body, {
+    status: "120002",
+    msg: "无此订单",
+    result: "",
+  });
+});
+
+test("GET /users/orderDetail rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+    orderList: [],
+  }));
+
+  const response = await request(app)
+    .get("/users/orderDetail")
+    .query({ orderId: "O001" });
+
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+});

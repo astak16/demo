@@ -206,9 +206,7 @@ router.post("/payMent", requireLogin, async (req, res) => {
     return;
   }
 
-  const goodsList = userInfo.cartList.filter(
-    (item) => item.checked === 1 || item.checked === "1",
-  );
+  const goodsList = userInfo.cartList.filter((item) => item.checked === 1 || item.checked === "1");
   if (goodsList.length === 0) {
     res.json({ status: "1", msg: "请选择结算商品", result: "" });
     return;
@@ -230,6 +228,29 @@ router.post("/payMent", requireLogin, async (req, res) => {
     res.json({ status: "0", msg: "", result: { orderId, orderTotal } });
   } catch (error) {
     res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
+router.get("/orderDetail", requireLogin, async (req, res) => {
+  const orderId = typeof req.query.orderId === "string" ? req.query.orderId : "";
+  if (!orderId) {
+    res.json({ status: "1", msg: "orderId不能为空", result: "" });
+    return;
+  }
+  const orderList = res.locals.userInfo.orderList;
+  if (orderList.length > 0) {
+    const order = orderList.find((item) => item.orderId === orderId);
+    if (!order) {
+      res.json({ status: "120002", msg: "无此订单", result: "" });
+      return;
+    }
+    res.json({
+      status: "0",
+      msg: "",
+      result: { orderId: order.orderId, orderTotal: order.orderTotal },
+    });
+  } else {
+    res.json({ status: "120001", msg: "当前用户未创建订单", result: "" });
   }
 });
 
