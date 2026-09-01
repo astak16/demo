@@ -161,4 +161,26 @@ router.post("/setDefault", requireLogin, async (req, res) => {
   }
 });
 
+router.post("/delAddress", requireLogin, async (req, res) => {
+  const { addressId } = req.body;
+  if (!addressId) {
+    res.json({ status: "1003", msg: "addressId 不存在", result: "" });
+    return;
+  }
+
+  try {
+    const result = await Users.updateOne(
+      { userId: res.locals.userId, "addressList.addressId": addressId },
+      { $pull: { addressList: { addressId } } },
+    );
+    if (result.matchedCount === 0) {
+      res.json({ status: "1", msg: "更新失败", result: "" });
+      return;
+    }
+    res.json({ status: "0", msg: "", result: "" });
+  } catch (error) {
+    res.json({ status: "1", msg: getErrorMessage(error), result: "" });
+  }
+});
+
 export default router;

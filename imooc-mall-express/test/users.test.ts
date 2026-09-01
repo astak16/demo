@@ -837,3 +837,108 @@ test("POST /users/setDefault rejects a request without a login cookie", async ()
   });
   assert.equal(findUser.mock.callCount(), 0);
 });
+
+test("POST /users/delAddress removes the matching address", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [{ addressId: "A001" }],
+    cartList: [],
+  }));
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/delAddress")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { status: "0", msg: "", result: "" });
+  assert.deepEqual(findUser.mock.calls[0]!.arguments, [{ userId: "U001" }]);
+  assert.deepEqual(updateUser.mock.calls[0]!.arguments, [
+    { userId: "U001", "addressList.addressId": "A001" },
+    { $pull: { addressList: { addressId: "A001" } } },
+  ]);
+});
+
+test("POST /users/delAddress rejects a missing address id", async () => {
+  mock.method(Users, "findOne", async () => ({ addressList: [], cartList: [] }));
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/delAddress")
+    .set("Cookie", "userId=U001")
+    .send({});
+
+  assert.deepEqual(response.body, {
+    status: "1003",
+    msg: "addressId 不存在",
+    result: "",
+  });
+  assert.equal(updateUser.mock.callCount(), 0);
+});
+
+test("POST /users/delAddress returns a business error for an unknown address", async () => {
+  mock.method(Users, "findOne", async () => ({ addressList: [], cartList: [] }));
+  mock.method(Users, "updateOne", async () => ({
+    matchedCount: 0,
+    modifiedCount: 0,
+  }));
+
+  const response = await request(app)
+    .post("/users/delAddress")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "missing" });
+
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "更新失败",
+    result: "",
+  });
+});
+
+test("POST /users/delAddress returns a business error when the update fails", async () => {
+  mock.method(Users, "findOne", async () => ({ addressList: [], cartList: [] }));
+  mock.method(Users, "updateOne", async () => {
+    throw new Error("database unavailable");
+  });
+
+  const response = await request(app)
+    .post("/users/delAddress")
+    .set("Cookie", "userId=U001")
+    .send({ addressId: "A001" });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, {
+    status: "1",
+    msg: "database unavailable",
+    result: "",
+  });
+});
+
+test("POST /users/delAddress rejects a request without a login cookie", async () => {
+  const findUser = mock.method(Users, "findOne", async () => ({
+    addressList: [],
+    cartList: [],
+  }));
+  const updateUser = mock.method(Users, "updateOne", async () => ({
+    matchedCount: 1,
+    modifiedCount: 1,
+  }));
+
+  const response = await request(app)
+    .post("/users/delAddress")
+    .send({ addressId: "A001" });
+
+  assert.deepEqual(response.body, {
+    status: "10001",
+    msg: "当前未登录",
+    result: "",
+  });
+  assert.equal(findUser.mock.callCount(), 0);
+  assert.equal(updateUser.mock.callCount(), 0);
+});
