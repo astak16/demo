@@ -1,0 +1,8 @@
+allowBuilds:
+  core-js: true
+  ejs: true
+  fsevents: true
+  husky: true
+  node-sass: true
+  nodent-runtime: true
+  yorkie: true
