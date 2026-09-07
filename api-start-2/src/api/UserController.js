@@ -274,12 +274,38 @@ class UserController {
     }
   }
   async getUsers(ctx) {
-    const params = ctx.query;
+    let params = ctx.query;
+    params = qs.parse(params);
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 0;
     const sort = params.sort ? params.sort : "created";
-    const result = await User.getList({}, sort, page, limit);
-    const total = await User.countList({});
+    const options = params.option || {};
+
+    // datepicker -> item: string, search -> array starttime,endtime
+    // radio -> key-value $in
+    // select -> key-value $in
+    let query = {};
+    const hasSearch = Array.isArray(options.search)
+      ? options.search.length > 0
+      : typeof options.search === "string"
+        ? options.search.trim() !== ""
+        : options.search !== undefined && options.search !== null;
+    if (hasSearch) {
+      if (options.item === "created") {
+        const start = options.search[0];
+        const end = options.search[1];
+        query = { created: { $gte: new Date(start), $lt: new Date(end) } };
+      } else if (options.item === "roles") {
+        query = { roles: { $in: options.search } };
+      } else if (["name", "username"].includes(options.item)) {
+        query[options.item] = { $regex: new RegExp(options.search) };
+      } else {
+        query[options.item] = options.search;
+      }
+    }
+
+    const result = await User.getList(query, sort, page, limit);
+    const total = await User.countList(query);
     ctx.body = {
       code: 200,
       data: result,
