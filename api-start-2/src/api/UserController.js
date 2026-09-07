@@ -288,21 +288,14 @@ class UserController {
   }
 
   async deleteUserById(ctx) {
-    const params = ctx.query;
-    const user = await User.findById({ _id: params.id });
-    if (user) {
-      const result = await User.deleteOne({ _id: params.id });
-      ctx.body = {
-        code: 200,
-        msg: "删除成功",
-        data: result,
-      };
-    } else {
-      ctx.body = {
-        code: 500,
-        msg: "用户信息不存在或者 id 信息错误",
-      };
-    }
+    const { body } = ctx.request;
+
+    const result = await User.deleteMany({ _id: { $in: body.ids } });
+    ctx.body = {
+      code: 200,
+      msg: "删除成功",
+      data: result,
+    };
   }
 
   async updateUserById(ctx) {
@@ -342,6 +335,12 @@ class UserController {
         msg: "服务异常，更新失败",
       };
     }
+  }
+
+  async updateUserBatch(ctx) {
+    const { body } = ctx.request;
+    const result = await User.updateMany({ _id: { $in: body.ids } }, { $set: { ...body.settings } });
+    ctx.body = { code: 200, data: result };
   }
 
   async checkUsername(ctx) {

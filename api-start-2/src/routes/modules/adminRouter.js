@@ -32,6 +32,9 @@ router.post("/deleteUser", userController.deleteUserById);
 // 更新指定用户
 router.post("/updateUser", userController.updateUserById);
 
+// 批量更新用户属性
+router.post("/updateUserSettings", userController.updateUserBatch);
+
 // 校验用户名是否冲突
 router.get("/checkname", userController.checkUsername);
 
