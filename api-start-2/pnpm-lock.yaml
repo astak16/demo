@@ -65,6 +65,9 @@ importers:
       uuid:
         specifier: ^8.3.2
         version: 8.3.2
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
     devDependencies:
       '@babel/core':
         specifier: ^7.17.5
@@ -2764,6 +2767,18 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=}
+
+  ws@8.21.3:
+    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   yallist@3.1.1:
     resolution: {integrity: sha1-27fa+b/YusmrRev2ArjLrQ1dCP0=}
@@ -6299,6 +6314,8 @@ snapshots:
   wildcard@2.0.1: {}
 
   wrappy@1.0.2: {}
+
+  ws@8.21.3: {}
 
   yallist@3.1.1: {}
 

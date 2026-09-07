@@ -46,7 +46,10 @@ class UserController {
           } else if (count >= 365) {
             fav = 50;
           }
-          await User.updateOne({ _id: obj._id }, { $inc: { favs: fav, count: 1 } });
+          await User.updateOne(
+            { _id: obj._id },
+            { $inc: { favs: fav, count: 1 } },
+          );
           result = {
             favs: user.favs + fav,
             count: user.count + 1,
@@ -58,7 +61,7 @@ class UserController {
             {
               $set: { count: 1 },
               $inc: { favs: fav },
-            }
+            },
           );
           result = {
             favs: user.favs + fav,
@@ -72,7 +75,10 @@ class UserController {
         await newRecord.save();
       }
     } else {
-      await User.updateOne({ _id: obj._id }, { $set: { count: 1 }, $inc: { favs: 5 } });
+      await User.updateOne(
+        { _id: obj._id },
+        { $set: { count: 1 }, $inc: { favs: 5 } },
+      );
       newRecord = new SignRecord({
         uid: obj._id,
         favs: 5,
@@ -101,7 +107,10 @@ class UserController {
         return;
       }
       const key = uuid();
-      setValue(key, jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }));
+      setValue(
+        key,
+        jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }),
+      );
       const url = `${baseUrl}/public/reset-email?${qs.stringify({ key, username: body.username })}`;
       ctx.body = {
         code: 500,
@@ -136,7 +145,10 @@ class UserController {
       const token = await getValue(body.key);
       const obj = await getJWTPayload("Bearer " + token);
       console.log("obj", obj);
-      const a = await User.updateOne({ _id: obj._id }, { username: body.username });
+      const a = await User.updateOne(
+        { _id: obj._id },
+        { username: body.username },
+      );
       console.log("a", a);
       ctx.body = {
         code: 200,
@@ -156,7 +168,10 @@ class UserController {
       };
       return;
     }
-    const result = await User.updateOne({ _id: obj._id }, { password: bcrypt.hashSync(body.newpwd, 5) });
+    const result = await User.updateOne(
+      { _id: obj._id },
+      { password: bcrypt.hashSync(body.newpwd, 5) },
+    );
     if (result.modifiedCount === 1) {
       ctx.body = {
         code: 200,
@@ -180,7 +195,11 @@ class UserController {
         msg: "取消收藏成功",
       };
     } else {
-      const newCollect = new UserCollect({ uid: obj._id, tid: params.tid, title: params.title });
+      const newCollect = new UserCollect({
+        uid: obj._id,
+        tid: params.tid,
+        title: params.title,
+      });
       const result = await newCollect.save();
       ctx.body = {
         code: 200,
@@ -192,7 +211,11 @@ class UserController {
   async getCollectByUid(ctx) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
-    const result = await UserCollect.getListByUid(obj._id, params.page, params.limit ? parseInt(params.limit) : 10);
+    const result = await UserCollect.getListByUid(
+      obj._id,
+      params.page,
+      params.limit ? parseInt(params.limit) : 10,
+    );
     const total = await UserCollect.countByUid(obj._id);
     if (result.length > 0) {
       ctx.body = {
@@ -214,7 +237,10 @@ class UserController {
     let user = await User.findByID(uid);
     user = user.toJSON();
     const date = dayjs().format("YYYY-MM-DD");
-    const result = await SignRecord.findOne({ uid, created: { $gte: date + " 00:00:00" } });
+    const result = await SignRecord.findOne({
+      uid,
+      created: { $gte: date + " 00:00:00" },
+    });
     if (result && result.uid) {
       user.isSign = true;
     } else {
@@ -250,7 +276,10 @@ class UserController {
   async setMsg(ctx) {
     const params = ctx.query;
     if (params.id) {
-      const result = await Comments.updateOne({ _id: params.id }, { isRead: "1" });
+      const result = await Comments.updateOne(
+        { _id: params.id },
+        { isRead: "1" },
+      );
       if (result) {
         ctx.body = {
           code: 200,
@@ -258,13 +287,29 @@ class UserController {
       }
     } else {
       const obj = await getJWTPayload(ctx.headers.authorization);
-      const result = await Comments.updateMany({ uid: obj._id }, { isRead: "1" });
+      const result = await Comments.updateMany(
+        { uid: obj._id },
+        { isRead: "1" },
+      );
       if (result) {
         ctx.body = {
           code: 200,
         };
       }
     }
+  }
+  async getUsers(ctx) {
+    const params = ctx.query;
+    const page = params.page ? parseInt(params.page) : 0;
+    const limit = params.limit ? parseInt(params.limit) : 0;
+    const sort = params.sort ? params.sort : "created";
+    const result = await User.getList({}, sort, page, limit);
+    const total = await User.countList({});
+    ctx.body = {
+      code: 200,
+      data: result,
+      total,
+    };
   }
 }
 

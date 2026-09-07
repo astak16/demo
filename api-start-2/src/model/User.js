@@ -46,6 +46,15 @@ UserSchema.statics = {
     // 后面的对象中是不需要查出来的
     return this.findOne({ _id: id }, { password: 0, username: 0, mobile: 0 });
   },
+  getList(options, sort, page, limit) {
+    return this.find({ ...options }, { password: 0, mobile: 0 })
+      .sort({ [sort]: -1 })
+      .skip(page * limit)
+      .limit(limit);
+  },
+  countList(options) {
+    return this.find(options).countDocuments();
+  },
 };
 
 const UserModel = mongoose.model("users", UserSchema);
