@@ -20,5 +20,16 @@ router.prefix("/admin");
 // router.post("/edit-tag", contentController.editTag);
 
 // 用户管理
+// 查询所有用户
 router.get("/users", userController.getUsers);
+
+// 删除指定用户
+router.post("/deleteUser", userController.deleteUserById);
+
+// 更新指定用户
+router.post("/updateUser", userController.updateUserById);
+
+// 校验用户名是否冲突
+router.get("/checkname", userController.checkUsername);
+
 export default router;

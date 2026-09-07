@@ -46,10 +46,7 @@ class UserController {
           } else if (count >= 365) {
             fav = 50;
           }
-          await User.updateOne(
-            { _id: obj._id },
-            { $inc: { favs: fav, count: 1 } },
-          );
+          await User.updateOne({ _id: obj._id }, { $inc: { favs: fav, count: 1 } });
           result = {
             favs: user.favs + fav,
             count: user.count + 1,
@@ -75,10 +72,7 @@ class UserController {
         await newRecord.save();
       }
     } else {
-      await User.updateOne(
-        { _id: obj._id },
-        { $set: { count: 1 }, $inc: { favs: 5 } },
-      );
+      await User.updateOne({ _id: obj._id }, { $set: { count: 1 }, $inc: { favs: 5 } });
       newRecord = new SignRecord({
         uid: obj._id,
         favs: 5,
@@ -107,10 +101,7 @@ class UserController {
         return;
       }
       const key = uuid();
-      setValue(
-        key,
-        jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }),
-      );
+      setValue(key, jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }));
       const url = `${baseUrl}/public/reset-email?${qs.stringify({ key, username: body.username })}`;
       ctx.body = {
         code: 500,
@@ -145,10 +136,7 @@ class UserController {
       const token = await getValue(body.key);
       const obj = await getJWTPayload("Bearer " + token);
       console.log("obj", obj);
-      const a = await User.updateOne(
-        { _id: obj._id },
-        { username: body.username },
-      );
+      const a = await User.updateOne({ _id: obj._id }, { username: body.username });
       console.log("a", a);
       ctx.body = {
         code: 200,
@@ -168,10 +156,7 @@ class UserController {
       };
       return;
     }
-    const result = await User.updateOne(
-      { _id: obj._id },
-      { password: bcrypt.hashSync(body.newpwd, 5) },
-    );
+    const result = await User.updateOne({ _id: obj._id }, { password: bcrypt.hashSync(body.newpwd, 5) });
     if (result.modifiedCount === 1) {
       ctx.body = {
         code: 200,
@@ -211,11 +196,7 @@ class UserController {
   async getCollectByUid(ctx) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
-    const result = await UserCollect.getListByUid(
-      obj._id,
-      params.page,
-      params.limit ? parseInt(params.limit) : 10,
-    );
+    const result = await UserCollect.getListByUid(obj._id, params.page, params.limit ? parseInt(params.limit) : 10);
     const total = await UserCollect.countByUid(obj._id);
     if (result.length > 0) {
       ctx.body = {
@@ -276,10 +257,7 @@ class UserController {
   async setMsg(ctx) {
     const params = ctx.query;
     if (params.id) {
-      const result = await Comments.updateOne(
-        { _id: params.id },
-        { isRead: "1" },
-      );
+      const result = await Comments.updateOne({ _id: params.id }, { isRead: "1" });
       if (result) {
         ctx.body = {
           code: 200,
@@ -287,10 +265,7 @@ class UserController {
       }
     } else {
       const obj = await getJWTPayload(ctx.headers.authorization);
-      const result = await Comments.updateMany(
-        { uid: obj._id },
-        { isRead: "1" },
-      );
+      const result = await Comments.updateMany({ uid: obj._id }, { isRead: "1" });
       if (result) {
         ctx.body = {
           code: 200,
@@ -309,6 +284,78 @@ class UserController {
       code: 200,
       data: result,
       total,
+    };
+  }
+
+  async deleteUserById(ctx) {
+    const params = ctx.query;
+    const user = await User.findById({ _id: params.id });
+    if (user) {
+      const result = await User.deleteOne({ _id: params.id });
+      ctx.body = {
+        code: 200,
+        msg: "删除成功",
+        data: result,
+      };
+    } else {
+      ctx.body = {
+        code: 500,
+        msg: "用户信息不存在或者 id 信息错误",
+      };
+    }
+  }
+
+  async updateUserById(ctx) {
+    const { body } = ctx.request;
+    const user = await User.findOne({ _id: body._id });
+    if (!user) {
+      ctx.body = {
+        code: 500,
+        msg: "用户信息不存在或者 id 信息错误",
+      };
+      return;
+    }
+    if (body.username !== user.username) {
+      const userCheckName = await User.findOne({ username: body.username });
+      if (userCheckName) {
+        ctx.body = {
+          code: 501,
+          msg: "用户名已存在，请更换用户名",
+        };
+        return;
+      }
+    }
+    if (body.password) {
+      body.password = await bcrypt.hash(body.password, 5);
+    }
+
+    const result = await User.updateOne({ _id: body._id }, body);
+    if (result.ok === 1 && result.nModified === 1) {
+      ctx.body = {
+        code: 200,
+        msg: "更新成功",
+        data: result,
+      };
+    } else {
+      ctx.body = {
+        code: 500,
+        msg: "服务异常，更新失败",
+      };
+    }
+  }
+
+  async checkUsername(ctx) {
+    const params = ctx.query;
+    const user = await User.findOne({ username: params.username });
+    // 默认是 1 - 校验通过，0-校验失败
+    let result = 1;
+    if (user) {
+      result = 0;
+    }
+    ctx.body = {
+      code: 200,
+      data: result,
+      msg: result === 0 ? "用户名已经存在，更新失败" : "用户名可用",
     };
   }
 }
