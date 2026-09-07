@@ -358,6 +358,30 @@ class UserController {
       msg: result === 0 ? "用户名已经存在，更新失败" : "用户名可用",
     };
   }
+
+  async addUser(ctx) {
+    const { body } = ctx.request;
+    body.password = await bcrypt.hash(body.password, 5);
+    const user = new User(body);
+    const result = await user.save();
+    const userObj = result.toJSON();
+    const arr = ["password"];
+    arr.map((item) => {
+      delete userObj[item];
+    });
+    if (result) {
+      ctx.body = {
+        code: 200,
+        msg: "添加用户成功",
+        data: userObj,
+      };
+    } else {
+      ctx.body = {
+        code: 200,
+        msg: "服务接口异常",
+      };
+    }
+  }
 }
 
 export default new UserController();

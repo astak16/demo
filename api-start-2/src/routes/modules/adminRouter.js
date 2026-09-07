@@ -23,6 +23,9 @@ router.prefix("/admin");
 // 查询所有用户
 router.get("/users", userController.getUsers);
 
+// 添加用户
+router.post("/addUser", userController.addUser);
+
 // 删除指定用户
 router.post("/deleteUser", userController.deleteUserById);
 
