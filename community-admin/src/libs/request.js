@@ -4,7 +4,7 @@ import { getToken } from '@/libs/util'
 import qs from 'qs'
 
 const baseUrl =
-  process.env.NODE_ENV === 'development'
+  import.meta.env.DEV
     ? config.baseUrl.dev
     : config.baseUrl.pro
 

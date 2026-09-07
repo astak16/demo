@@ -1,5 +1,5 @@
 import Main from '@/components/main'
-// import communityRoutes from './community'
+import communityRoutes from './community'
 
 /**
  * iview-admin中meta除了原生参数外可配置的参数:
@@ -23,9 +23,9 @@ export default [
     name: 'login',
     meta: {
       title: 'Login - 登录',
-      hideInMenu: true
+      hideInMenu: true,
     },
-    component: () => import('@/view/login/login.vue')
+    component: () => import('@/view/login/login.vue'),
   },
   {
     path: '/',
@@ -34,7 +34,7 @@ export default [
     component: Main,
     meta: {
       hideInMenu: true,
-      notCache: true
+      notCache: true,
     },
     children: [
       {
@@ -44,19 +44,19 @@ export default [
           hideInMenu: true,
           title: '首页',
           notCache: true,
-          icon: 'md-home'
+          icon: 'md-home',
         },
-        component: () => import('@/view/single-page/home')
-      }
-    ]
+        component: () => import('@/view/single-page/home'),
+      },
+    ],
   },
-  // ...communityRoutes,
+  ...communityRoutes,
   {
     path: '',
     name: 'doc',
     meta: {
       title: '项目文档',
-      icon: 'ios-folder'
+      icon: 'ios-folder',
     },
     children: [
       {
@@ -65,8 +65,8 @@ export default [
         meta: {
           title: 'iview-admin文档',
           href: 'https://lison16.github.io/iview-admin-doc/#/',
-          icon: 'ios-book'
-        }
+          icon: 'ios-book',
+        },
       },
       {
         path: '/api',
@@ -74,17 +74,17 @@ export default [
         meta: {
           title: '接口文档',
           href: 'https://doc.toimc.com/web/#/2?page_id=42',
-          icon: 'ios-cube'
-        }
-      }
-    ]
+          icon: 'ios-cube',
+        },
+      },
+    ],
   },
   {
     path: '/join',
     name: 'join',
     component: Main,
     meta: {
-      hideInBread: true
+      hideInBread: true,
     },
     children: [
       {
@@ -92,34 +92,34 @@ export default [
         name: 'join_page',
         meta: {
           icon: '_qq',
-          title: '社区信息'
+          title: '社区信息',
         },
-        component: () => import('@/view/join-page.vue')
-      }
-    ]
+        component: () => import('@/view/join-page.vue'),
+      },
+    ],
   },
   {
     path: '/401',
     name: 'error_401',
     meta: {
-      hideInMenu: true
+      hideInMenu: true,
     },
-    component: () => import('@/view/error-page/401.vue')
+    component: () => import('@/view/error-page/401.vue'),
   },
   {
     path: '/500',
     name: 'error_500',
     meta: {
-      hideInMenu: true
+      hideInMenu: true,
     },
-    component: () => import('@/view/error-page/500.vue')
+    component: () => import('@/view/error-page/500.vue'),
   },
   {
     path: '*',
     name: 'error_404',
     meta: {
-      hideInMenu: true
+      hideInMenu: true,
     },
-    component: () => import('@/view/error-page/404.vue')
-  }
+    component: () => import('@/view/error-page/404.vue'),
+  },
 ]

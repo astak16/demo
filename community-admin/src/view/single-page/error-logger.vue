@@ -28,21 +28,21 @@ export default {
           title: '类型',
           width: 100,
           render: (h, { row }) => {
-            return (
-              <div>
-                <icon
-                  size={16}
-                  type={row.type === 'ajax' ? 'md-link' : 'md-code-working'}
-                ></icon>
-              </div>
-            )
+            return h('div', [
+              h('Icon', {
+                props: {
+                  size: 16,
+                  type: row.type === 'ajax' ? 'md-link' : 'md-code-working'
+                }
+              })
+            ])
           }
         },
         {
           key: 'code',
           title: '编码',
           render: (h, { row }) => {
-            return <span>{row.code === 0 ? '-' : row.code}</span>
+            return h('span', row.code === 0 ? '-' : row.code)
           }
         },
         {
@@ -57,7 +57,7 @@ export default {
           key: 'time',
           title: '时间',
           render: (h, { row }) => {
-            return <span>{dayjs(row.time).format('YYYY-MM-DD HH:mm:ss')}</span>
+            return h('span', dayjs(row.time).format('YYYY-MM-DD HH:mm:ss'))
           },
           sortable: true,
           sortType: 'desc'

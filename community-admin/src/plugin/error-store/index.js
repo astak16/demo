@@ -1,7 +1,7 @@
 import store from '@/store'
 export default {
   install (Vue, options) {
-    if (options.developmentOff && process.env.NODE_ENV === 'development') return
+    if (options.developmentOff && import.meta.env.DEV) return
     Vue.config.errorHandler = (error, vm, mes) => {
       const info = {
         type: 'script',

@@ -101,7 +101,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="less">
 @media screen and (max-width: 1200px) {
   .imooc-btn-group {
     .ivu-icon {

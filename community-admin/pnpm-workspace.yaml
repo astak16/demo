@@ -1,6 +1,8 @@
 allowBuilds:
+  '@parcel/watcher': true
   core-js: true
   ejs: true
+  esbuild: true
   fsevents: true
   husky: true
   node-sass: true

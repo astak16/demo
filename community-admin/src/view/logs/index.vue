@@ -228,7 +228,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="less">
 .ctrls {
   margin-top: 10px;
   button {

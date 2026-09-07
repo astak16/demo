@@ -5,6 +5,7 @@ import { forEach, hasOneOf, objEqual } from '@/libs/tools'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+export { getRoutesName } from './route-names.mjs'
 const { title, cookieExpires, useI18n } = config
 
 dayjs.extend(relativeTime)
@@ -609,17 +610,6 @@ export const sortMenus = (tree) => {
     tree.operations = sortMenus(tree.operations, 'sort')
   }
   return tree
-}
-
-export const getRoutesName = (routes) => {
-  const arr = []
-  routes.forEach((item) => {
-    arr.push(item.name)
-    if (item.children && item.children.length > 0) {
-      arr.push(getRoutesName(item.children))
-    }
-  })
-  return flatten(arr)
 }
 
 export const filterRoutes = (origin, target) => {

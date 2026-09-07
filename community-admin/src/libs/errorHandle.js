@@ -1,5 +1,5 @@
 import store from '@/store'
-import { Message } from 'iview'
+import { Message } from 'view-design'
 
 const addErrorLog = (errorInfo) => {
   const {

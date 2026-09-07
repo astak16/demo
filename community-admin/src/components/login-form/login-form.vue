@@ -56,9 +56,9 @@ export default {
       default: () => {
         return [
           { required: true, message: '账号不能为空', trigger: 'blur' },
-          { type: 'email', message: '邮箱格式不正确', trigger: 'change' }
+          { type: 'email', message: '邮箱格式不正确', trigger: 'change' },
         ]
-      }
+      },
     },
     passwordRules: {
       type: Array,
@@ -69,10 +69,10 @@ export default {
             type: 'string',
             min: 6,
             message: '密码至少为6位',
-            trigger: 'change'
-          }
+            trigger: 'change',
+          },
         ]
-      }
+      },
     },
     codeRules: {
       type: Array,
@@ -83,25 +83,25 @@ export default {
             type: 'string',
             len: 4,
             message: '验证码长度不正确',
-            trigger: 'change'
-          }
+            trigger: 'change',
+          },
         ]
-      }
+      },
     },
     loading: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   data() {
     return {
       svg: '',
       form: {
-        username: 'toimc_admin@toimc.com',
-        password: 'toimc@520',
+        username: '',
+        password: '',
         code: '',
-        sid: ''
-      }
+        sid: '',
+      },
     }
   },
   computed: {
@@ -109,9 +109,9 @@ export default {
       return {
         username: this.userNameRules,
         password: this.passwordRules,
-        code: this.codeRules
+        code: this.codeRules,
       }
-    }
+    },
   },
   mounted() {
     let sid = ''
@@ -139,11 +139,11 @@ export default {
           this.svg = res.data
         }
       })
-    }
-  }
+    },
+  },
 }
 </script>
-<style lang="scss">
+<style lang="less">
 .imooc-input {
   .ivu-input-group-append {
     padding: 0;
