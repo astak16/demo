@@ -1,6 +1,7 @@
 import Router from "koa-router";
 import contentController from "@/api/ContentController";
 import userController from "@/api/UserController";
+import adminController from "@/api/AdminController";
 
 const router = new Router();
 
@@ -37,5 +38,17 @@ router.post("/updateUserSettings", userController.updateUserBatch);
 
 // 校验用户名是否冲突
 router.get("/checkname", userController.checkUsername);
+
+// 添加菜单
+router.post("/addMenu", adminController.addMenu);
+
+// 获取菜单
+router.get("/getMenu", adminController.getMenu);
+
+// 更新菜单
+router.post("/updateMenu", adminController.updateMenu);
+
+// 删除菜单
+router.post("/deleteMenu", adminController.deleteMenu);
 
 export default router;
