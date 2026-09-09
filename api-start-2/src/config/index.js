@@ -19,6 +19,15 @@ export const DB_NAME = process.env.DB_NAME || "testdb";
 // export const DB_URL = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 export const DB_URL = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 export const baseUrl = "http://localhost:3000";
-export const UploadFilePath = path.join(
-  path.resolve(__dirname, "../../public/uploads"),
-);
+export const UploadFilePath = path.join(path.resolve(__dirname, "../../public/uploads"));
+
+export const adminEmail = ["1500846601@qq.com"];
+
+export const publicPath = [
+  /^\/public/,
+  /^\/login/,
+  /^\/content/,
+  /^\/user/,
+  /^\/comments/,
+  // /^\/admin\/getRoutes(?:\?|$)/,
+];

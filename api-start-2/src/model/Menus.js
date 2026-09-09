@@ -3,6 +3,7 @@ import mongoose from "@/config/DBHelpler";
 const Schema = mongoose.Schema;
 
 const MenuSchema = new Schema({
+  name: { type: String, default: "" },
   title: { type: String, default: "" },
   path: { type: String, default: "" },
   component: { type: String, default: "" },
@@ -11,6 +12,7 @@ const MenuSchema = new Schema({
   notCache: { type: Boolean, default: false },
   icon: { type: String, default: "" },
   sort: { type: String, default: 0 },
+  link: { type: String, default: "" },
   redirect: { type: String, default: "" },
   type: { type: String, default: "menu" },
   expand: { type: Boolean, default: true },

@@ -185,11 +185,7 @@ class CommentController {
   }
   async getCommentsPublic(ctx) {
     const params = ctx.query;
-    const result = await Comments.getCommentsPublic(
-      params.uid,
-      params.page,
-      params.limit ? parseInt(params.limit) : 10
-    );
+    const result = await Comments.getCommentsPublic(params.uid, params.page, params.limit ? parseInt(params.limit) : 10);
     if (result.length > 0) {
       ctx.body = {
         code: 200,

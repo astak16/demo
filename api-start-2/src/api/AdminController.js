@@ -1,11 +1,12 @@
 import Menu from "../model/Menus";
 import Role from "../model/Roles";
 import User from "../model/User";
+import { getMenuData, getRights, sortMenus } from "@/common/Utils";
 
 class AdminController {
   async getMenu(ctx) {
     const result = await Menu.find();
-    ctx.body = { code: 200, data: result };
+    ctx.body = { code: 200, data: sortMenus(result) };
   }
 
   async addMenu(ctx) {
@@ -70,7 +71,28 @@ class AdminController {
       menus = menus.concat(rights.menu);
     }
     menus = Array.from(new Set(menus));
-    ctx.body = { code: 200, data: menus };
+
+    const treeData = await Menu.find({});
+    const routes = getMenuData(treeData, menus, ctx.isAdmin);
+    ctx.body = { code: 200, data: routes };
+  }
+
+  async getOperations(ctx) {
+    const user = await User.findOne({ _id: ctx._id }, { roles: 1 });
+    const { roles } = user;
+
+    let menus = [];
+    for (let i = 0; i < roles?.length; i++) {
+      const role = roles[i];
+      const rights = await Role.findOne({ role }, { menu: 1 });
+      menus = menus.concat(rights.menu);
+    }
+    menus = Array.from(new Set(menus));
+    const treeData = await Menu.find({});
+    const operations = getRights(treeData, menus);
+
+    // ctx.body = { code: 200, data: operations };
+    return operations;
   }
 }
 

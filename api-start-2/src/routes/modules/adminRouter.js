@@ -69,4 +69,5 @@ router.post("/deleteRole", adminController.deleteRole);
 // 获取路由
 router.get("/getRoutes", adminController.getRoutes);
 
+router.get("/getOperations", adminController.getOperations);
 export default router;

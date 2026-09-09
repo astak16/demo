@@ -57,3 +57,66 @@ export const rename = (obj, key, newKey) => {
   }
   return obj;
 };
+
+export const sortMenus = (tree) => {
+  tree = sortObj(tree, "sort");
+  if (tree.children && tree.children.length > 0) {
+    tree.children = sortMenus(tree.children, "sort");
+  }
+  if (tree.operations && tree.operations.length > 0) {
+    tree.operations = sortMenus(tree.operations, "sort");
+  }
+  return tree;
+};
+
+const sortObj = (arr, property) => {
+  return arr.sort((m, n) => m[property] - n[property]);
+};
+
+export const getMenuData = (treeData, rights, flag) => {
+  const arr = [];
+  for (let i = 0; i < treeData.length; i++) {
+    const item = treeData[i];
+    if (item.type === "menu") {
+      if (rights.includes(item._id.toString()) || flag) {
+        arr.push({
+          _id: item._id,
+          path: item.path,
+          meta: { hideInBread: item.hideInBread, hideInMenu: item.HideInMenu, notCache: item.notCache, icon: item.icon, title: item.title },
+          component: item.component,
+          children: getMenuData(item.children, rights),
+        });
+      }
+    } else if (item.type === "link") {
+      arr.push({
+        _id: item._id,
+        path: item.path,
+        meta: { icon: item.icon, title: item.title, href: item.link },
+      });
+    }
+  }
+  return sortObj(arr, "sort");
+};
+
+const flatten = (arr) => {
+  while (arr.some((item) => Array.isArray(item))) {
+    arr = [].concat(...arr);
+  }
+  return arr;
+};
+
+export const getRights = (tree, menus) => {
+  let arr = [];
+  for (let item of tree) {
+    if (item.operations && item.operations.length > 0) {
+      for (let op of item.operations) {
+        if (menus.includes(op._id.toString())) {
+          arr.push(op.path);
+        }
+      }
+    } else if (item.children && item.children.length > 0) {
+      arr.push(getRights(item.children, menus));
+    }
+  }
+  return flatten(arr);
+};

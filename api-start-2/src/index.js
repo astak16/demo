@@ -14,6 +14,7 @@ import ErrorHandle from "./common/ErrorHandle";
 import router from "./routes/routes";
 import WebSocketServer from "./config/WebSocket";
 import Auth from "./common/Auth";
+import { init } from "@/config/Init";
 
 const app = new Koa();
 const ws = new WebSocketServer();
@@ -51,4 +52,5 @@ app.listen(port, () => {
   // const logger = log4js.getLogger("out");
   // logger.info("app is runing at " + config.port);
   run();
+  init();
 });
