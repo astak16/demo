@@ -51,4 +51,22 @@ router.post("/updateMenu", adminController.updateMenu);
 // 删除菜单
 router.post("/deleteMenu", adminController.deleteMenu);
 
+// 添加角色
+router.post("/addRole", adminController.addRole);
+
+// 获取角色列表
+router.get("/getRoles", adminController.getRole);
+
+// 获取指定角色
+router.get("/getRolesNames", adminController.getRolesNames);
+
+// 更新角色
+router.post("/updateRole", adminController.updateRole);
+
+// 删除角色
+router.post("/deleteRole", adminController.deleteRole);
+
+// 获取路由
+router.get("/getRoutes", adminController.getRoutes);
+
 export default router;

@@ -349,16 +349,22 @@ class UserController {
     }
 
     const result = await User.updateOne({ _id: body._id }, body);
-    if (result.ok === 1 && result.nModified === 1) {
-      ctx.body = {
-        code: 200,
-        msg: "更新成功",
-        data: result,
-      };
-    } else {
+    console.log("result", result);
+    if (!result.acknowledged) {
       ctx.body = {
         code: 500,
         msg: "服务异常，更新失败",
+      };
+    } else if (result.matchedCount === 0) {
+      ctx.body = {
+        code: 404,
+        msg: "用户不存在",
+      };
+    } else {
+      ctx.body = {
+        code: 200,
+        msg: result.modifiedCount > 0 ? "更新成功" : "数据没有变化",
+        data: result,
       };
     }
   }
@@ -402,7 +408,7 @@ class UserController {
       };
     } else {
       ctx.body = {
-        code: 200,
+        code: 500,
         msg: "服务接口异常",
       };
     }

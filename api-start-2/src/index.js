@@ -13,6 +13,7 @@ import { JWT_SECRET } from "./config";
 import ErrorHandle from "./common/ErrorHandle";
 import router from "./routes/routes";
 import WebSocketServer from "./config/WebSocket";
+import Auth from "./common/Auth";
 
 const app = new Koa();
 const ws = new WebSocketServer();
@@ -35,6 +36,7 @@ const middleware = compose([
   helmet(),
   ErrorHandle,
   jwt,
+  Auth,
 ]);
 
 if (!isDevMode) {
