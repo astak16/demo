@@ -15,6 +15,9 @@ import router from "./routes/routes";
 import WebSocketServer from "./config/WebSocket";
 import Auth from "./common/Auth";
 import { init } from "@/config/Init";
+// import logger from "koa-logger";
+import log4js from "./config/Log4j";
+import logger1 from "./common/Logger";
 
 const app = new Koa();
 const ws = new WebSocketServer();
@@ -26,6 +29,7 @@ const isDevMode = process.env.NODE_ENV !== "production";
 const jwt = JWT({ secret: JWT_SECRET }).unless({ path: [/^\/public/, /\/login/] });
 
 const middleware = compose([
+  logger1,
   koaBody({
     multipart: true,
     formidable: { keepExtensions: true, maxFileSize: 10 * 1024 * 1024 },
@@ -38,6 +42,10 @@ const middleware = compose([
   ErrorHandle,
   jwt,
   Auth,
+  // logger(),
+  isDevMode
+    ? log4js.koaLogger(log4js.getLogger("access", { level: "auto" }))
+    : log4js.koaLogger(log4js.getLogger("http", { level: "auto" })),
 ]);
 
 if (!isDevMode) {

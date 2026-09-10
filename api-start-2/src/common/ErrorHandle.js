@@ -1,5 +1,10 @@
+import log4js from "@/config/Log4j";
+
+const logger = log4js.getLogger("error");
+
 export default (ctx, next) => {
   return next().catch((err) => {
+    logger.error(`${ctx.url} ${ctx.method} ${ctx.status} ${err.stack}`);
     if (401 == err.status) {
       ctx.status = 401;
       ctx.body = {
@@ -14,7 +19,7 @@ export default (ctx, next) => {
           msg: err.message,
         },
         console.error(err),
-        process.env.NODE_ENV === "development" ? { stack: err.stack } : {}
+        process.env.NODE_ENV === "development" ? { stack: err.stack } : {},
       );
     }
   });
