@@ -1,7 +1,14 @@
 import Menu from "../model/Menus";
 import Role from "../model/Roles";
 import User from "../model/User";
+import Post from "../model/Post";
+import Comments from "@/model/Comments";
+import SignRecord from "../model/SignRecord";
+import dayjs from "dayjs";
 import { getMenuData, getRights, sortMenus } from "@/common/Utils";
+
+const weekday = require("dayjs/plugin/weekday");
+dayjs.extend(weekday);
 
 class AdminController {
   async getMenu(ctx) {
@@ -93,6 +100,103 @@ class AdminController {
 
     // ctx.body = { code: 200, data: operations };
     return operations;
+  }
+
+  async getStats(ctx) {
+    let result = {};
+    const inforCardData = [];
+    const time = dayjs().format("YYYY-MM-DD 00:00:00");
+    const nowZero = new Date().setHours(0, 0, 0, 0);
+
+    // 1. 顶部统计
+    const userNewCount = await User.find({
+      created: { $gte: time },
+    }).countDocuments();
+    const postsCount = await Post.find({}).countDocuments();
+    const commentsNewCount = await Comments.find({ created: { $gte: time } }).countDocuments();
+    const starttime = dayjs(nowZero).weekday(1);
+    const endtime = dayjs(nowZero).weekday(8);
+    const weekEndCount = await Comments.find({ created: { $gte: starttime, $lte: endtime }, isBest: "1" }).countDocuments();
+    const signWeekCount = await SignRecord.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments();
+    const postWeekCount = await Post.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments();
+
+    inforCardData.push(userNewCount);
+    inforCardData.push(postsCount);
+    inforCardData.push(commentsNewCount);
+    inforCardData.push(weekEndCount);
+    inforCardData.push(signWeekCount);
+    inforCardData.push(postWeekCount);
+
+    // 2. 左侧饼图
+    const postsCatalogCount = await Post.aggregate([{ $group: { _id: "$catalog", count: { $sum: 1 } } }]);
+    const pieData = {};
+    postsCatalogCount.forEach((item) => {
+      pieData[item._id] = item.count;
+    });
+
+    // 3. 本周的右侧统计数据
+    // 3.1 计算6个月前的时间 1号 00:00:00
+    // 3.2 查询数据库中对应时间内的数据 $gte
+    // 3.3 group组合 -> sum -> sort排序
+
+    const startMonth = dayjs(nowZero).subtract(11, "M").date(1).format();
+    const endMonth = dayjs(nowZero).add(1, "M").date(1).format();
+
+    let monthData = await Post.aggregate([
+      { $match: { created: { $gte: new Date(startMonth), $lt: new Date(endMonth) } } },
+      { $project: { month: { $dateToString: { format: "%Y-%m", date: "$created" } } } },
+      { $group: { _id: "$month", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+    monthData = monthData.reduce((obj, item) => ({ ...obj, [item._id]: item.count }), {});
+
+    // 4. 底部的数据
+    const startDay = dayjs().subtract(7, "day").format();
+    const _aggregate = async (model) => {
+      let result = await model.aggregate([
+        { $match: { created: { $gte: new Date(startDay) } } },
+        { $project: { month: { $dateToString: { format: "%Y-%m-%d", date: "$created" } } } },
+        { $group: { _id: "$month", count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]);
+      result = result.reduce((obj, item) => ({ ...obj, [item._id]: item.count }), {});
+      return result;
+    };
+    const userWeekData = await _aggregate(User);
+    const signWeekData = await _aggregate(SignRecord);
+    const postWeekData = await _aggregate(Post);
+    const commentsWeekData = await _aggregate(Comments);
+
+    const dataArr = [];
+    for (let i = 0; i < 6; i++) {
+      dataArr.push(
+        dayjs()
+          .subtract(6 - i, "day")
+          .format("YYYY-MM-DD"),
+      );
+    }
+
+    const addData = (obj) => {
+      const arr = [];
+      dataArr.forEach((item) => {
+        if (obj[item]) {
+          arr.push(obj[item]);
+        } else {
+          arr.push(0);
+        }
+      });
+      return arr;
+    };
+
+    const weekData = {
+      user: addData(userWeekData),
+      sign: addData(signWeekData),
+      post: addData(postWeekData),
+      comments: addData(commentsWeekData),
+    };
+
+    result = { inforCardData, pieData, monthData, weekData };
+    ctx.body = { code: 200, data: result };
   }
 }
 

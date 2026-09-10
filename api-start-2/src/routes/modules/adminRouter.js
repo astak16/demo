@@ -70,4 +70,7 @@ router.post("/deleteRole", adminController.deleteRole);
 router.get("/getRoutes", adminController.getRoutes);
 
 router.get("/getOperations", adminController.getOperations);
+
+router.get("/getstat", adminController.getStats);
+
 export default router;
