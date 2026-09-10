@@ -18,13 +18,12 @@ import { init } from "@/config/Init";
 // import logger from "koa-logger";
 import log4js from "./config/Log4j";
 import logger1 from "./common/Logger";
+import { isDevMode } from "./config";
 
 const app = new Koa();
 const ws = new WebSocketServer();
 ws.init();
 global.ws = ws;
-
-const isDevMode = process.env.NODE_ENV !== "production";
 
 const jwt = JWT({ secret: JWT_SECRET }).unless({ path: [/^\/public/, /\/login/] });
 
@@ -43,9 +42,9 @@ const middleware = compose([
   jwt,
   Auth,
   // logger(),
-  isDevMode
-    ? log4js.koaLogger(log4js.getLogger("access", { level: "auto" }))
-    : log4js.koaLogger(log4js.getLogger("http", { level: "auto" })),
+  // isDevMode?
+  log4js.koaLogger(log4js.getLogger("access", { level: "auto" })),
+  log4js.koaLogger(log4js.getLogger("http", { level: "auto" })),
 ]);
 
 if (!isDevMode) {

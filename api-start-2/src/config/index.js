@@ -21,6 +21,8 @@ export const DB_URL = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 export const baseUrl = "http://localhost:3000";
 export const UploadFilePath = path.join(path.resolve(__dirname, "../../public/uploads"));
 
+export const isDevMode = process.env.NODE_ENV !== "production";
+
 export const adminEmail = ["1500846601@qq.com"];
 
 export const publicPath = [
