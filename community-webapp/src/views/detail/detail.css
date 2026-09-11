@@ -1,4 +1,3 @@
-@import '@/assets/styles/_mixin.scss';
 li {
   list-style: none;
 }
@@ -8,7 +7,7 @@ p {
   padding: 0;
 }
 .wrapper {
-  padding-top: $header-height;
+  padding-top: var(--header-height);
   background-color: #f6f6f6;
 }
 .detail-head {
@@ -17,7 +16,7 @@ p {
   padding: 0 30px;
   box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
   margin: 0 0 20px 0;
-  line-height: $header-height;
+  line-height: var(--header-height);
   background-color: #fff;
   z-index: 200;
   position: relative;
@@ -73,7 +72,7 @@ p {
 }
 
 .detail-bottom {
-  height: $header-height;
+  height: var(--header-height);
   position: fixed;
   left: 0;
   bottom: 0;
@@ -86,9 +85,6 @@ p {
   justify-content: flex-end;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
   transition: all 0.5s;
-  @include resH-to(big-screens) {
-    padding-bottom: 28px;
-  }
   &.fixed {
     padding-bottom: 0;
   }
@@ -118,7 +114,7 @@ p {
       background-color: transparent;
       outline: 0;
       flex: 1;
-      // padding-right: 20px;
+      /* padding-right: 20px; */
     }
   }
   .bottom-right {
@@ -152,9 +148,15 @@ p {
         margin-bottom: 8px;
       }
       &.selected {
-        color: $primary-color;
+        color: var(--primary-color);
       }
     }
+  }
+}
+
+@media only screen and (min-height: 737px) {
+  .detail-bottom {
+    padding-bottom: 28px;
   }
 }
 
@@ -174,8 +176,8 @@ p {
   transform: translateY(600px);
   visibility: hidden;
   overflow-y: scroll;
-  border-bottom: 1px solid $border-color;
-  // overscroll-behavior: contain;
+  border-bottom: 1px solid var(--border-color);
+  /* overscroll-behavior: contain; */
   &.on {
     transform: translateY(0);
     visibility: visible;
@@ -191,9 +193,9 @@ p {
   }
 }
 
-// comments lists
+/* comments lists */
 .comments {
-  padding: 20px 30px $header-height 30px;
+  padding: 20px 30px var(--header-height) 30px;
   background: #fff;
   position: relative;
   z-index: 0;
@@ -203,7 +205,7 @@ p {
   }
   .item {
     padding: 10px 0 28px 0;
-    color: $font-main-color;
+    color: var(--font-main-color);
   }
   .hands {
     font-size: 28px;

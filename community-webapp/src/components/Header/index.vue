@@ -56,17 +56,17 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-// @import '../../assets/styles/_variables.scss';
+<style  scoped>
+/* @import '../../assets/styles/_variables.css'; */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: $header-height;
+  height: var(--header-height);
   z-index: 100;
   font-size: 32px;
-  line-height: $header-height;
+  line-height: var(--header-height);
   background: #fff;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   .head-content {

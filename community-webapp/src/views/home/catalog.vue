@@ -34,7 +34,7 @@ export default {
     return {
       page: 0,
       limit: 10,
-      // catalog: '',
+      /* catalog: '', */
       lists: [],
       isEnd: false,
       isRepeat: false,
@@ -49,7 +49,7 @@ export default {
       this.init()
     },
     $route (to, from) {
-      // 每次进入首页的时候都刷新
+      /* 每次进入首页的时候都刷新 */
       this.$router.go(0)
     }
   },
@@ -91,13 +91,13 @@ export default {
         sort: 'created'
       })
         .then((res) => {
-          // 加入一个请求锁，防止用户多次点击，等待数据返回后，再打开
+          /* 加入一个请求锁，防止用户多次点击，等待数据返回后，再打开 */
           this.isRepeat = false
-          // 对于异常的判断，res.code 非200，我们给用户一个提示
-          // 判断是否lists长度为0，如果为零即可以直接赋值
-          // 当Lists长度不为0，后面请求的数据，加入到Lists里面来
+          /* 对于异常的判断，res.code 非200，我们给用户一个提示 */
+          /* 判断是否lists长度为0，如果为零即可以直接赋值 */
+          /* 当Lists长度不为0，后面请求的数据，加入到Lists里面来 */
           if (res.code === 200) {
-            // 判断res.data的长度，如果小于20条，则是最后页
+            /* 判断res.data的长度，如果小于20条，则是最后页 */
             if (res.data.length < this.limit) {
               this.isEnd = true
             }
@@ -120,21 +120,20 @@ export default {
         })
     },
     goUser (id) {
-      // console.log('goUser -> id', id)
+      /* console.log('goUser -> id', id) */
     },
     goDetail (tid) {
-      // console.log('goDetail -> tid', tid)
+      /* console.log('goDetail -> tid', tid) */
       this.$router.push({ name: 'detail', params: { tid } })
     },
     goNewPost () {
-      // console.log('addPost...')
+      /* console.log('addPost...') */
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
-@import '~@/assets/styles/_mixin.scss';
+<style  scoped>
 ul {
   padding: 0;
   margin: 0;

@@ -1,11 +1,10 @@
-@import '@/assets/styles/_mixin.scss';
 
 .layout-footer {
   position: fixed;
   left: 0;
   bottom: 0;
   width: 100%;
-  height: $footer-height;
+  height: var(--footer-height);
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
@@ -15,9 +14,6 @@
   z-index: 10;
   padding: 10px 0;
   margin: 0;
-  @include resH-to(big-screens) {
-    padding-bottom: 28px;
-  }
   &.fixed {
     padding-bottom: 28px;
   }
@@ -41,5 +37,11 @@
   }
   .svg-icon-home {
     font-size: 46px;
+  }
+}
+
+@media only screen and (min-height: 737px) {
+  .layout-footer {
+    padding-bottom: 28px;
   }
 }

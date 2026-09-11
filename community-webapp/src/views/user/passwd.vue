@@ -46,10 +46,10 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .container {
-  // padding-top: $header-height + 10;
-  padding: $header-height - 2 30px 30px;
+  /* padding-top: calc(var(--header-height) + 10px); */
+  padding: calc(var(--header-height) - 2px) 30px 30px;
   position: relative;
   z-index: 0;
 }

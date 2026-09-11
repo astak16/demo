@@ -144,7 +144,7 @@ export default {
       }
       this.$Loading.show()
       this.signX().then(res => {
-        // this.$Toast(res.msg)
+        /* this.$Toast(res.msg) */
         this.isShow = true
         this.renderList()
         this.$Loading.close()
@@ -157,7 +157,7 @@ export default {
       this.checked = []
       const today = getDay()
       const lastSignDate = this.userInfo.lastSign
-      // 如果签到有中断，签到次数清零
+      /* 如果签到有中断，签到次数清零 */
       const isFirstSign = lastSignDate ? (getDiffFromNow(lastSignDate) > 1) : true
       let count = isFirstSign ? 0 : this.userInfo.count
       this.count = count
@@ -195,7 +195,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .grey {
   position: relative;
   width: 100%;
@@ -216,10 +216,10 @@ export default {
   top: 0;
   width: 100%;
   height: 400px;
-  background-position: 0 $header-height;
+  background-position: 0 var(--header-height);
   z-index: 0;
   .wrapper {
-    padding-top: $header-height + 30;
+    padding-top: calc(var(--header-height) + 30px);
     text-align: center;
     display: flex;
     flex-flow: row nowrapper;
@@ -251,7 +251,7 @@ export default {
   }
 }
 .board {
-  padding: $header-height 30px 0 30px;
+  padding: var(--header-height) 30px 0 30px;
   position: relative;
   z-index: 50;
   top: 120px;
@@ -276,13 +276,13 @@ export default {
     width: 100%;
     line-height: 80px;
     border-collapse: collapse;
-    border: 1px solid $border-color;
+    border: 1px solid var(--border-color);
     color: #666666;
     thead {
       background: #f6f6f6;
     }
     tr {
-      border-bottom: 1px solid $border-color;
+      border-bottom: 1px solid var(--border-color);
     }
     td {
       width: 50%;
@@ -331,16 +331,16 @@ export default {
         background: #d4f8ee;
         position: relative;
         z-index: 0;
-        // &.active {
-        //   &:after {
-        //     content: '';
-        //     position: absolute;
-        //     border-radius: 50%;
-        //     width: 44px;
-        //     height: 44px;
-        //     background: #02d199;
-        //   }
-        // }
+        /* &.active { */
+        /*   &:after { */
+        /*     content: ''; */
+        /*     position: absolute; */
+        /*     border-radius: 50%; */
+        /*     width: 44px; */
+        /*     height: 44px; */
+        /*     background: #02d199; */
+        /*   } */
+        /* } */
       }
       .active {
         color: #02d199;
@@ -382,7 +382,7 @@ export default {
   text-align: center;
   .title {
     font-size: 34px;
-    color: $primary-color;
+    color: var(--primary-color);
     font-weight: bold;
     margin-top: 400px;
   }

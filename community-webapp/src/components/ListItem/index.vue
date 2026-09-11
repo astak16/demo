@@ -52,6 +52,6 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import './listitem.scss';
+<style  scoped>
+@import './listitem.css';
 </style>

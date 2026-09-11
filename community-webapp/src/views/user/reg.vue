@@ -62,10 +62,10 @@ export default {
     async _getCode () {
       const result = await this.getCode()
       if (result.code === 200) {
-        // 返回到前端svg图片数据
+        /* 返回到前端svg图片数据 */
         this.svg = result.data
       } else {
-        // 请求失败，或者异常
+        /* 请求失败，或者异常 */
       }
     },
     goback () {
@@ -85,9 +85,9 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .wrapper {
-  padding: $header-height 30px 0 30px;
+  padding: var(--header-height) 30px 0 30px;
   .logo {
     padding-top: 10px;
     text-align: center;
@@ -106,7 +106,7 @@ export default {
   padding-top: 30px;
   .input-wrap {
     line-height: 80px;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 20px;
     input {
       width: 80%;

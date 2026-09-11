@@ -39,7 +39,7 @@
 import { uploadImg, addPost } from '../../api/content'
 import { getMyCount } from '../../api/user'
 
-// 把图片地址拼装成标签
+/* 把图片地址拼装成标签 */
 const generateImageTag = imgList => {
   let tagStr = ''
   imgList.forEach(item => {

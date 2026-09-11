@@ -83,12 +83,11 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import '../../assets/styles/_mixin';
+<style  scoped>
 
 .container {
-  // padding-top: $header-height + 10;
-  padding-top: $header-height;
+  /* padding-top: calc(var(--header-height) + 10px); */
+  padding-top: var(--header-height);
   width: 100%;
   height: 100%;
   background: #f6f6f6;
@@ -103,7 +102,18 @@ export default {
     .content-item {
       align-items: center;
       padding: 30px 20px;
-      @extend %border-line;
+      position: relative;
+      &:not(:last-child)::after {
+        position: absolute;
+        box-sizing: border-box;
+        content: '';
+        pointer-events: none;
+        right: 0;
+        bottom: 0;
+        left: 16px;
+        border-bottom: 1px solid #ebedf0;
+        transform: scaleY(0.5);
+      }
     }
     .title {
       color: #333;

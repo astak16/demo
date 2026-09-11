@@ -17,7 +17,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .flex {
   width: 100%;
   height: 100%;
@@ -35,7 +35,7 @@ export default {
 }
 a {
   text-decoration: none;
-  color: $font-main-color;
+  color: var(--font-main-color);
 }
 p {
   padding-bottom: 15px;

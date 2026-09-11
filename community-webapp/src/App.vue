@@ -18,25 +18,25 @@ export default {
     }
   },
   mounted () {
-    // const _this = this
+    /* const _this = this */
     window.forbidScroll = forbidScroll
-    // window.addEventListener(
-    //   'onorientationchange' in window ? 'orientationchange' : 'resize',
-    //   function () {
-    //     // if (window.orientation === 180 || window.orientation === 0) {
-    //     //   alert('竖屏状态！')
-    //     // }
-    //     if (window.orientation === 90 || window.orientation === -90) {
-    //       // alert('横屏状态！')
-    //       _this.$Toast('请使用竖屏进行浏览！')
-    //     }
-    //   },
-    //   false
-    // )
+    /* window.addEventListener( */
+    /*   'onorientationchange' in window ? 'orientationchange' : 'resize', */
+    /*   function () { */
+    /*     // if (window.orientation === 180 || window.orientation === 0) { */
+    /*     //   alert('竖屏状态！') */
+    /*     // } */
+    /*     if (window.orientation === 90 || window.orientation === -90) { */
+    /*       // alert('横屏状态！') */
+    /*       _this.$Toast('请使用竖屏进行浏览！') */
+    /*     } */
+    /*   }, */
+    /*   false */
+    /* ) */
   },
   watch: {
     $route (to, from) {
-      // 如果前端页面进行刷新，则无需加入transition动画
+      /* 如果前端页面进行刷新，则无需加入transition动画 */
       if (from.name === null) {
         return
       }
@@ -53,10 +53,9 @@ export default {
   }
 }
 </script>
-<style lang="scss">
-@import './assets/styles/_mixin.scss';
-// 当手机屏幕宽度超过 $break-super: 480px, 横屏浏览时的样式
-@media (min-width: $break-super) and (orientation: landscape) {
+<style >
+/* 当手机屏幕宽度超过 var(--break-super): 480px, 横屏浏览时的样式 */
+@media (min-width: var(--break-super)) and (orientation: landscape) {
   html::before {
     width: 100%;
     height: 100%;
@@ -98,7 +97,7 @@ export default {
 }
 html,
 body {
-  // touch-action: none;
+  /* touch-action: none; */
 }
 .inline-block {
   display: inline-block;
@@ -152,7 +151,7 @@ a {
   text-decoration: none;
 }
 
-// custom style for mint ui
+/* custom style for mint ui */
 .cell-title {
   .mint-cell-title {
     align-self: flex-start;

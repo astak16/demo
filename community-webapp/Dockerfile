@@ -1,5 +1,5 @@
 # build stage
-FROM node:12-alpine as build-stage
+FROM node:26-alpine as build-stage
 
 LABEL maintainer=brian@toimc.com
 
@@ -8,11 +8,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install cnpm -g --no-progress --registry=https://registry.npm.taobao.org
-
-RUN cnpm install --no-progress
-
-RUN npm run build
+RUN corepack enable && pnpm install --frozen-lockfile && pnpm build
 
 # production stage
 FROM nginx:stable-alpine as production-stage

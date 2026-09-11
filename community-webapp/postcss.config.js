@@ -1,5 +1,6 @@
 module.exports = {
   plugins: {
+    'postcss-nesting': {},
     'postcss-px-to-viewport': {
       unitToConvert: 'px',
       viewportWidth: 750,

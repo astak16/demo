@@ -39,7 +39,7 @@
 </template>
 
 <script>
-// import { getList } from '@/api/content'
+/* import { getList } from '@/api/content' */
 export default {
   name: 'scroll',
   props: {
@@ -89,7 +89,7 @@ export default {
       topStatus: '',
       bottomStatus: '',
       wrapperHeight: 0
-      // allLoaded: false
+      /* allLoaded: false */
     }
   },
   watch: {
@@ -111,18 +111,18 @@ export default {
     },
     loadTop () {
       this.$emit('on-loadTop', this.endTopLoaded)
-      // setTimeout(() => {
-      //   this.$refs.loadmore.onTopLoaded()
-      // }, 2000)
+      /* setTimeout(() => { */
+      /*   this.$refs.loadmore.onTopLoaded() */
+      /* }, 2000) */
     },
     endTopLoaded () {
       this.$refs.loadmore.onTopLoaded()
     },
     loadBottom () {
       this.$emit('on-loadBottom', this.endBottomLoaded)
-      // setTimeout(() => {
-      //   this.$refs.loadmore.onBottomLoaded() // 固定方法，查询完要调用一次，用于重新定位
-      // }, 1500)
+      /* setTimeout(() => { */
+      /*   this.$refs.loadmore.onBottomLoaded() // 固定方法，查询完要调用一次，用于重新定位 */
+      /* }, 1500) */
     },
     endBottomLoaded () {
       this.$refs.loadmore.onBottomLoaded()
@@ -137,11 +137,11 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-// body {
-//   margin: 0;
-//   background-color: #fafafa;
-// }
+<style  scoped>
+/* body { */
+/*   margin: 0; */
+/*   background-color: #fafafa; */
+/* } */
 ul,
 li {
   padding: 0;
@@ -150,7 +150,7 @@ li {
 }
 .page-loadmore-wrapper {
   overflow: scroll;
-  // 硬件加速
+  /* 硬件加速 */
   -webkit-overflow-scrolling: touch;
   &:after {
     min-height: calc(100% + 1px);
@@ -158,7 +158,7 @@ li {
 }
 .mint-loadmore-top,
 .mint-loadmore-bottom {
-  color: $font-main-color;
+  color: var(--font-main-color);
   span {
     display: inline-block;
     transition: 0.2s linear;

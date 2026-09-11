@@ -22,11 +22,11 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .links {
   width: 100%;
-  height: $header-height;
-  line-height: $header-height;
+  height: var(--header-height);
+  line-height: var(--header-height);
   text-align: center;
   display: flex;
   flex-flow: row nowrap;
@@ -36,7 +36,7 @@ export default {
     color: #666;
   }
   .active {
-    color: $primary-color;
+    color: var(--primary-color);
     position: relative;
     &:after {
       content: '';
@@ -46,7 +46,7 @@ export default {
       position: absolute;
       bottom: -30px;
       right: 36px;
-      background: $primary-color;
+      background: var(--primary-color);
     }
   }
 }

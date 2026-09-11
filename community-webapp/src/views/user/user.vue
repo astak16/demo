@@ -151,7 +151,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .grey {
   position: fixed;
   width: 100%;
@@ -164,14 +164,14 @@ a {
   color: #666;
   text-decoration: none;
 }
-// .bg {
-//   height: 260px;
-//   // 4个参数： 左上 右上 右下 左下
-//   border-radius: 0 0 50% 50%;
-//   background-color: #16d1a2;
-//   position: relative;
-//   z-index: 50;
-// }
+/* .bg { */
+/*   height: 260px; */
+/*   // 4个参数： 左上 右上 右下 左下 */
+/*   border-radius: 0 0 50% 50%; */
+/*   background-color: #16d1a2; */
+/*   position: relative; */
+/*   z-index: 50; */
+/* } */
 .bg {
   background-image: url('~@/assets/images/my_bg@2x.png');
   background-repeat: no-repeat;
@@ -193,7 +193,7 @@ a {
   top: 0;
   z-index: 100;
   box-sizing: border-box;
-  color: $font-main-color;
+  color: var(--font-main-color);
   .profile {
     background: #fff;
     border-radius: 12px;

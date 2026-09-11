@@ -1,0 +1,56 @@
+/* 覆盖mint-ui的primary颜色，改为微信UI的绿色 */
+var(--primary-color): #02d199;
+
+.mint-header {
+  background-color: var(--primary-color) !important;
+}
+.mint-button:not(.is-disabled):active::after {
+  opacity: 0.2; /* .6 */
+}
+.mint-button--primary {
+  background-color: var(--primary-color) !important;
+}
+.mint-button--primary.is-plain {
+  border: 1px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+.mint-badge.is-primary {
+  background-color: var(--primary-color) !important;
+}
+.mint-switch-input:checked + .mint-switch-core {
+  border-color: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
+}
+.mint-navbar .mint-tab-item.is-selected {
+  border-bottom: 3px solid var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+.mint-tabbar > .mint-tab-item.is-selected {
+  color: var(--primary-color) !important;
+}
+.mint-searchbar-cancel {
+  color: var(--primary-color) !important;
+}
+.mint-checkbox-input:checked + .mint-checkbox-core {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+.mint-radio-input:checked + .mint-radio-core {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+.mt-range-progress {
+  background-color: var(--primary-color) !important;
+}
+.mt-progress-progress {
+  background-color: var(--primary-color) !important;
+}
+.mint-msgbox-confirm {
+  color: var(--primary-color) !important;
+}
+.mint-msgbox-confirm:active {
+  color: var(--primary-color) !important;
+}
+.mint-datetime-action {
+  color: var(--primary-color) !important;
+}

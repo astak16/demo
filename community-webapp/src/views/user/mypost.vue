@@ -79,8 +79,8 @@ export default {
     },
     deletePost (postId) {
       MessageBox.confirm('确定删除该帖子吗?').then(action => {
-        // console.log(postId)
-        // console.log(action)
+        /* console.log(postId) */
+        /* console.log(action) */
       }).catch(cancel => {})
     }
   },
@@ -92,17 +92,27 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import '../../assets/styles/_mixin';
+<style  scoped>
 
 .container {
-  // padding-top: $header-height + 10;
-  padding-top: $header-height;
+  /* padding-top: calc(var(--header-height) + 10px); */
+  padding-top: var(--header-height);
   .content-box {
     padding: 0 30px;
     .content-item {
       align-items: center;
-      @extend %border-line;
+      position: relative;
+      &:not(:last-child)::after {
+        position: absolute;
+        box-sizing: border-box;
+        content: '';
+        pointer-events: none;
+        right: 0;
+        bottom: 0;
+        left: 16px;
+        border-bottom: 1px solid #ebedf0;
+        transform: scaleY(0.5);
+      }
     }
     .column {
       flex: 1;
@@ -111,7 +121,6 @@ export default {
       justify-content: space-between;
       height: 150px;
       padding: 30px 20px;
-      // @extend %border-line;
       .title {
         color: #333;
         font-size: 30px;
@@ -132,7 +141,7 @@ export default {
     .tags {
       font-size: 24px;
       color: #fff;
-      background: $primary-color;
+      background: var(--primary-color);
       border-radius: 24px 24px 24px 0;
       padding: 4px 12px;
       margin-right: 10px;

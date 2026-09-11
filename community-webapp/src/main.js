@@ -9,7 +9,8 @@ import '@/plugins/veevalidate'
 
 // common css
 import 'normalize.css/normalize.css'
-import '@/assets/styles/theme.scss'
+import '@/assets/styles/variables.css'
+import '@/assets/styles/theme.css'
 
 // 引用mint-ui组件
 import '@/plugins/mint-ui'

@@ -116,10 +116,10 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .container {
-  // padding-top: $header-height + 10;
-  padding: $header-height + 10 30px 30px;
+  /* padding-top: calc(var(--header-height) + 10px); */
+  padding: calc(var(--header-height) + 10px) 30px 30px;
 }
 .divider {
   height: 24px;

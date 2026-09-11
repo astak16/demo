@@ -153,8 +153,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import '~@/assets/styles/_mixin.scss';
+<style  scoped>
 .bg {
   background-image: url('~@/assets/images/my_bg@2x.png');
   background-repeat: no-repeat;
@@ -164,11 +163,11 @@ export default {
   top: 0;
   width: 100%;
   height: 400px;
-  background-position: 0 $header-height;
+  background-position: 0 var(--header-height);
   z-index: 0;
   .wrapper {
-    margin: $header-height + 150 auto 0 auto;
-    // padding-top: $header-height + 30;
+    margin: calc(var(--header-height) + 150px) auto 0 auto;
+    /* padding-top: calc(var(--header-height) + 30px); */
     width: 686px;
     height: 224px;
     background: rgba(255, 255, 255, 1);
@@ -231,7 +230,7 @@ export default {
       padding-bottom: 10px;
     }
   }
-  // box-shadow: 0px 4px 6px 0px rgba(36, 37, 37, 0.08);
+  /* box-shadow: 0px 4px 6px 0px rgba(36, 37, 37, 0.08); */
 }
 .tabs {
   height: 88px;
@@ -265,7 +264,7 @@ export default {
     }
   }
 }
-// content-box
+/* content-box */
 .content-box {
   background: #fff;
   padding: 0 30px;
@@ -277,7 +276,18 @@ export default {
   .content-item {
     align-items: center;
     padding: 30px 20px;
-    @extend %border-line;
+    position: relative;
+    &:not(:last-child)::after {
+      position: absolute;
+      box-sizing: border-box;
+      content: '';
+      pointer-events: none;
+      right: 0;
+      bottom: 0;
+      left: 16px;
+      border-bottom: 1px solid #ebedf0;
+      transform: scaleY(0.5);
+    }
   }
   .title {
     color: #333;

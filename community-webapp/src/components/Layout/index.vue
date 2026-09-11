@@ -6,17 +6,17 @@
 </template>
 
 <script>
-// import Footer from './footer'
+/* import Footer from './footer' */
 export default {
   name: 'Layout'
-  // components: {
-  //   'my-footer': Footer
-  // }
+  /* components: { */
+  /*   'my-footer': Footer */
+  /* } */
 }
 </script>
 
-<style lang="scss" scoped>
+<style  scoped>
 .wrapper {
-  padding-bottom: $footer-height;
+  padding-bottom: var(--footer-height);
 }
 </style>

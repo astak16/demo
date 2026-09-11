@@ -195,7 +195,7 @@ export default {
     getCommentsList () {
       this.paging.next({ tid: this.tid }, res => {
         this.loading = false
-        // console.log(res)
+        /* console.log(res) */
       })
     },
     collect (postid) {
@@ -237,6 +237,6 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import './detail.scss';
+<style  scoped>
+@import './detail.css';
 </style>

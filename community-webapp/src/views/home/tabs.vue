@@ -35,6 +35,6 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-@import './tabs.scss';
+<style  scoped>
+@import './tabs.css';
 </style>

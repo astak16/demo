@@ -2,5 +2,5 @@ allowBuilds:
   core-js: true
   ejs: true
   fsevents: true
-  node-sass: true
+  unrs-resolver: true
   yorkie: true
