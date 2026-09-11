@@ -1,0 +1,6 @@
+allowBuilds:
+  core-js: true
+  ejs: true
+  fsevents: true
+  node-sass: true
+  yorkie: true
