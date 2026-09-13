@@ -6,6 +6,16 @@ import path from "path";
 
 export const getJWTPayload = async (token) => jwt.verify(token.split(" ")[1], JWT_SECRET);
 
+export const generateToken = (payload, expire = "1h") => {
+  if (payload) {
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: expire,
+    });
+  } else {
+    throw new Error("生成token失败");
+  }
+};
+
 export const checkCode = async (key, value) => {
   const redisData = await getValue(key);
   if (redisData) {

@@ -3,6 +3,8 @@ import Comments from "@/model/Comments";
 import CommentsHands from "@/model/CommentsHands";
 import PostModel from "@/model/Post";
 import User from "@/model/User";
+import dayjs from "dayjs";
+import SignRecord from "@/model/SignRecord";
 
 const canReply = async (ctx) => {
   let result = false;
@@ -93,6 +95,7 @@ class CommentController {
       };
     }
   }
+
   async updateComment(ctx) {
     const check = await canReply(ctx);
     if (!check) {
@@ -110,6 +113,7 @@ class CommentController {
       msg: "修改评论成功",
     };
   }
+
   async setBest(ctx) {
     const obj = await getJWTPayload(ctx.headers.authorization);
     if (!obj && !obj._id) {
@@ -183,6 +187,7 @@ class CommentController {
       };
     }
   }
+
   async getCommentsPublic(ctx) {
     const params = ctx.query;
     const result = await Comments.getCommentsPublic(params.uid, params.page, params.limit ? parseInt(params.limit) : 10);
@@ -198,6 +203,65 @@ class CommentController {
         msg: "查询列表失败",
       };
     }
+  }
+
+  async getHotPost(ctx) {
+    const params = ctx.query;
+    const page = params.page ? parseInt(params.page) : 0;
+    const limit = params.limit ? parseInt(params.limit) : 10;
+    const index = params.index ? params.index : "0";
+    let startTime = "";
+    let endTime = "";
+
+    // index 0 -> 3日内
+    // index 1 -> 7日内
+    // index 2 -> 30日内
+    // index 3 -> 全部
+    if (index === "0") {
+      startTime = dayjs().subtract(2, "day").format("YYYY-MM-DD 00:00:00");
+    } else if (index === "1") {
+      startTime = dayjs().subtract(6, "day").format("YYYY-MM-DD 00:00:00");
+    } else if (index === "2") {
+      startTime = dayjs().subtract(29, "day").format("YYYY-MM-DD 00:00:00");
+    }
+    endTime = dayjs().add(1, "day").format("YYYY-MM-DD 00:00:00");
+
+    const result = await PostModel.getHotPost(page, limit, startTime, endTime);
+    const total = await PostModel.getHotPostCount(page, limit, startTime, endTime);
+    ctx.body = { code: 200, data: result, total, msg: "获取热门文章成功" };
+  }
+
+  async getHotComments(ctx) {
+    const params = ctx.query;
+    const page = params.page ? parseInt(params.page) : 0;
+    const limit = params.limit ? parseInt(params.limit) : 10;
+    const index = params.index ? params.index : "0";
+    // 0. 热门评论
+    // 1. 最新评论
+    const result = await Comments.getHotComments(page, limit, index);
+    const total = await Comments.getHotCommentsCount(index);
+    ctx.body = { code: 200, data: result, total, msg: "获取热门评论成功" };
+  }
+
+  async getHotSignRecord(ctx) {
+    const params = ctx.query;
+    const page = params.page ? parseInt(params.page) : 0;
+    const limit = params.limit ? parseInt(params.limit) : 10;
+    const index = params.index ? params.index : "0";
+    // 0. 总签到榜
+    // 1. 最新签到
+    let result,
+      total = 0;
+    if (index === "0") {
+      result = await User.getTotalSign(page, limit);
+      total = await User.getTotalSignCount();
+    } else if (index === "1") {
+      // result = await SignRecord.getLatestSign(page, limit);
+      // total = await SignRecord.getSignCount();
+      result = await SignRecord.getTopSign(page, limit);
+      total = await SignRecord.getTopSignCount();
+    }
+    ctx.body = { code: 200, data: result, total, msg: "获取签到排行成功" };
   }
 }
 

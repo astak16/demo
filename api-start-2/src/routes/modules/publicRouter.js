@@ -43,4 +43,13 @@ router.get("/latestPost", contentController.getPostPublic);
 // 获取用户最近的评论记录
 router.get("/latestComments", commentsController.getCommentsPublic);
 
+// 获取热门帖子
+router.get("/hotPost", commentsController.getHotPost);
+
+// 获取热门评论
+router.get("/hotComments", commentsController.getHotComments);
+
+// 获取签到排行
+router.get("/hotSignRecord", commentsController.getHotSignRecord);
+
 export default router;

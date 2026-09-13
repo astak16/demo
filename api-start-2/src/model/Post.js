@@ -57,6 +57,23 @@ PostSchema.statics = {
   countByUid: function (id) {
     return this.find({ uid: id }).countDocuments();
   },
+  getHotPost: function (page, limit, start, end) {
+    let query = {};
+    if (start !== "" && end !== "") {
+      query = { created: { $gte: start, $lt: end } };
+    }
+    return this.find(query)
+      .skip(limit * page)
+      .limit(limit)
+      .sort({ answer: -1 });
+  },
+  getHotPostCount: function (page, limit, start, end) {
+    let query = {};
+    if (start !== "" && end !== "") {
+      query = { created: { $gte: start, $lt: end } };
+    }
+    return this.find(query).countDocuments();
+  },
 };
 
 const PostModel = mongoose.model("posts", PostSchema);

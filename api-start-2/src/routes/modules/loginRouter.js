@@ -15,4 +15,7 @@ router.post("/login", loginController.login);
 // 注册用户
 router.post("/reg", loginController.reg);
 
+// 刷新
+router.post("/refresh", loginController.refresh);
+
 export default router;

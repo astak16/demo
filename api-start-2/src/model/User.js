@@ -55,6 +55,15 @@ UserSchema.statics = {
   countList(options) {
     return this.find(options).countDocuments();
   },
+  getTotalSign(page, limit) {
+    return this.find({})
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ count: -1 });
+  },
+  getTotalSignCount(page, limit) {
+    return this.find({}).countDocuments();
+  },
 };
 
 const UserModel = mongoose.model("users", UserSchema);

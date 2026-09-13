@@ -15,7 +15,7 @@ const CommentsSchema = new Schema(
     isRead: { type: String, default: "0" },
     isBest: { type: String, default: "0" },
   },
-  { toJSON: { virtuals: true } }
+  { toJSON: { virtuals: true } },
 );
 
 CommentsSchema.pre("save", function (next) {
@@ -311,51 +311,51 @@ CommentsSchema.statics = {
   //     .limit(limit)
   //     .sort({ created: -1 })
   // }
-  // getHotComments: function (page, limit, index) {
-  //   if (index === "0") {
-  //     // 总评论记数 -> aggregate聚合查询
-  //     return this.aggregate([
-  //       // 匹配30天内的评论数据
-  //       { $match: { created: { $gte: new Date(moment().subtract(30, "day")) } } },
-  //       { $group: { _id: "$cuid", count: { $sum: 1 } } },
-  //       { $addFields: { userId: { $toObjectId: "$_id" } } },
-  //       { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "cuid" } },
-  //       { $unwind: "$cuid" },
-  //       { $project: { cuid: { name: 1, _id: 1, pic: 1 }, count: 1 } },
-  //       { $skip: page * limit },
-  //       { $limit: limit },
-  //       { $sort: { count: -1 } },
-  //     ]);
-  //   } else if (index === "1") {
-  //     // 最新评论
-  //     return (
-  //       this.find({})
-  //         // populate
-  //         .populate({
-  //           path: "cuid",
-  //           select: "name pic _id",
-  //         })
-  //         .skip(page * limit)
-  //         .limit(limit)
-  //         .sort({ created: -1 })
-  //     );
-  //   }
-  // },
-  // getHotCommentsCount: async function (index) {
-  //   if (index === "0") {
-  //     // 总评论记数 -> aggregate聚合查询
-  //     const result = await this.aggregate([
-  //       // 匹配30天内的评论数据
-  //       { $match: { created: { $gte: new Date(moment().subtract(30, "day")) } } },
-  //       { $group: { _id: "$cuid", count: { $sum: 1 } } },
-  //       { $group: { _id: "null", total: { $sum: 1 } } },
-  //     ]);
-  //     return result[0].total;
-  //   } else if (index === "1") {
-  //     // 最新评论
-  //     return this.find({}).countDocuments();
-  //   }
-  // },
+  getHotComments: function (page, limit, index) {
+    if (index === "0") {
+      // 总评论记数 -> aggregate聚合查询
+      return this.aggregate([
+        // 匹配30天内的评论数据
+        { $match: { created: { $gte: new Date(dayjs().subtract(30, "day")) } } },
+        { $group: { _id: "$cuid", count: { $sum: 1 } } },
+        { $addFields: { userId: { $toObjectId: "$_id" } } },
+        { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "cuid" } },
+        { $unwind: "$cuid" },
+        { $project: { cuid: { name: 1, _id: 1, pic: 1 }, count: 1 } },
+        { $skip: page * limit },
+        { $limit: limit },
+        { $sort: { count: -1 } },
+      ]);
+    } else if (index === "1") {
+      // 最新评论
+      return (
+        this.find({})
+          // populate
+          .populate({
+            path: "cuid",
+            select: "name pic _id",
+          })
+          .skip(page * limit)
+          .limit(limit)
+          .sort({ created: -1 })
+      );
+    }
+  },
+  getHotCommentsCount: async function (index) {
+    if (index === "0") {
+      // 总评论记数 -> aggregate聚合查询
+      const result = await this.aggregate([
+        // 匹配30天内的评论数据
+        { $match: { created: { $gte: new Date(dayjs().subtract(30, "day")) } } },
+        { $group: { _id: "$cuid", count: { $sum: 1 } } },
+        { $group: { _id: "null", total: { $sum: 1 } } },
+      ]);
+      return result[0].total;
+    } else if (index === "1") {
+      // 最新评论
+      return this.find({}).countDocuments();
+    }
+  },
 };
 
 const Comments = mongoose.model("comments", CommentsSchema);

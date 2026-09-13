@@ -214,7 +214,7 @@ class UserController {
   }
   async getBasicInfo(ctx) {
     const params = ctx.query;
-    const uid = params.uid;
+    const uid = params.uid || ctx._id;
     let user = await User.findByID(uid);
     user = user.toJSON();
     const date = dayjs().format("YYYY-MM-DD");

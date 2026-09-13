@@ -1,6 +1,6 @@
 import jsonwebtoken from "jsonwebtoken";
 import { JWT_SECRET } from "@/config";
-import { checkCode } from "@/common/Utils";
+import { checkCode, generateToken } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
@@ -27,11 +27,13 @@ class LoginController {
         arr.map((item) => {
           delete userObj[item];
         });
-        const token = jsonwebtoken.sign({ _id: userObj._id }, JWT_SECRET, { expiresIn: "1d" });
+        // const token = jsonwebtoken.sign({ _id: userObj._id }, JWT_SECRET, { expiresIn: "1d" });
+        const token = generateToken({ _id: userObj._id }, "1m");
         ctx.body = {
           code: 200,
           data: userObj,
           token,
+          refreshToken: generateToken({ _id: userObj._id }, "7d"),
         };
       } else {
         ctx.body = {
@@ -45,6 +47,14 @@ class LoginController {
         msg: "图片验证码不正确，请检查",
       };
     }
+  }
+
+  async refresh(ctx) {
+    ctx.body = {
+      code: 200,
+      token: generateToken({ _id: ctx._id }),
+      msg: "获取 token 成功",
+    };
   }
 
   async reg(ctx) {

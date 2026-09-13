@@ -31,6 +31,26 @@ SignRecordSchema.statics = {
   findByUid: function (uid) {
     return this.findOne({ uid }).sort({ created: -1 });
   },
+  getLatestSign(page, limit) {
+    return this.find({})
+      .populate({ path: "uid", select: "_id name pic" })
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ create: -1 });
+  },
+  getSignCount() {
+    return this.find({}).countDocuments();
+  },
+  getTopSign(page, limit) {
+    return this.find({ created: { $gte: dayjs("2025-12-24").format("YYYY-MM-DD 00:00:00") } })
+      .populate({ path: "uid", select: "_id name pic" })
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ create: 1 });
+  },
+  getTopSignCount() {
+    return this.find({ created: { $gte: dayjs().format("YYYY-MM-DD 00:00:00") } }).countDocuments();
+  },
 };
 
 const SignRecord = mongoose.model("sign_record", SignRecordSchema);
