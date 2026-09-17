@@ -1,5 +1,6 @@
 import mongoose from "@/config/DBHelpler";
 import dayjs from "dayjs";
+import { getTempName } from "@/common/Utils";
 
 const Schema = mongoose.Schema;
 
@@ -42,6 +43,22 @@ UserSchema.post("save", function (error, doc, next) {
 });
 
 UserSchema.statics = {
+  findOrCreateByUnionid(user) {
+    return this.findOne({ unionid: user.unionid }, { unionid: 0, password: 0 }).then(
+      (obj) =>
+        obj ||
+        this.create({
+          openid: user.openid,
+          unionid: user.unionid,
+          username: getTempName(),
+          name: user.nickName,
+          roles: ["user"],
+          gender: user.gender,
+          pic: user.avatarUrl,
+          location: user.city,
+        }),
+    );
+  },
   findByID: function (id) {
     // 后面的对象中是不需要查出来的
     return this.findOne({ _id: id }, { password: 0, username: 0, mobile: 0 });

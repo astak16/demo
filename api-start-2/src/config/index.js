@@ -33,3 +33,6 @@ export const publicPath = [
   /^\/comments/,
   // /^\/admin\/getRoutes(?:\?|$)/,
 ];
+
+export const AppID = "wxc47d78881f2e620c";
+export const AppSecret = "431a25b3bd04845338aa28631c094e7d";

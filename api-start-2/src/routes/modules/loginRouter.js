@@ -18,4 +18,6 @@ router.post("/reg", loginController.reg);
 // 刷新
 router.post("/refresh", loginController.refresh);
 
+router.post("/wxLogin", loginController.wxLogin);
+
 export default router;

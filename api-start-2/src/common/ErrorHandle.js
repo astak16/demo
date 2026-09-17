@@ -60,7 +60,7 @@ export default async (ctx, next) => {
       ctx.status = error.status || 500;
       ctx.body = Object.assign(
         {
-          code: 500,
+          code: ctx.status,
           msg: error.message,
         },
         console.error(error),

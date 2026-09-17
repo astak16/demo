@@ -4,6 +4,26 @@ import { checkCode, generateToken } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
+import { wxGetOpenData, wxGetUserInfo } from "@/common/WxUtils";
+import SignRecord from "@/model/SignRecord";
+
+const addSign = async (user) => {
+  const userObj = user.toJSON();
+  const signRecord = await SignRecord.findByUid(userObj._id);
+  if (signRecord !== null) {
+    if (moment(signRecord.created).format("YYYY-MM-DD") === moment().format("YYYY-MM-DD")) {
+      userObj.isSign = true;
+    } else {
+      userObj.isSign = false;
+    }
+    userObj.lastSign = signRecord.created;
+  } else {
+    // 用户无签到记录
+    userObj.isSign = false;
+  }
+  return userObj;
+};
+
 class LoginController {
   async forget(ctx) {}
 
@@ -22,13 +42,13 @@ class LoginController {
         checkUserPassword = true;
       }
       if (checkUserPassword) {
-        const userObj = user.toJSON();
+        const userObj = addSign(user);
         const arr = ["password", "username", "roles"];
         arr.map((item) => {
           delete userObj[item];
         });
         // const token = jsonwebtoken.sign({ _id: userObj._id }, JWT_SECRET, { expiresIn: "1d" });
-        const token = generateToken({ _id: userObj._id }, "1m");
+        const token = generateToken({ _id: userObj._id }, "1d");
         ctx.body = {
           code: 200,
           data: userObj,
@@ -98,6 +118,24 @@ class LoginController {
       code: 500,
       msg,
     };
+  }
+
+  async wxLogin(ctx) {
+    const { body } = ctx.request;
+    const { user, code } = body;
+    if (!code) {
+      ctx.body = { code: 500, data: "没有足够参数" };
+      return;
+    }
+    const res = await wxGetUserInfo(user, code);
+    if (res.errcode === 0) {
+      const tmpUser = await UserModel.findOrCreateByUnionid(res);
+      const token = generateToken({ _id: tmpUser._id });
+      const userInfo = addSign(tmpUser);
+      ctx.body = { code: 200, data: userInfo, token };
+    } else {
+      ctx.throw(501, res.errcode === 50163 ? "code已失效，请刷新后重试" : "获取用户信息失败，请重试 ");
+    }
   }
 }
 export default new LoginController();

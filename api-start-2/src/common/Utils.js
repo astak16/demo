@@ -130,3 +130,17 @@ export const getRights = (tree, menus) => {
   }
   return flatten(arr);
 };
+
+const rand = (len = 8) => {
+  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let text = "";
+  for (let i = 0; i < len; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
+
+export const getTempName = () => {
+  // 返回用户邮箱
+  return "uccs_" + rand() + "@qq.com";
+};
