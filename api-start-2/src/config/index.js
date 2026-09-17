@@ -36,3 +36,10 @@ export const publicPath = [
 
 export const AppID = "wxc47d78881f2e620c";
 export const AppSecret = "431a25b3bd04845338aa28631c094e7d";
+
+export const subIds = {
+  comment: "S7zrpjN9Kq05-4ZG_nlTAYxnARMLWlSW09h54A2JCZo",
+  comment1: "ANN2-LhDgrhdFjs7jHOLdTnaxWpQU1LqS3kDIMF9GDs",
+  login: "FSQZganmBgaRRoNNlelQ1Qm2u4gx6pVSt69EJfkLbPA",
+  fav: "g9FFU43_deHRuez-2FcrASorTSITsJJPYx-GhzvHEIU",
+};

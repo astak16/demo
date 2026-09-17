@@ -19,6 +19,7 @@ import { init } from "@/config/Init";
 import log4js from "./config/Log4j";
 import logger1 from "./common/Logger";
 import { isDevMode } from "./config";
+import "./common/Cron";
 
 const app = new Koa();
 const ws = new WebSocketServer();

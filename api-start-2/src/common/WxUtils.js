@@ -2,6 +2,10 @@ import axios from "axios";
 import config from "@/config";
 import crypto from "crypto";
 import WXBizDataCrypt from "./WXBizDataCrypt";
+import { getValue, setValue } from "@/config/RedisConfig";
+import log4js from "@/config/Log4j";
+
+const logger = log4js.getLogger("error");
 
 const instance = axios.create({ timeout: 1000 });
 
@@ -31,5 +35,39 @@ export const wxGetUserInfo = async (user, code) => {
     return { ...userInfo, ...data, errcode: 0 };
   } else {
     return data;
+  }
+};
+
+// flag 强制刷新，默认 false - 不强制刷新
+export const wxGetAccessToken = async (flag = true) => {
+  let accessToken = await getValue("accessToken");
+  if (!accessToken || flag) {
+    try {
+      const result = await instance.get(
+        `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${AppID}&secret=${AppSecret}`,
+      );
+      if (result.status === 200) {
+        await setValue("accessToken", result.data.access_token, result.data.expires_in);
+        accessToken = result.data.access_token;
+        if (result.data.errcode && result.data.errmsg) {
+          logger.error(`wxGetAccessToken error ${result.data.errcode} - ${result.data.errmsg}`);
+        }
+      }
+    } catch (error) {
+      logger.error(`wxGetAccessToken error ${error.message}`);
+    }
+  }
+  return accessToken;
+};
+
+// 发送订阅消息
+export const wxSendMessage = async (options) => {
+  // POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCESS_TOKEN
+  let accessToken = await wxGetAccessToken();
+  try {
+    const { data } = await instance.post(`https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${accessToken}`, options);
+    return data;
+  } catch (error) {
+    logger.error(`wxSendMessage error: ${error.message}`);
   }
 };

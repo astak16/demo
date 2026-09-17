@@ -47,12 +47,15 @@ router.get("/latestPost", contentController.getPostPublic);
 router.get("/latestComments", commentsController.getCommentsPublic);
 
 // 获取热门帖子
-router.get("/hotPost", commentsController.getHotPost);
+router.get("/hotPost", publicController.getHotPost);
 
 // 获取热门评论
-router.get("/hotComments", commentsController.getHotComments);
+router.get("/hotComments", publicController.getHotComments);
 
 // 获取签到排行
-router.get("/hotSignRecord", commentsController.getHotSignRecord);
+router.get("/hotSignRecord", publicController.getHotSignRecord);
+
+// 获取微信模版 id
+router.get("/subids", publicController.getSubIds);
 
 export default router;

@@ -20,8 +20,8 @@ const UserSchema = new Schema({
   location: { type: String, default: "" },
   isVip: { type: String, default: "0" },
   count: { type: Number, default: 0 },
-  // openid: { type: String, default: "" },
-  // unionid: { type: String, default: "" },
+  openid: { type: String, default: "" },
+  unionid: { type: String, default: "" },
 });
 
 UserSchema.pre("save", function (next) {

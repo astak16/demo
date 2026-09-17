@@ -4,7 +4,7 @@ import { checkCode, generateToken } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
-import { wxGetOpenData, wxGetUserInfo } from "@/common/WxUtils";
+import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from "@/common/WxUtils";
 import SignRecord from "@/model/SignRecord";
 import { getValue, delValue } from "@/config/RedisConfig";
 import WXBizDataCrypt from "@/common/WXBizDataCrypt";
@@ -74,7 +74,7 @@ class LoginController {
   async refresh(ctx) {
     ctx.body = {
       code: 200,
-      token: generateToken({ _id: ctx._id }),
+      token: generateToken({ _id: ctx._id }, "60m"),
       msg: "获取 token 成功",
     };
   }
@@ -132,9 +132,25 @@ class LoginController {
     const res = await wxGetUserInfo(user, code);
     if (res.errcode === 0) {
       const tmpUser = await UserModel.findOrCreateByUnionid(res);
+      const notify = await wxSendMessage({
+        touser: tmpUser.openid,
+        template_id: "ssss",
+        data: {
+          phrase1: { value: "登录安全" },
+          date2: { value: dayjs().format("YYYY年MM月DD日 HH:mm") },
+          thing4: { value: "通过微信授权登录成功，请注意信息安全" },
+        },
+        miniprogram_state: "developer", // 正式：formal
+      });
       const token = generateToken({ _id: tmpUser._id });
       const userInfo = addSign(tmpUser);
-      ctx.body = { code: 200, data: userInfo, token, refreshToken: generateToken({ _id: userObj._id }, "7d") };
+      ctx.body = {
+        code: 200,
+        data: userInfo,
+        token,
+        refreshToken: generateToken({ _id: userObj._id }, "7d"),
+        notify: notify ? notify.data : "",
+      };
     } else {
       ctx.throw(501, res.errcode === 50163 ? "code已失效，请刷新后重试" : "获取用户信息失败，请重试 ");
     }
