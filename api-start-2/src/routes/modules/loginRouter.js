@@ -18,6 +18,13 @@ router.post("/reg", loginController.reg);
 // 刷新
 router.post("/refresh", loginController.refresh);
 
+// 微信登录
 router.post("/wxLogin", loginController.wxLogin);
+
+// 手机登录
+router.post("/loginByPhone", loginController.loginByPhone);
+
+// 获取用户手机号
+router.post("/getMobile", loginController.getMobile);
 
 export default router;

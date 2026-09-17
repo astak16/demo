@@ -1,11 +1,13 @@
 import jsonwebtoken from "jsonwebtoken";
-import { JWT_SECRET } from "@/config";
+import { JWT_SECRET, AppID } from "@/config";
 import { checkCode, generateToken } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import { wxGetOpenData, wxGetUserInfo } from "@/common/WxUtils";
 import SignRecord from "@/model/SignRecord";
+import { getValue, delValue } from "@/config/RedisConfig";
+import WXBizDataCrypt from "@/common/WXBizDataCrypt";
 
 const addSign = async (user) => {
   const userObj = user.toJSON();
@@ -132,9 +134,41 @@ class LoginController {
       const tmpUser = await UserModel.findOrCreateByUnionid(res);
       const token = generateToken({ _id: tmpUser._id });
       const userInfo = addSign(tmpUser);
-      ctx.body = { code: 200, data: userInfo, token };
+      ctx.body = { code: 200, data: userInfo, token, refreshToken: generateToken({ _id: userObj._id }, "7d") };
     } else {
       ctx.throw(501, res.errcode === 50163 ? "code已失效，请刷新后重试" : "获取用户信息失败，请重试 ");
+    }
+  }
+
+  async getMobile(ctx) {
+    const { body } = ctx.request;
+    const { code, encryptedData, iv } = body;
+    if (!code) {
+      ctx.body = { code: 500, data: "没有足够参数" };
+      return;
+    }
+    const { session_key: sessionKey } = await wxGetOpenData(code);
+    const wxBizDataCrypt = new WXBizDataCrypt(AppID, sessionKey);
+    const data = wxBizDataCrypt.decryptData(encryptedData, iv);
+    ctx.body = { code: 200, data, msg: "获取手机号成功" };
+  }
+
+  async loginByPhone(ctx) {
+    const { body } = ctx.request;
+    const { phone, code } = body;
+    const sms = await getValue(phone);
+    if (sms && sms === code) {
+      await delValue(mobile);
+      const user = await UserModel.findOrCreateByMobile({ mobile });
+      const userObj = await addSign(user);
+      ctx.body = {
+        code: 200,
+        token: generateToken({ _id: userObj._id }),
+        data: userObj,
+        refreshToken: generateToken({ _id: userObj._id }, "7d"),
+      };
+    } else {
+      code.body = { code: 500, msg: "手机号与验证码不匹配" };
     }
   }
 }

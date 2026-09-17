@@ -43,6 +43,11 @@ UserSchema.post("save", function (error, doc, next) {
 });
 
 UserSchema.statics = {
+  findOrCreateByMobile(user) {
+    return this.findOne({ mobile: user.mobile }, { unionid: 0, password: 0 }).then(
+      (obj) => obj || this.create({ mobile: user.mobile, username: getTempName(), name: getTempName(), roles: ["user"] }),
+    );
+  },
   findOrCreateByUnionid(user) {
     return this.findOne({ unionid: user.unionid }, { unionid: 0, password: 0 }).then(
       (obj) =>

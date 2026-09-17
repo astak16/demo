@@ -21,6 +21,16 @@ class PublicController {
       data: newCaptcha.text,
     };
   }
+  async sendCode(ctx) {
+    const { mobile } = ctx.query;
+    if (await getValue(mobile)) {
+      ctx.body = { code: 501, msg: "短信正在发送中，请勿重新发送" };
+      return;
+    }
+    const sms = String(Math.random()).slice(-6);
+    setValue(mobile, sms, 10 * 60);
+    ctx.body = { code: 200, msg: "发送成功", data: sms };
+  }
 }
 
 export default new PublicController();
