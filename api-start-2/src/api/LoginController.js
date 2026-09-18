@@ -1,6 +1,6 @@
 import jsonwebtoken from "jsonwebtoken";
 import { JWT_SECRET, AppID } from "@/config";
-import { checkCode, generateToken } from "@/common/Utils";
+import { checkCode, generateToken, getTempName } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
@@ -8,6 +8,7 @@ import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from "@/common/WxUtils";
 import SignRecord from "@/model/SignRecord";
 import { getValue, delValue } from "@/config/RedisConfig";
 import WXBizDataCrypt from "@/common/WXBizDataCrypt";
+import { getOauth2AccessToken, getOpenDataByOpenId } from "../common/WxOauth";
 
 const addSign = async (user) => {
   const userObj = user.toJSON();
@@ -120,6 +121,55 @@ class LoginController {
       code: 500,
       msg,
     };
+  }
+
+  async wxOauth(ctx) {
+    const { body } = ctx.request;
+    const { code, state } = body;
+    if (code && state) {
+      const res = await getOauth2AccessToken(code);
+      const { access_token, openid, errcode, errmsg } = res;
+      if (errmsg && errcode) {
+        ctx.body = { code: 500, msg: errmsg };
+        return;
+      }
+      const user = await UserModel.find({ openid });
+      if (user) {
+        const userObj = addSign(user);
+        const arr = ["password", "username", "roles"];
+        arr.map((item) => {
+          delete userObj[item];
+        });
+        // const token = jsonwebtoken.sign({ _id: userObj._id }, JWT_SECRET, { expiresIn: "1d" });
+        const token = generateToken({ _id: userObj._id }, "1d");
+        ctx.body = {
+          code: 200,
+          data: userObj,
+          token,
+          refreshToken: generateToken({ _id: userObj._id }, "7d"),
+        };
+        return;
+      }
+      const userInfo = await getOpenDataByOpenId(access_token, openid);
+      const newUser = new UserModel({
+        openid: userInfo.openid,
+        unionid: userInfo.unionid,
+        username: getTempName(),
+        name: userInfo.nickName,
+        roles: ["user"],
+        gender: userInfo.sex,
+        pic: userInfo.headimgurl,
+        location: `${userInfo.country}${userInfo.province}${userInfo.city}`,
+      });
+      const userTemp = (await newUser.save()).toJSON();
+      const token = generateToken({ _id: userTemp._id }, "1d");
+      ctx.body = {
+        code: 200,
+        data: userTemp,
+        token,
+        refreshToken: generateToken({ _id: userTemp._id }, "7d"),
+      };
+    }
   }
 
   async wxLogin(ctx) {

@@ -7,6 +7,7 @@ import fs from "fs";
 import User from "@/model/User";
 import { getJWTPayload, rename } from "@/common/Utils";
 import UserCollect from "@/model/UserCollect";
+import { wxMsgCheck } from "@/common/WxUtils";
 
 class ContentController {
   async getPostList(ctx) {
@@ -98,7 +99,7 @@ class ContentController {
     await dirExists(dir);
     const destPath = `${dir}/${file.name}`;
     const reader = fs.createReadStream(
-      file.path
+      file.path,
       // 设置分片大小
       // { highWaterMark: 1 * 1024 }
     );
@@ -161,6 +162,36 @@ class ContentController {
         msg: "验证码错误，发布文章失败",
       };
     }
+  }
+
+  async addWxPost(ctx) {
+    const body = ctx.request.body;
+    const user = await User.findById({ _id: ctx._id });
+    const flag = await wxMsgCheck(body.content || "", { user, title: body.title });
+    if (!flag) {
+      ctx.body = {
+        code: 500,
+        msg: "内容安全校验失败，请检查",
+      };
+      return;
+    }
+    if (user.favs < body.fav) {
+      ctx.body = {
+        code: 501,
+        msg: "积分不足，发布失败",
+      };
+      return;
+    } else {
+      await User.updateOne({ _id: ctx._id }, { $inc: { favs: -body.fav } });
+    }
+    const newPost = new Post(body);
+    newPost.uid = ctx._id;
+    const result = await newPost.save();
+    ctx.body = {
+      code: 200,
+      data: result,
+      msg: "发布文章成功",
+    };
   }
 
   async updatePost(ctx) {

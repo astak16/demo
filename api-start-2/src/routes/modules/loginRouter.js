@@ -27,4 +27,7 @@ router.post("/loginByPhone", loginController.loginByPhone);
 // 获取用户手机号
 router.post("/getMobile", loginController.getMobile);
 
+// 扫码登录
+router.post("/wxOauth", loginController.wxOauth);
+
 export default router;
