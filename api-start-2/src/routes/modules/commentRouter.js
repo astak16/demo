@@ -1,4 +1,4 @@
-import Router from "koa-router";
+import Router from "@koa/router";
 import CommentController from "@/api/CommentController";
 
 const router = new Router();

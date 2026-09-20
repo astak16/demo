@@ -1,15 +1,16 @@
 import axios from "axios";
-import config from "@/config";
+import { AppID, AppSecret } from "@/config";
 import crypto from "crypto";
 import WXBizDataCrypt from "./WXBizDataCrypt";
 import { getValue, setValue } from "@/config/RedisConfig";
 import log4js from "@/config/Log4j";
 import qs from "qs";
 import sharp from "sharp";
-import del from "del";
+import { deleteAsync as del } from "del";
 import FormData from "form-data";
 import fs, { accessSync, constants } from "fs";
-import mkdir from "make-dir";
+import { makeDirectory as mkdir } from "make-dir";
+import { v4 as uuidv4 } from "uuid";
 import path from "path";
 
 const logger = log4js.getLogger("error");
@@ -35,7 +36,7 @@ instance.interceptors.response.use(async (res) => {
 
 export const wxGetOpenData = async (code) => {
   const res = await instance.get(
-    `https://api.weixin.qq.com/sns/jscode2session?appid=${config.AppID}&secret=${config.AppSecret}&js_code=${code}&grant_type=authorization_code`,
+    `https://api.weixin.qq.com/sns/jscode2session?appid=${AppID}&secret=${AppSecret}&js_code=${code}&grant_type=authorization_code`,
   );
   return res.data;
 };
@@ -53,7 +54,7 @@ export const wxGetUserInfo = async (user, code) => {
     if (sha1.digest("hex") !== signature) {
       return new Promise.reject(new Error({ code: 500, msg: "签名校验失败" }));
     }
-    const wxBizDataCrypt = new WXBizDataCrypt(config.AppID, sessionKey);
+    const wxBizDataCrypt = new WXBizDataCrypt(AppID, sessionKey);
     //   3. 用户加密数据的解密
     const userInfo = wxBizDataCrypt.decryptData(encryptedData, iv);
     return { ...userInfo, ...data, errcode: 0 };

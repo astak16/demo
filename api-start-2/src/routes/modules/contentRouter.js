@@ -1,4 +1,4 @@
-import Router from "koa-router";
+import Router from "@koa/router";
 import ContentController from "@/api/ContentController";
 
 const router = new Router();
@@ -13,7 +13,7 @@ router.post("/upload", ContentController.uploadImg);
 router.post("/add", ContentController.addPost);
 
 // 小程序发表新帖
-router.post("/wxAdd", ContentController.wxAdd);
+router.post("/wxAdd", ContentController.addWxPost);
 
 // 更新帖子
 router.post("/update", ContentController.updatePost);

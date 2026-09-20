@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 import { DB_URL, DB_NAME, MONGO_HOSTNAME } from ".";
 
-mongoose.connect(DB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(DB_URL);
 
 // 连接成功
 mongoose.connection.on("connected", () => {

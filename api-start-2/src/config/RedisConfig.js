@@ -28,7 +28,7 @@ export const setValue = async (key, value, time) => {
   }
   if (typeof value === "string") {
     if (typeof time !== "undefined") {
-      await client.set(key, value, "EX", time);
+      await client.set(key, value, { EX: time });
     } else {
       await client.set(key, value);
     }
@@ -44,12 +44,10 @@ export const getValue = async (key) => {
   return await client.get(key);
 };
 
-export const delValue = (key) => {
-  client.del(key, (err, res) => {
-    if (res === 1) {
-      console.log("delete successfully");
-    } else {
-      console.log("delete redis key error: " + err);
-    }
-  });
+export const delValue = async (key) => {
+  const result = await client.del(key);
+  if (result === 1) {
+    console.log("delete successfully");
+  }
+  return result;
 };

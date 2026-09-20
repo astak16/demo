@@ -1,4 +1,4 @@
-import Router from "koa-router";
+import Router from "@koa/router";
 import contentController from "@/api/ContentController";
 import userController from "@/api/UserController";
 import adminController from "@/api/AdminController";

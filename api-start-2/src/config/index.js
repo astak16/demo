@@ -12,7 +12,7 @@ export const JWT_SECRET = "abcdefghijklmnopqrstuvwxyz";
 const MONGO_USERNAME = process.env.DB_USER || "root";
 const MONGO_PASSWORD = process.env.DB_PASS || "root";
 export const MONGO_HOSTNAME = process.env.DB_HOST || "localhost";
-const MONGO_PORT = process.env.DB_PORT || "10050";
+const MONGO_PORT = process.env.DB_PORT || "27000";
 export const DB_NAME = process.env.DB_NAME || "testdb";
 
 // mongodb://localhost:10050/
