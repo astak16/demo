@@ -1,6 +1,11 @@
 import svgCaptcha from "svg-captcha";
 import { getValue, setValue } from "@/config/RedisConfig";
 import { subIds } from "@/config";
+import dayjs from "dayjs";
+import PostModel from "@/model/Post";
+import Comments from "@/model/Comments";
+import User from "@/model/User";
+import SignRecord from "@/model/SignRecord";
 
 class PublicController {
   async getCaptcha(ctx) {

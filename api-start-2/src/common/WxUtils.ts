@@ -235,7 +235,7 @@ export const wxImgCheck = async (file) => {
     // 3.请求接口 -> 返回结果
     const result = await instance.post(`https://api.weixin.qq.com/wxa/img_sec_check?access_token=${accessToken}`, form, { headers });
     // 校验成功 -> 删除tmp数据 -> 判断路径中的文件是否存在
-    console.log("🚀 ~ file: WxUtils.js ~ line 232 ~ wxImgCheck ~ result", result);
+    console.log("wxImgCheck result", result);
     await checkAndDelFile(newPath);
     return result.status === 200 && result.data && result.data.errcode === 0;
     // if (result.status === 200 && result.data && result.data.errcode === 0) {

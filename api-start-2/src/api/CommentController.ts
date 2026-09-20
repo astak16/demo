@@ -26,7 +26,7 @@ class CommentController {
     const tid = params.tid;
     const page = params.page ? params.page : 0;
     const limit = params.limit ? params.limit : 10;
-    const result = await Comments.getCommentsList(tid, page, limit);
+    let result = await Comments.getCommentsList(tid, page, limit);
     let obj;
     if (ctx.headers.authorization) {
       obj = await getJWTPayload(ctx.headers.authorization);

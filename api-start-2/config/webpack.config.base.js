@@ -8,7 +8,7 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const webpackconfig = {
   target: "node",
   entry: {
-    server: path.join(utils.APP_PATH, "index.js"),
+    server: path.join(utils.APP_PATH, "index.ts"),
   },
   resolve: {
     ...utils.getWebpackResolveConfig(),
@@ -20,7 +20,7 @@ const webpackconfig = {
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.(ts|tsx|js|jsx)$/,
         use: {
           loader: "babel-loader",
         },

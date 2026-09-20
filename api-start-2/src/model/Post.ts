@@ -17,7 +17,7 @@ const PostSchema = new Schema({
   isTop: { type: String, default: "0" },
   sort: { type: String, default: 100 },
   tags: {
-    type: Array,
+    type: [{ name: String, class: String }],
     default: [
       // {
       //   name: '',

@@ -11,7 +11,7 @@ exports.getWebpackResolveConfig = function (customAlias = {}) {
   const appPath = exports.APP_PATH;
   return {
     modules: [appPath, "node_modules"],
-    extensions: [".js", ".json"],
+    extensions: [".ts", ".js", ".json"],
     alias: {
       "@": appPath,
       ...customAlias,

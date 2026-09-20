@@ -3,10 +3,17 @@ import { JWT_SECRET } from "@/config";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+import type { AuthPayload, MenuNode, JsonValue } from "@/types";
 
-export const getJWTPayload = async (token) => jwt.verify(token.split(" ")[1], JWT_SECRET);
+export const getJWTPayload = async (token: string): Promise<AuthPayload> => {
+  const payload = jwt.verify(token.split(" ")[1], JWT_SECRET);
+  if (typeof payload === "string" || !payload || typeof payload !== "object" || !("_id" in payload)) {
+    throw new Error("无效的 token");
+  }
+  return payload as AuthPayload;
+};
 
-export const generateToken = (payload, expire = "1h") => {
+export const generateToken = (payload: AuthPayload, expire = "1h"): string => {
   if (payload) {
     return jwt.sign(payload, JWT_SECRET, {
       expiresIn: expire,
@@ -16,9 +23,9 @@ export const generateToken = (payload, expire = "1h") => {
   }
 };
 
-export const checkCode = async (key, value) => {
+export const checkCode = async (key: string, value: string): Promise<boolean> => {
   const redisData = await getValue(key);
-  if (redisData) {
+  if (typeof redisData === "string") {
     if (redisData.toLowerCase() === value.toLowerCase()) {
       return true;
     } else {
@@ -39,7 +46,7 @@ const mkdir = (path) => new Promise((resolve) => fs.mkdir(path, (err) => (err ? 
 export const dirExists = async (dir) => {
   const isExists = await getStats(dir);
   // 如果该路径存在且不是文件，返回 true
-  if (isExists && isExists.isDirectory()) {
+  if (isExists && typeof isExists !== "boolean" && isExists.isDirectory()) {
     return true;
   } else if (isExists) {
     // 路径存在，但是是文件，返回 false
@@ -60,30 +67,27 @@ export const dirExists = async (dir) => {
   }
 };
 
-export const rename = (obj, key, newKey) => {
-  if (Object.keys(obj).includes(key) !== -1) {
+export const rename = (obj: Record<string, JsonValue>, key: string, newKey: string): Record<string, JsonValue> => {
+  if (Object.keys(obj).includes(key)) {
     obj[newKey] = obj[key];
     delete obj[key];
   }
   return obj;
 };
 
-export const sortMenus = (tree) => {
-  tree = sortObj(tree, "sort");
-  if (tree.children && tree.children.length > 0) {
-    tree.children = sortMenus(tree.children, "sort");
-  }
-  if (tree.operations && tree.operations.length > 0) {
-    tree.operations = sortMenus(tree.operations, "sort");
-  }
-  return tree;
+export const sortMenus = (tree: MenuNode[]): MenuNode[] => {
+  return sortObj(tree, "sort").map((item) => ({
+    ...item,
+    children: item.children ? sortMenus(item.children) : item.children,
+    operations: item.operations ? sortObj(item.operations, "sort") : item.operations,
+  }));
 };
 
-const sortObj = (arr, property) => {
-  return arr.sort((m, n) => m[property] - n[property]);
+const sortObj = (arr: MenuNode[], property: "sort"): MenuNode[] => {
+  return arr.sort((m, n) => Number(m[property] ?? 0) - Number(n[property] ?? 0));
 };
 
-export const getMenuData = (treeData, rights, flag) => {
+export const getMenuData = (treeData: MenuNode[], rights: string[], flag = false): MenuNode[] => {
   const arr = [];
   for (let i = 0; i < treeData.length; i++) {
     const item = treeData[i];
@@ -115,7 +119,7 @@ const flatten = (arr) => {
   return arr;
 };
 
-export const getRights = (tree, menus) => {
+export const getRights = (tree: MenuNode[], menus: string[]): string[] => {
   let arr = [];
   for (let item of tree) {
     if (item.operations && item.operations.length > 0) {

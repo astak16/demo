@@ -6,6 +6,7 @@ import Comments from "@/model/Comments";
 import SignRecord from "../model/SignRecord";
 import dayjs from "dayjs";
 import { getMenuData, getRights, sortMenus } from "@/common/Utils";
+import qs from "qs";
 
 const weekday = require("dayjs/plugin/weekday");
 dayjs.extend(weekday);

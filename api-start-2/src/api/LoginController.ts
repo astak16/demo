@@ -4,6 +4,7 @@ import { checkCode, generateToken, getJWTPayload, getTempName } from "@/common/U
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
+import moment from "dayjs";
 import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from "@/common/WxUtils";
 import SignRecord from "@/model/SignRecord";
 import { getValue, delValue } from "@/config/RedisConfig";

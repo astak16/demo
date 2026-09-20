@@ -6,7 +6,7 @@ const RoleSchema = new Schema({
   name: { type: String, default: "" },
   role: { type: String, default: "" },
   desc: { type: String, default: "" },
-  menu: { type: Array, default: [] },
+  menu: { type: [String], default: [] },
 });
 
 const Roles = mongoose.model("roles", RoleSchema);
