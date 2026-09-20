@@ -1,6 +1,6 @@
 import jsonwebtoken from "jsonwebtoken";
 import { JWT_SECRET, AppID } from "@/config";
-import { checkCode, generateToken, getTempName } from "@/common/Utils";
+import { checkCode, generateToken, getJWTPayload, getTempName } from "@/common/Utils";
 import UserModel from "@/model/User";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
@@ -121,6 +121,51 @@ class LoginController {
       code: 500,
       msg,
     };
+  }
+
+  // 密码重置
+  async reset(ctx) {
+    const { body } = ctx.request;
+    const sid = body.sid;
+    const code = body.code;
+    let msg = {};
+    // 验证图片验证码的时效性、正确性
+    const result = await checkCode(sid, code);
+    if (!body.key) {
+      ctx.body = {
+        code: 500,
+        msg: "请求参数异常，请重新获取链接",
+      };
+      return;
+    }
+    if (!result) {
+      msg.code = ["验证码已经失效，请重新获取！"];
+      ctx.body = {
+        code: 500,
+        msg: msg,
+      };
+      return;
+    }
+    const token = await getValue(body.key);
+    if (token) {
+      const obj = getJWTPayload("Bearer " + token);
+      body.password = await bcrypt.hash(body.password, 5);
+      await User.updateOne(
+        { _id: obj._id },
+        {
+          password: body.password,
+        },
+      );
+      ctx.body = {
+        code: 200,
+        msg: "更新用户密码成功！",
+      };
+    } else {
+      ctx.body = {
+        code: 500,
+        msg: "链接已经失效",
+      };
+    }
   }
 
   async wxOauth(ctx) {

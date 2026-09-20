@@ -15,7 +15,14 @@ router.post("/add", ContentController.addPost);
 // 小程序发表新帖
 router.post("/wxAdd", ContentController.wxAdd);
 
-// 发表新帖
+// 更新帖子
 router.post("/update", ContentController.updatePost);
+
+router.post("/updateId", ContentController.updatePostByTid);
+
+router.post("/updatePostSettings", ContentController.updatePostBatch);
+
+// 删除帖子
+router.post("/delete", ContentController.deletePost);
 
 export default router;

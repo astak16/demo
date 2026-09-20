@@ -20,6 +20,9 @@ router.post("/changePassword", userController.changePassword);
 // 取消，设置收藏
 router.get("/setCollect", userController.setCollect);
 
+// 获取点赞记录
+router.get("/getHands", userController.getHands);
+
 // 获取收藏列表
 router.get("/collect", userController.getCollectByUid);
 
@@ -36,5 +39,5 @@ router.get("/getmsg", userController.getMsg);
 router.get("/setmsg", userController.setMsg);
 
 // 保存错误日志
-router.post("addError", errorController.addError);
+router.post("/addError", errorController.addError);
 export default router;

@@ -15,6 +15,9 @@ router.post("/login", loginController.login);
 // 注册用户
 router.post("/reg", loginController.reg);
 
+// 密码重置
+router.post("/reset", loginController.reset);
+
 // 刷新
 router.post("/refresh", loginController.refresh);
 

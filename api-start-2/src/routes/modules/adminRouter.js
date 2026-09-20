@@ -10,16 +10,25 @@ router.prefix("/admin");
 
 // 标签页面
 // 获取标签列表
-// router.get("/get-tags", contentController.getTags);
+router.get("/getTags", contentController.getTags);
 
-// // 添加标签
-// router.post("/add-tag", contentController.addTag);
+// 添加标签
+router.post("/addTag", contentController.addTag);
 
-// // 删除标签
-// router.post("/remove-tag", contentController.removeTag);
+// 删除标签
+router.post("/removeTag", contentController.removeTag);
 
-// // 编辑标签
-// router.post("/edit-tag", contentController.editTag);
+// 编辑标签
+router.post("/editTag", contentController.updateTag);
+
+// 获取评论
+router.get("/getComments", adminController.getCommentsAll);
+
+// 删除评论
+router.post("/deleteComments", adminController.deleteCommentsBatch);
+
+// 批量更新评论
+router.post("/updateCommentsBatch", adminController.updateCommentsBatch);
 
 // 用户管理
 // 查询所有用户

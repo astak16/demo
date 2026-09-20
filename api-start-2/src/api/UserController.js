@@ -193,6 +193,24 @@ class UserController {
       };
     }
   }
+
+  // 获取历史消息
+  // 记录评论之后，给作者发送消息
+  async getHands(ctx) {
+    const params = ctx.query;
+    const page = params.page ? params.page : 0;
+    const limit = params.limit ? parseInt(params.limit) : 0;
+    // 方法一： 嵌套查询 -> aggregate
+    // 方法二： 通过冗余换时间
+    const obj = await getJWTPayload(ctx.header.authorization);
+    const result = await CommentsHands.getHandsByUid(obj._id, page, limit);
+
+    ctx.body = {
+      code: 200,
+      data: result,
+    };
+  }
+
   async getCollectByUid(ctx) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);

@@ -198,6 +198,51 @@ class AdminController {
     result = { inforCardData, pieData, monthData, weekData };
     ctx.body = { code: 200, data: result };
   }
+
+  async getCommentsAll(ctx) {
+    const params = qs.parse(ctx.query);
+    let options = {};
+    if (params.options) {
+      options = params.options;
+    }
+    const page = params.page ? parseInt(params.page) : 0;
+    const limit = params.limit ? parseInt(params.limit) : 20;
+    // 使用MongoDB中的视图，效率提升1倍
+    // const test = await CommentsUsers.find({ 'uid.name': { $regex: 'admin1', $options: 'i' } })
+    const result = await Comments.getCommentsOptions(options, page, limit);
+    let total = await Comments.getCommentsOptionsCount(options);
+    if (typeof total === "object") {
+      if (total.length > 0) {
+        total = total[0].count;
+      } else {
+        total = 0;
+      }
+    }
+    ctx.body = {
+      code: 200,
+      data: result,
+      total,
+    };
+  }
+
+  async updateCommentsBatch(ctx) {
+    const { body } = ctx.request;
+    const result = await Comments.updateMany({ _id: { $in: body.ids } }, { $set: { ...body.settings } });
+    ctx.body = {
+      code: 200,
+      data: result,
+    };
+  }
+
+  async deleteCommentsBatch(ctx) {
+    const { body } = ctx.request;
+    const result = await Comments.deleteMany({ _id: { $in: body.ids } });
+    ctx.body = {
+      code: 200,
+      msg: "删除成功",
+      data: result,
+    };
+  }
 }
 
 export default new AdminController();
