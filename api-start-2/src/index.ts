@@ -1,25 +1,27 @@
 import Koa from "koa";
-import { port } from "./config";
+import { port } from "./config/index.ts";
 import compose from "koa-compose";
-import { run } from "./common/init";
+import { run } from "./common/init.ts";
 import JWT from "koa-jwt";
 import statics from "koa-static";
 import path from "path";
+import { fileURLToPath } from "url";
 import koaBody from "koa-body";
 import cors from "@koa/cors";
 import helmet from "koa-helmet";
 import jsonutil from "koa-json";
-import { JWT_SECRET } from "./config";
-import ErrorHandle from "./common/ErrorHandle";
-import router from "./routes/routes";
-import WebSocketServer from "./config/WebSocket";
-import Auth from "./common/Auth";
-import { init } from "@/config/Init";
+import { JWT_SECRET } from "./config/index.ts";
+import ErrorHandle from "./common/ErrorHandle.ts";
+import router from "./routes/routes.ts";
+import WebSocketServer from "./config/WebSocket.ts";
+import Auth from "./common/Auth.ts";
+import { init } from "./config/Init.ts";
 // import logger from "koa-logger";
-import log4js from "./config/Log4j";
-import logger1 from "./common/Logger";
-import { isDevMode } from "./config";
-import "./common/Cron";
+import log4js from "./config/Log4j.ts";
+import logger1 from "./common/Logger.ts";
+import "./common/Cron.ts";
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 const app = new Koa();
 const ws = new WebSocketServer();
@@ -36,7 +38,7 @@ const middleware = compose([
     onError: (err) => console.log("koaBodyError", err),
   }),
   cors(),
-  statics(path.join(__dirname, "../public")),
+  statics(path.join(currentDir, "../public")),
   jsonutil({ pretty: false, param: "pretty" }),
   helmet(),
   ErrorHandle,
@@ -44,13 +46,9 @@ const middleware = compose([
   Auth,
   // logger(),
   // isDevMode?
-  log4js.koaLogger(log4js.getLogger("access", { level: "auto" })),
-  log4js.koaLogger(log4js.getLogger("http", { level: "auto" })),
+  log4js.koaLogger(log4js.getLogger("access"), { level: "auto" }),
+  log4js.koaLogger(log4js.getLogger("http"), { level: "auto" }),
 ]);
-
-if (!isDevMode) {
-  app.use(compose());
-}
 
 app.use(middleware);
 app.use(router());

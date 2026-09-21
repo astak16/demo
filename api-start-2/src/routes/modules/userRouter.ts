@@ -1,7 +1,7 @@
 import Router from "@koa/router";
-import userController from "@/api/UserController";
-import contentController from "@/api/ContentController";
-import errorController from "@/api/ErrorController";
+import userController from "../../api/UserController.ts";
+import contentController from "../../api/ContentController.ts";
+import errorController from "../../api/ErrorController.ts";
 
 const router = new Router();
 

@@ -1,15 +1,18 @@
-import { getValue } from "@/config/RedisConfig";
-import { getJWTPayload } from "./Utils";
-import { publicPath } from "@/config";
-import AdminController from "@/api/AdminController";
+import { getValue } from "../config/RedisConfig.ts";
+import { getJWTPayload } from "./Utils.ts";
+import { publicPath } from "../config/index.ts";
+import AdminController from "../api/AdminController.ts";
+import type { Next } from "koa";
+import type { AppContext } from "../types.ts";
 
-export default async (ctx, next) => {
+export default async (ctx: AppContext, next: Next) => {
   const headers = ctx.header.authorization;
   if (typeof headers !== "undefined") {
     const obj = await getJWTPayload(headers);
     if (obj && obj._id) {
       ctx._id = obj._id;
-      const admins = JSON.parse(await getValue("admin"));
+      const adminValue = await getValue("admin");
+      const admins: string[] = adminValue ? JSON.parse(adminValue) : [];
       if (admins.includes(obj._id)) {
         ctx.isAdmin = true;
         await next();

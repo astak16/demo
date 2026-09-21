@@ -1,6 +1,6 @@
 // 每隔7200秒执行一次 刷新accessToken
 import { CronJob } from 'cron'
-import { wxGetAccessToken } from './WxUtils'
+import { wxGetAccessToken } from './WxUtils.ts'
 
 // Seconds: 0-59
 // Minutes: 0-59

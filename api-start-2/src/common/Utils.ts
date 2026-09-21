@@ -1,9 +1,9 @@
-import { getValue } from "@/config/RedisConfig";
-import { JWT_SECRET } from "@/config";
+import { getValue } from "../config/RedisConfig.ts";
+import { JWT_SECRET } from "../config/index.ts";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import type { AuthPayload, MenuNode, JsonValue } from "@/types";
+import type { AuthPayload, MenuNode, JsonValue } from "../types.ts";
 
 export const getJWTPayload = async (token: string): Promise<AuthPayload> => {
   const payload = jwt.verify(token.split(" ")[1], JWT_SECRET);
@@ -13,7 +13,7 @@ export const getJWTPayload = async (token: string): Promise<AuthPayload> => {
   return payload as AuthPayload;
 };
 
-export const generateToken = (payload: AuthPayload, expire = "1h"): string => {
+export const generateToken = (payload: AuthPayload, expire: import("jsonwebtoken").SignOptions["expiresIn"] = "1h"): string => {
   if (payload) {
     return jwt.sign(payload, JWT_SECRET, {
       expiresIn: expire,
@@ -36,14 +36,14 @@ export const checkCode = async (key: string, value: string): Promise<boolean> =>
   }
 };
 
-const getStats = (path) =>
+const getStats = (path: string): Promise<fs.Stats | false> =>
   new Promise((resolve) => {
     fs.stat(path, (err, stats) => (err ? resolve(false) : resolve(stats)));
   });
 
-const mkdir = (path) => new Promise((resolve) => fs.mkdir(path, (err) => (err ? resolve(false) : resolve(true))));
+const mkdir = (path: string): Promise<boolean> => new Promise((resolve) => fs.mkdir(path, (err) => (err ? resolve(false) : resolve(true))));
 
-export const dirExists = async (dir) => {
+export const dirExists = async (dir: string): Promise<boolean> => {
   const isExists = await getStats(dir);
   // 如果该路径存在且不是文件，返回 true
   if (isExists && typeof isExists !== "boolean" && isExists.isDirectory()) {
@@ -88,7 +88,7 @@ const sortObj = (arr: MenuNode[], property: "sort"): MenuNode[] => {
 };
 
 export const getMenuData = (treeData: MenuNode[], rights: string[], flag = false): MenuNode[] => {
-  const arr = [];
+  const arr: MenuNode[] = [];
   for (let i = 0; i < treeData.length; i++) {
     const item = treeData[i];
     if (item.type === "menu") {
@@ -112,15 +112,15 @@ export const getMenuData = (treeData: MenuNode[], rights: string[], flag = false
   return sortObj(arr, "sort");
 };
 
-const flatten = (arr) => {
+const flatten = (arr: Array<string | string[]>): string[] => {
   while (arr.some((item) => Array.isArray(item))) {
-    arr = [].concat(...arr);
+    arr = ([] as string[]).concat(...arr);
   }
-  return arr;
+  return arr.flat();
 };
 
 export const getRights = (tree: MenuNode[], menus: string[]): string[] => {
-  let arr = [];
+  let arr: Array<string | string[]> = [];
   for (let item of tree) {
     if (item.operations && item.operations.length > 0) {
       for (let op of item.operations) {

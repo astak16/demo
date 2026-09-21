@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import moogoose from "../config/DBHelpler";
+import moogoose from "../config/DBHelpler.ts";
 
 const Schema = moogoose.Schema;
 
@@ -11,11 +11,10 @@ const UserCollectSchema = new Schema({
 });
 
 UserCollectSchema.pre("save", function (next) {
-  this.created = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+  this.created = new Date();
 });
 
-UserCollectSchema.post("save", function (error, doc, next) {
+UserCollectSchema.post("save", function (error: Error & { code?: number; name: string }, _doc: unknown, next: (error?: Error) => void) {
   if (error.name === "MongoError" && error.code === 11000) {
     next(new Error("There was a duplicate key error"));
   } else {
@@ -37,6 +36,12 @@ UserCollectSchema.statics = {
   },
 };
 
-const UserCollect = moogoose.model("user_collect", UserCollectSchema);
+const UserCollectBase = moogoose.model("user_collect", UserCollectSchema);
+type UserCollectWithStatics = typeof UserCollectBase & {
+  getListByUid(id: string, page: number, limit: number): ReturnType<typeof UserCollectBase.find>;
+  countByUid(id: string): ReturnType<typeof UserCollectBase.countDocuments>;
+};
+
+const UserCollect = UserCollectBase as UserCollectWithStatics;
 
 export default UserCollect;

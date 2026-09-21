@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { DB_URL, DB_NAME, MONGO_HOSTNAME } from ".";
+import { DB_URL, DB_NAME, MONGO_HOSTNAME } from "./index.ts";
 
 mongoose.connect(DB_URL);
 

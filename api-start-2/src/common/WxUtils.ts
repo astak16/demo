@@ -1,9 +1,9 @@
 import axios from "axios";
-import { AppID, AppSecret } from "@/config";
+import { AppID, AppSecret } from "../config/index.ts";
 import crypto from "crypto";
-import WXBizDataCrypt from "./WXBizDataCrypt";
-import { getValue, setValue } from "@/config/RedisConfig";
-import log4js from "@/config/Log4j";
+import WXBizDataCrypt from "./WXBizDataCrypt.ts";
+import { getValue, setValue } from "../config/RedisConfig.ts";
+import log4js from "../config/Log4j.ts";
 import qs from "qs";
 import sharp from "sharp";
 import { deleteAsync as del } from "del";
@@ -14,6 +14,18 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 
 const logger = log4js.getLogger("error");
+
+interface WxMessageUser {
+  openid?: string;
+  name?: string;
+  remark?: string;
+}
+
+interface WxMessageOptions {
+  user: WxMessageUser;
+  scene: number;
+  title: string;
+}
 
 const instance = axios.create({ timeout: 10000 });
 instance.interceptors.response.use(async (res) => {
@@ -34,14 +46,14 @@ instance.interceptors.response.use(async (res) => {
   return res;
 });
 
-export const wxGetOpenData = async (code) => {
+export const wxGetOpenData = async (code: string) => {
   const res = await instance.get(
     `https://api.weixin.qq.com/sns/jscode2session?appid=${AppID}&secret=${AppSecret}&js_code=${code}&grant_type=authorization_code`,
   );
   return res.data;
 };
 
-export const wxGetUserInfo = async (user, code) => {
+export const wxGetUserInfo = async (user: any, code: string) => {
   // 1. 获取用户的 openData -> session_key
   const data = await wxGetOpenData(code);
   const { session_key: sessionKey, errcode } = data;
@@ -52,7 +64,7 @@ export const wxGetUserInfo = async (user, code) => {
     sha1.update(rawData);
     sha1.update(sessionKey);
     if (sha1.digest("hex") !== signature) {
-      return new Promise.reject(new Error({ code: 500, msg: "签名校验失败" }));
+      return Promise.reject(new Error("签名校验失败"));
     }
     const wxBizDataCrypt = new WXBizDataCrypt(AppID, sessionKey);
     //   3. 用户加密数据的解密
@@ -86,7 +98,7 @@ export const wxGetAccessToken = async (flag = true) => {
 };
 
 // 发送订阅消息
-export const wxSendMessage = async (options) => {
+export const wxSendMessage = async (options: any) => {
   // POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCESS_TOKEN
   let accessToken = await wxGetAccessToken();
   try {
@@ -102,8 +114,8 @@ export const wxSendMessage = async (options) => {
 // title - 标题 可选
 // signature - 签名 也是可选
 export const wxMsgCheck = async (
-  content,
-  { user: { openid, name: nickname, remark: signature }, scene, title } = {
+  content: string,
+  { user: { openid, name: nickname, remark: signature }, scene, title }: WxMessageOptions = {
     user: {},
     scene: 3,
     title: "",
@@ -180,9 +192,9 @@ export const wxMsgCheck = async (
   }
 };
 
-export const getHeaders = (form) => {
+export const getHeaders = (form: FormData) => {
   return new Promise((resolve, reject) => {
-    form.getLength((err, length) => {
+    form.getLength((err: Error | null, length: number) => {
       if (err) {
         reject(err);
       }
@@ -197,7 +209,7 @@ export const getHeaders = (form) => {
   });
 };
 
-export const checkAndDelFile = async (path) => {
+export const checkAndDelFile = async (path: string) => {
   try {
     accessSync(path, constants.R_OK | constants.W_OK);
     await del(path);
@@ -207,7 +219,7 @@ export const checkAndDelFile = async (path) => {
 };
 
 // 图片内容安全
-export const wxImgCheck = async (file) => {
+export const wxImgCheck = async (file: { path: string }) => {
   // POST https://api.weixin.qq.com/wxa/img_sec_check?access_token=ACCESS_TOKEN
   const accessToken = await wxGetAccessToken();
   // 1.保证图片 -> 判断分辨率 -> sharp 750 * 1334
@@ -233,7 +245,9 @@ export const wxImgCheck = async (file) => {
     form.append("media", stream);
     const headers = await getHeaders(form);
     // 3.请求接口 -> 返回结果
-    const result = await instance.post(`https://api.weixin.qq.com/wxa/img_sec_check?access_token=${accessToken}`, form, { headers });
+    const result = await instance.post(`https://api.weixin.qq.com/wxa/img_sec_check?access_token=${accessToken}`, form, {
+      headers: headers as Record<string, string>,
+    });
     // 校验成功 -> 删除tmp数据 -> 判断路径中的文件是否存在
     console.log("wxImgCheck result", result);
     await checkAndDelFile(newPath);

@@ -1,17 +1,20 @@
 import jsonwebtoken from "jsonwebtoken";
-import { JWT_SECRET, AppID } from "@/config";
-import { checkCode, generateToken, getJWTPayload, getTempName } from "@/common/Utils";
-import UserModel from "@/model/User";
+import { JWT_SECRET, AppID } from "../config/index.ts";
+import { checkCode, generateToken, getJWTPayload, getTempName } from "../common/Utils.ts";
+import UserModel from "../model/User.ts";
+import User from "../model/User.ts";
+
+type HandlerContext = import("../types.ts").AppContext;
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import moment from "dayjs";
-import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from "@/common/WxUtils";
-import SignRecord from "@/model/SignRecord";
-import { getValue, delValue } from "@/config/RedisConfig";
-import WXBizDataCrypt from "@/common/WXBizDataCrypt";
-import { getOauth2AccessToken, getOpenDataByOpenId } from "../common/WxOauth";
+import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from "../common/WxUtils.ts";
+import SignRecord from "../model/SignRecord.ts";
+import { getValue, delValue } from "../config/RedisConfig.ts";
+import WXBizDataCrypt from "../common/WXBizDataCrypt.ts";
+import { getOauth2AccessToken, getOpenDataByOpenId } from "../common/WxOauth.ts";
 
-const addSign = async (user) => {
+const addSign = async (user: { toJSON: () => Record<string, any> }) => {
   const userObj = user.toJSON();
   const signRecord = await SignRecord.findByUid(userObj._id);
   if (signRecord !== null) {
@@ -29,9 +32,9 @@ const addSign = async (user) => {
 };
 
 class LoginController {
-  async forget(ctx) {}
+  async forget(_ctx: HandlerContext) {}
 
-  async login(ctx) {
+  async login(ctx: HandlerContext) {
     const { body } = ctx.request;
     let sid = body.sid;
     let code = body.code;
@@ -46,7 +49,7 @@ class LoginController {
         checkUserPassword = true;
       }
       if (checkUserPassword) {
-        const userObj = addSign(user);
+        const userObj = await addSign(user);
         const arr = ["password", "username", "roles"];
         arr.map((item) => {
           delete userObj[item];
@@ -73,7 +76,7 @@ class LoginController {
     }
   }
 
-  async refresh(ctx) {
+  async refresh(ctx: HandlerContext) {
     ctx.body = {
       code: 200,
       token: generateToken({ _id: ctx._id }, "60m"),
@@ -81,7 +84,7 @@ class LoginController {
     };
   }
 
-  async reg(ctx) {
+  async reg(ctx: HandlerContext) {
     const { body } = ctx.request;
     const sid = body.sid;
     const code = body.code;
@@ -90,13 +93,13 @@ class LoginController {
     if (await checkCode(sid, code)) {
       let user1 = await UserModel.findOne({ username: body.username });
       if (user1 && typeof user1.username !== "undefined") {
-        msg.username = ["此邮箱已经注册，可通过邮箱找回密码"];
+        msg = { ...msg, username: ["此邮箱已经注册，可通过邮箱找回密码"] };
         check = false;
       }
 
       let user2 = await UserModel.findOne({ name: body.name });
       if (user2 && typeof user2.name !== "undefined") {
-        msg.name = ["此昵称已经被占用，请更换"];
+        msg = { ...msg, name: ["此昵称已经被占用，请更换"] };
         check = false;
       }
       if (check) {
@@ -116,7 +119,7 @@ class LoginController {
         return;
       }
     } else {
-      msg.code = ["验证码已经失效，请重新获取！"];
+      msg = { ...msg, code: ["验证码已经失效，请重新获取！"] };
     }
     ctx.body = {
       code: 500,
@@ -125,7 +128,7 @@ class LoginController {
   }
 
   // 密码重置
-  async reset(ctx) {
+  async reset(ctx: HandlerContext) {
     const { body } = ctx.request;
     const sid = body.sid;
     const code = body.code;
@@ -140,7 +143,7 @@ class LoginController {
       return;
     }
     if (!result) {
-      msg.code = ["验证码已经失效，请重新获取！"];
+      msg = { ...msg, code: ["验证码已经失效，请重新获取！"] };
       ctx.body = {
         code: 500,
         msg: msg,
@@ -149,7 +152,7 @@ class LoginController {
     }
     const token = await getValue(body.key);
     if (token) {
-      const obj = getJWTPayload("Bearer " + token);
+      const obj = await getJWTPayload("Bearer " + token);
       body.password = await bcrypt.hash(body.password, 5);
       await User.updateOne(
         { _id: obj._id },
@@ -169,7 +172,7 @@ class LoginController {
     }
   }
 
-  async wxOauth(ctx) {
+  async wxOauth(ctx: HandlerContext) {
     const { body } = ctx.request;
     const { code, state } = body;
     if (code && state) {
@@ -179,9 +182,9 @@ class LoginController {
         ctx.body = { code: 500, msg: errmsg };
         return;
       }
-      const user = await UserModel.find({ openid });
+      const user = await UserModel.findOne({ openid });
       if (user) {
-        const userObj = addSign(user);
+        const userObj = await addSign(user);
         const arr = ["password", "username", "roles"];
         arr.map((item) => {
           delete userObj[item];
@@ -208,17 +211,17 @@ class LoginController {
         location: `${userInfo.country}${userInfo.province}${userInfo.city}`,
       });
       const userTemp = (await newUser.save()).toJSON();
-      const token = generateToken({ _id: userTemp._id }, "1d");
+      const token = generateToken({ _id: userTemp._id.toString() }, "1d");
       ctx.body = {
         code: 200,
         data: userTemp,
         token,
-        refreshToken: generateToken({ _id: userTemp._id }, "7d"),
+        refreshToken: generateToken({ _id: userTemp._id.toString() }, "7d"),
       };
     }
   }
 
-  async wxLogin(ctx) {
+  async wxLogin(ctx: HandlerContext) {
     const { body } = ctx.request;
     const { user, code } = body;
     if (!code) {
@@ -238,13 +241,13 @@ class LoginController {
         },
         miniprogram_state: "developer", // 正式：formal
       });
-      const token = generateToken({ _id: tmpUser._id });
-      const userInfo = addSign(tmpUser);
+      const token = generateToken({ _id: tmpUser._id.toString() });
+      const userInfo = await addSign(tmpUser);
       ctx.body = {
         code: 200,
         data: userInfo,
         token,
-        refreshToken: generateToken({ _id: userObj._id }, "7d"),
+        refreshToken: generateToken({ _id: tmpUser._id.toString() }, "7d"),
         notify: notify ? notify.data : "",
       };
     } else {
@@ -252,7 +255,7 @@ class LoginController {
     }
   }
 
-  async getMobile(ctx) {
+  async getMobile(ctx: HandlerContext) {
     const { body } = ctx.request;
     const { code, encryptedData, iv } = body;
     if (!code) {
@@ -265,13 +268,13 @@ class LoginController {
     ctx.body = { code: 200, data, msg: "获取手机号成功" };
   }
 
-  async loginByPhone(ctx) {
+  async loginByPhone(ctx: HandlerContext) {
     const { body } = ctx.request;
     const { phone, code } = body;
     const sms = await getValue(phone);
     if (sms && sms === code) {
-      await delValue(mobile);
-      const user = await UserModel.findOrCreateByMobile({ mobile });
+      await delValue(phone);
+      const user = await UserModel.findOrCreateByMobile({ mobile: phone });
       const userObj = await addSign(user);
       ctx.body = {
         code: 200,

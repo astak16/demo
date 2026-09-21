@@ -1,22 +1,25 @@
-import SignRecord from "@/model/SignRecord";
-import User from "@/model/User";
-import { getJWTPayload } from "@/common/Utils";
+import SignRecord from "../model/SignRecord.ts";
+import User from "../model/User.ts";
+import { getJWTPayload } from "../common/Utils.ts";
 import dayjs from "dayjs";
 import { v4 as uuid } from "uuid";
-import { getValue, setValue } from "@/config/RedisConfig";
-import { baseUrl, JWT_SECRET } from "@/config";
+import { getValue, setValue } from "../config/RedisConfig.ts";
+import { baseUrl, JWT_SECRET } from "../config/index.ts";
 import jwt from "jsonwebtoken";
 import qs from "qs";
 import bcrypt from "bcrypt";
-import UserCollect from "@/model/UserCollect";
-import Comments from "@/model/Comments";
+import UserCollect from "../model/UserCollect.ts";
+
+type HandlerContext = import("../types.ts").AppContext;
+import Comments from "../model/Comments.ts";
+import CommentsHands from "../model/CommentsHands.ts";
 
 class UserController {
-  async userSign(ctx) {
+  async userSign(ctx: HandlerContext) {
     const obj = await getJWTPayload(ctx.headers.authorization);
     const record = await SignRecord.findByUid(obj._id);
     const user = await User.findByID(obj._id);
-    let newRecord = {};
+    let newRecord: { save(): Promise<unknown> } | undefined;
     let result = {};
     if (record) {
       if (dayjs(record.created).isSame(dayjs(), "day")) {
@@ -87,7 +90,7 @@ class UserController {
     };
   }
 
-  async updateUserInfo(ctx) {
+  async updateUserInfo(ctx: HandlerContext) {
     const body = ctx.request.body;
     const obj = await getJWTPayload(ctx.headers.authorization);
     const user = await User.findOne({ _id: obj._id });
@@ -101,7 +104,7 @@ class UserController {
         return;
       }
       const key = uuid();
-      setValue(key, jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }));
+      setValue(key, jwt.sign({ _id: obj._id }, JWT_SECRET, { expiresIn: "30m" }), 30 * 60);
       const url = `${baseUrl}/public/reset-email?${qs.stringify({ key, username: body.username })}`;
       ctx.body = {
         code: 500,
@@ -129,7 +132,7 @@ class UserController {
     }
   }
 
-  async updateUserName(ctx) {
+  async updateUserName(ctx: HandlerContext) {
     const body = ctx.query;
     console.log("body", body);
     if (body.key) {
@@ -137,7 +140,7 @@ class UserController {
       const obj = await getJWTPayload("Bearer " + token);
       console.log("obj", obj);
       const a = await User.updateOne({ _id: obj._id }, { username: body.username });
-      console.log("a", a);
+      console.log("result", a);
       ctx.body = {
         code: 200,
         msg: "用户名修改成功",
@@ -145,7 +148,7 @@ class UserController {
     }
   }
 
-  async changePassword(ctx) {
+  async changePassword(ctx: HandlerContext) {
     const body = ctx.request.body;
     const obj = await getJWTPayload(ctx.headers.authorization);
     const user = await User.findOne({ _id: obj._id });
@@ -170,7 +173,7 @@ class UserController {
     }
   }
 
-  async setCollect(ctx) {
+  async setCollect(ctx: HandlerContext) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
     if (parseInt(params.isFav)) {
@@ -196,7 +199,7 @@ class UserController {
 
   // 获取历史消息
   // 记录评论之后，给作者发送消息
-  async getHands(ctx) {
+  async getHands(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? params.page : 0;
     const limit = params.limit ? parseInt(params.limit) : 0;
@@ -211,7 +214,7 @@ class UserController {
     };
   }
 
-  async getCollectByUid(ctx) {
+  async getCollectByUid(ctx: HandlerContext) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
     const result = await UserCollect.getListByUid(obj._id, params.page, params.limit ? parseInt(params.limit) : 10);
@@ -230,17 +233,16 @@ class UserController {
       };
     }
   }
-  async getBasicInfo(ctx) {
+  async getBasicInfo(ctx: HandlerContext) {
     const params = ctx.query;
     const uid = params.uid || ctx._id;
-    let user = await User.findByID(uid);
-    user = user.toJSON();
+    const user = { ...(await User.findByID(uid))?.toJSON(), isSign: false };
     const date = dayjs().format("YYYY-MM-DD");
     const result = await SignRecord.findOne({
       uid,
       created: { $gte: date + " 00:00:00" },
     });
-    if (result && result.uid) {
+    if (user && result && result.uid) {
       user.isSign = true;
     } else {
       user.isSign = false;
@@ -258,7 +260,7 @@ class UserController {
       };
     }
   }
-  async getMsg(ctx) {
+  async getMsg(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 0;
@@ -272,7 +274,7 @@ class UserController {
     };
   }
 
-  async setMsg(ctx) {
+  async setMsg(ctx: HandlerContext) {
     const params = ctx.query;
     if (params.id) {
       const result = await Comments.updateOne({ _id: params.id }, { isRead: "1" });
@@ -291,7 +293,7 @@ class UserController {
       }
     }
   }
-  async getUsers(ctx) {
+  async getUsers(ctx: HandlerContext) {
     let params = ctx.query;
     params = qs.parse(params);
     const page = params.page ? parseInt(params.page) : 0;
@@ -302,7 +304,7 @@ class UserController {
     // datepicker -> item: string, search -> array starttime,endtime
     // radio -> key-value $in
     // select -> key-value $in
-    let query = {};
+    let query: Record<string, unknown> = {};
     const hasSearch = Array.isArray(options.search)
       ? options.search.length > 0
       : typeof options.search === "string"
@@ -316,7 +318,7 @@ class UserController {
       } else if (options.item === "roles") {
         query = { roles: { $in: options.search } };
       } else if (["name", "username"].includes(options.item)) {
-        query[options.item] = { $regex: new RegExp(options.search) };
+        query[options.item] = { $regex: new RegExp(String(options.search)) };
       } else {
         query[options.item] = options.search;
       }
@@ -331,7 +333,7 @@ class UserController {
     };
   }
 
-  async deleteUserById(ctx) {
+  async deleteUserById(ctx: HandlerContext) {
     const { body } = ctx.request;
 
     const result = await User.deleteMany({ _id: { $in: body.ids } });
@@ -342,7 +344,7 @@ class UserController {
     };
   }
 
-  async updateUserById(ctx) {
+  async updateUserById(ctx: HandlerContext) {
     const { body } = ctx.request;
     const user = await User.findOne({ _id: body._id });
     if (!user) {
@@ -387,13 +389,13 @@ class UserController {
     }
   }
 
-  async updateUserBatch(ctx) {
+  async updateUserBatch(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await User.updateMany({ _id: { $in: body.ids } }, { $set: { ...body.settings } });
     ctx.body = { code: 200, data: result };
   }
 
-  async checkUsername(ctx) {
+  async checkUsername(ctx: HandlerContext) {
     const params = ctx.query;
     const user = await User.findOne({ username: params.username });
     // 默认是 1 - 校验通过，0-校验失败
@@ -408,7 +410,7 @@ class UserController {
     };
   }
 
-  async addUser(ctx) {
+  async addUser(ctx: HandlerContext) {
     const { body } = ctx.request;
     body.password = await bcrypt.hash(body.password, 5);
     const user = new User(body);
@@ -416,7 +418,7 @@ class UserController {
     const userObj = result.toJSON();
     const arr = ["password"];
     arr.map((item) => {
-      delete userObj[item];
+      delete (userObj as Record<string, unknown>)[item];
     });
     if (result) {
       ctx.body = {

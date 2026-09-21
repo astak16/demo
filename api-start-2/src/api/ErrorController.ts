@@ -1,8 +1,10 @@
-import ErrorRecord from "@/model/ErrorRecord";
+import ErrorRecord from "../model/ErrorRecord.ts";
 import qs from "qs";
 
+type HandlerContext = import("../types.ts").AppContext;
+
 class ErrorController {
-  async addError(ctx) {
+  async addError(ctx: HandlerContext) {
     const { body } = ctx.request;
     const error = new ErrorRecord(body);
     const result = await error.save();
@@ -13,15 +15,15 @@ class ErrorController {
     };
   }
 
-  async getErrorList(ctx) {
+  async getErrorList(ctx: HandlerContext) {
     const params = ctx.query;
-    const obj = qs.parse(params);
-    const query = obj.filter ? { ...obj.filter } : {};
+    const obj = qs.parse(qs.stringify(params));
+    const query: Record<string, unknown> = obj.filter && typeof obj.filter === "object" ? { ...obj.filter } : {};
 
     const methodFilter = await ErrorRecord.aggregate([{ $group: { _id: "$method" } }, { $sort: { _id: 1 } }]);
     const codeFilter = await ErrorRecord.aggregate([{ $group: { _id: "$code" } }, { $sort: { _id: 1 } }]);
 
-    if (query.method) {
+    if (typeof query.method === "string") {
       query.method = { $regex: query.method, $options: "i" };
     }
 
@@ -46,7 +48,7 @@ class ErrorController {
     };
   }
 
-  async deleteError(ctx) {
+  async deleteError(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await ErrorRecord.deleteMany({ _id: { $in: body.ids } });
     ctx.body = { code: 200, msg: "删除成功", data: result };

@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import ContentController from "@/api/ContentController";
+import ContentController from "../../api/ContentController.ts";
 
 const router = new Router();
 

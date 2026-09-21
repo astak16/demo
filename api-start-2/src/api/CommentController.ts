@@ -1,12 +1,14 @@
-import { checkCode, getJWTPayload } from "@/common/Utils";
-import Comments from "@/model/Comments";
-import CommentsHands from "@/model/CommentsHands";
-import PostModel from "@/model/Post";
-import User from "@/model/User";
+import { checkCode, getJWTPayload } from "../common/Utils.ts";
+import Comments from "../model/Comments.ts";
+import CommentsHands from "../model/CommentsHands.ts";
+import PostModel from "../model/Post.ts";
+import User from "../model/User.ts";
 import dayjs from "dayjs";
-import SignRecord from "@/model/SignRecord";
 
-const canReply = async (ctx) => {
+type HandlerContext = import("../types.ts").AppContext;
+import SignRecord from "../model/SignRecord.ts";
+
+const canReply = async (ctx: HandlerContext) => {
   let result = false;
   const obj = await getJWTPayload(ctx.headers.authorization);
   if (!obj._id) {
@@ -21,20 +23,20 @@ const canReply = async (ctx) => {
 };
 
 class CommentController {
-  async getComments(ctx) {
+  async getComments(ctx: HandlerContext) {
     const params = ctx.query;
     const tid = params.tid;
     const page = params.page ? params.page : 0;
     const limit = params.limit ? params.limit : 10;
-    let result = await Comments.getCommentsList(tid, page, limit);
+    const result = await Comments.getCommentsList(tid, page, limit);
+    let data: unknown = result;
     let obj;
     if (ctx.headers.authorization) {
       obj = await getJWTPayload(ctx.headers.authorization);
     }
     if (obj && obj._id) {
-      result = result.map((item) => item.toJSON());
-      for (let i = 0; i < result.length; i++) {
-        const item = result[i];
+      const response = result.map((item) => ({ ...item.toJSON(), _id: item._id, handed: "0" }));
+      for (const item of response) {
         item.handed = "0";
         const commentsHands = await CommentsHands.findOne({ cid: item._id, uid: obj._id });
         if (commentsHands && commentsHands.cid) {
@@ -43,17 +45,18 @@ class CommentController {
           }
         }
       }
+      data = response;
     }
     const total = await Comments.queryCount(tid);
     ctx.body = {
       code: 200,
       total,
-      data: result,
+      data,
       msg: "获取评论列表成功",
     };
   }
 
-  async addComment(ctx) {
+  async addComment(ctx: HandlerContext) {
     const check = await canReply(ctx);
     if (!check) {
       ctx.body = {
@@ -96,7 +99,7 @@ class CommentController {
     }
   }
 
-  async updateComment(ctx) {
+  async updateComment(ctx: HandlerContext) {
     const check = await canReply(ctx);
     if (!check) {
       ctx.body = {
@@ -114,7 +117,7 @@ class CommentController {
     };
   }
 
-  async setBest(ctx) {
+  async setBest(ctx: HandlerContext) {
     const obj = await getJWTPayload(ctx.headers.authorization);
     if (!obj && !obj._id) {
       ctx.body = {
@@ -158,7 +161,7 @@ class CommentController {
     }
   }
 
-  async setHands(ctx) {
+  async setHands(ctx: HandlerContext) {
     const obj = await getJWTPayload(ctx.headers.authorization);
     const params = ctx.query;
 
@@ -188,7 +191,7 @@ class CommentController {
     }
   }
 
-  async getCommentsPublic(ctx) {
+  async getCommentsPublic(ctx: HandlerContext) {
     const params = ctx.query;
     const result = await Comments.getCommentsPublic(params.uid, params.page, params.limit ? parseInt(params.limit) : 10);
     if (result.length > 0) {

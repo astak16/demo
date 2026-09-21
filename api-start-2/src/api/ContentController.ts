@@ -1,16 +1,19 @@
-import Post from "@/model/Post";
-import Links from "@/model/Links";
+import Post from "../model/Post.ts";
+import Links from "../model/Links.ts";
 import dayjs from "dayjs";
-import { UploadFilePath } from "@/config";
-import { checkCode, dirExists } from "@/common/Utils";
+import { UploadFilePath } from "../config/index.ts";
+import { checkCode, dirExists } from "../common/Utils.ts";
 import fs from "fs";
-import User from "@/model/User";
-import { getJWTPayload, rename } from "@/common/Utils";
-import UserCollect from "@/model/UserCollect";
-import { wxMsgCheck } from "@/common/WxUtils";
+import User from "../model/User.ts";
+import { getJWTPayload, rename } from "../common/Utils.ts";
+import UserCollect from "../model/UserCollect.ts";
+import { wxMsgCheck } from "../common/WxUtils.ts";
+import PostTags from "../model/PostTags.ts";
+
+type HandlerContext = import("../types.ts").AppContext;
 
 class ContentController {
-  async getPostList(ctx) {
+  async getPostList(ctx: HandlerContext) {
     // const post = new Post({
     //   title: "测试标题1",
     //   content: "测试内容1",
@@ -35,7 +38,7 @@ class ContentController {
     const page = parseInt(body.page) || 0;
     const limit = parseInt(body.limit) || 20;
     const sort = body.sort || "created";
-    const option = {};
+    const option: Record<string, unknown> = {};
 
     if (body.catalog) {
       option.catalog = body.catalog;
@@ -65,7 +68,7 @@ class ContentController {
     };
   }
 
-  async getLinks(ctx) {
+  async getLinks(ctx: HandlerContext) {
     const result = await Links.find({ type: "links" });
     ctx.body = {
       code: 200,
@@ -74,7 +77,7 @@ class ContentController {
     };
   }
 
-  async getTips(ctx) {
+  async getTips(ctx: HandlerContext) {
     const result = await Links.find({ type: "tips" });
     ctx.body = {
       code: 200,
@@ -83,7 +86,7 @@ class ContentController {
     };
   }
 
-  async getTopWeek(ctx) {
+  async getTopWeek(ctx: HandlerContext) {
     const result = await Post.getTopWeek();
     ctx.body = {
       code: 200,
@@ -92,8 +95,8 @@ class ContentController {
     };
   }
 
-  async uploadImg(ctx) {
-    const file = ctx.request.files.file;
+  async uploadImg(ctx: HandlerContext) {
+    const file = ctx.request.files.file as { name: string; path: string };
     const today = dayjs().format("YYYYMMDD");
     const dir = `${UploadFilePath}/${today}`;
     await dirExists(dir);
@@ -131,7 +134,7 @@ class ContentController {
     };
   }
 
-  async addPost(ctx) {
+  async addPost(ctx: HandlerContext) {
     const body = ctx.request.body;
     const sid = body.sid;
     const code = body.code;
@@ -164,10 +167,10 @@ class ContentController {
     }
   }
 
-  async addWxPost(ctx) {
+  async addWxPost(ctx: HandlerContext) {
     const body = ctx.request.body;
     const user = await User.findById({ _id: ctx._id });
-    const flag = await wxMsgCheck(body.content || "", { user, title: body.title });
+    const flag = await wxMsgCheck(body.content || "", { user, scene: 3, title: body.title });
     if (!flag) {
       ctx.body = {
         code: 500,
@@ -194,7 +197,7 @@ class ContentController {
     };
   }
 
-  async updatePost(ctx) {
+  async updatePost(ctx: HandlerContext) {
     const body = ctx.request.body;
     const sid = body.sid;
     const code = body.code;
@@ -230,10 +233,10 @@ class ContentController {
     }
   }
 
-  async updatePostByTid(ctx) {
+  async updatePostByTid(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Post.updateOne({ _id: body._id }, body);
-    if (result.ok === 1) {
+    if (result.acknowledged) {
       ctx.body = {
         code: 200,
         data: result,
@@ -248,7 +251,7 @@ class ContentController {
     }
   }
 
-  async updatePostBatch(ctx) {
+  async updatePostBatch(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Post.updateMany({ _id: { $in: body.ids } }, { $set: { ...body.settings } });
     ctx.body = {
@@ -257,10 +260,10 @@ class ContentController {
     };
   }
 
-  async deletePost(ctx) {
+  async deletePost(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Post.deleteMany({ _id: { $in: body.ids } });
-    if (result.ok === 1) {
+    if (result.acknowledged) {
       ctx.body = {
         code: 200,
         msg: "删除成功",
@@ -273,7 +276,7 @@ class ContentController {
     }
   }
 
-  async getPostDetail(ctx) {
+  async getPostDetail(ctx: HandlerContext) {
     const params = ctx.query;
     if (!params.tid) {
       ctx.body = {
@@ -291,14 +294,13 @@ class ContentController {
         isFav = 1;
       }
     }
-    const newPost = post.toJSON();
-    newPost.isFav = isFav;
+    const newPost = { ...post.toJSON(), isFav };
     const result = await Post.updateOne({ _id: params.tid }, { $inc: { reads: 1 } });
     // const result = rename(post.toJSON(), "uid", "user");
     if (post._id && result) {
       ctx.body = {
         code: 200,
-        data: post,
+        data: newPost,
         msg: "查询文章详情成功",
       };
     } else {
@@ -309,7 +311,7 @@ class ContentController {
     }
   }
 
-  async getPostByUid(ctx) {
+  async getPostByUid(ctx: HandlerContext) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
     const page = parseInt(params.page) || 0;
@@ -332,7 +334,7 @@ class ContentController {
     }
   }
 
-  async getPostPublic(ctx) {
+  async getPostPublic(ctx: HandlerContext) {
     const params = ctx.query;
     const page = parseInt(params.page) || 0;
     const limit = parseInt(params.limit) || 10;
@@ -354,7 +356,7 @@ class ContentController {
     }
   }
 
-  async deletePostByUid(ctx) {
+  async deletePostByUid(ctx: HandlerContext) {
     const params = ctx.query;
     const obj = await getJWTPayload(ctx.headers.authorization);
     const post = await Post.findOne({ _id: params.tid, uid: obj._id });
@@ -375,7 +377,7 @@ class ContentController {
   }
 
   // 添加标签
-  async addTag(ctx) {
+  async addTag(ctx: HandlerContext) {
     const { body } = ctx.request;
     const tag = new PostTags(body);
     await tag.save();
@@ -386,7 +388,7 @@ class ContentController {
   }
 
   // 添加标签
-  async getTags(ctx) {
+  async getTags(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 10;
@@ -401,7 +403,7 @@ class ContentController {
   }
 
   // 删除标签
-  async removeTag(ctx) {
+  async removeTag(ctx: HandlerContext) {
     const params = ctx.query;
     const result = await PostTags.deleteOne({ id: params.ptid });
 
@@ -413,7 +415,7 @@ class ContentController {
   }
 
   // 删除标签
-  async updateTag(ctx) {
+  async updateTag(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await PostTags.updateOne({ _id: body._id }, body);
 

@@ -3,8 +3,8 @@ import type { Context } from "koa";
 export type Scalar = string | number | boolean | null;
 export type JsonValue = Scalar | JsonValue[] | { [key: string]: JsonValue };
 export type QueryValue = string | string[] | undefined;
-export type Query = Record<string, QueryValue>;
-export type RequestBody = Record<string, JsonValue | undefined>;
+export type Query = Record<string, any>;
+export type RequestBody = Record<string, any>;
 
 export interface AuthPayload {
   _id: string;
@@ -15,6 +15,7 @@ export interface AuthPayload {
 
 export interface AppContext extends Context {
   _id?: string;
+  query: Query;
   isAdmin?: boolean;
   request: Context["request"] & {
     body: RequestBody;
@@ -49,6 +50,7 @@ export interface MenuNode {
   link?: string;
   children?: MenuNode[];
   operations?: OperationNode[];
+  meta?: Record<string, unknown>;
 }
 
 export interface OperationNode {

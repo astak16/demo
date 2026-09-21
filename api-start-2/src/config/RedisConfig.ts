@@ -1,14 +1,12 @@
 import { createClient } from "redis";
-import retryStrategy from "node-redis-retry-strategy";
-import { REDIS } from "./index";
+import { REDIS } from "./index.ts";
 
 const options = {
   // password: "your_redis_password",
   socket: {
     host: REDIS.host,
-    port: REDIS.port,
-    detect_buffers: true,
-    reconnectStrategy: retryStrategy(),
+    port: Number(REDIS.port),
+    reconnectStrategy: (retries: number) => (retries > 0 && retries % 6 === 0 ? 300_000 : 500),
   },
 };
 
@@ -22,7 +20,7 @@ export const initRedis = async () => {
   client.on("reconnecting", (o) => console.log("Redis is reconnecting", o.attempt, o.delay));
 };
 
-export const setValue = async (key, value, time) => {
+export const setValue = async (key: string, value: string | Record<string, string> | null | undefined, time?: number) => {
   if (typeof value === "undefined" || value === null || value === "") {
     return;
   }
@@ -35,16 +33,17 @@ export const setValue = async (key, value, time) => {
   } else if (typeof value === "object") {
     for (let i = 0; i < Object.keys(value).length; i++) {
       const time = Object.keys(value)[i];
-      await client.hSet(key, time, value[time], console.log);
+      await client.hSet(key, time, value[time]);
     }
   }
 };
 
-export const getValue = async (key) => {
-  return await client.get(key);
+export const getValue = async (key: string): Promise<string | null> => {
+  const value = await client.get(key);
+  return typeof value === "string" ? value : null;
 };
 
-export const delValue = async (key) => {
+export const delValue = async (key: string) => {
   const result = await client.del(key);
   if (result === 1) {
     console.log("delete successfully");

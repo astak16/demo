@@ -1,4 +1,4 @@
-import mongoose from "@/config/DBHelpler";
+import mongoose from "../config/DBHelpler.ts";
 import dayjs from "dayjs";
 
 const Schema = mongoose.Schema;
@@ -28,8 +28,7 @@ const PostSchema = new Schema({
 });
 
 PostSchema.pre("save", function (next) {
-  this.created = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+  this.created = new Date();
 });
 
 PostSchema.statics = {
@@ -76,6 +75,17 @@ PostSchema.statics = {
   },
 };
 
-const PostModel = mongoose.model("posts", PostSchema);
+const PostModelBase = mongoose.model("posts", PostSchema);
+type PostModelWithStatics = typeof PostModelBase & {
+  getList(option: Record<string, unknown>, sort: string, page: number, limit: number): ReturnType<typeof PostModelBase.find>;
+  getTopWeek(): ReturnType<typeof PostModelBase.find>;
+  findByTid(tid: string): ReturnType<typeof PostModelBase.findOne>;
+  getListByUid(id: string, page: number, limit: number): ReturnType<typeof PostModelBase.find>;
+  countByUid(id: string): ReturnType<typeof PostModelBase.countDocuments>;
+  getHotPost(page: number, limit: number, start: string, end: string): ReturnType<typeof PostModelBase.find>;
+  getHotPostCount(page: number, limit: number, start: string, end: string): ReturnType<typeof PostModelBase.countDocuments>;
+};
+
+const PostModel = PostModelBase as PostModelWithStatics;
 
 export default PostModel;

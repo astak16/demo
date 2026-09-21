@@ -1,14 +1,16 @@
 import svgCaptcha from "svg-captcha";
-import { getValue, setValue } from "@/config/RedisConfig";
-import { subIds } from "@/config";
+import { getValue, setValue } from "../config/RedisConfig.ts";
+
+type HandlerContext = import("../types.ts").AppContext;
+import { subIds } from "../config/index.ts";
 import dayjs from "dayjs";
-import PostModel from "@/model/Post";
-import Comments from "@/model/Comments";
-import User from "@/model/User";
-import SignRecord from "@/model/SignRecord";
+import PostModel from "../model/Post.ts";
+import Comments from "../model/Comments.ts";
+import User from "../model/User.ts";
+import SignRecord from "../model/SignRecord.ts";
 
 class PublicController {
-  async getCaptcha(ctx) {
+  async getCaptcha(ctx: HandlerContext) {
     const body = ctx.query;
     const newCaptcha = svgCaptcha.create({
       size: 4,
@@ -27,7 +29,7 @@ class PublicController {
       data: newCaptcha.text,
     };
   }
-  async sendCode(ctx) {
+  async sendCode(ctx: HandlerContext) {
     const { mobile } = ctx.query;
     if (await getValue(mobile)) {
       ctx.body = { code: 501, msg: "短信正在发送中，请勿重新发送" };
@@ -38,7 +40,7 @@ class PublicController {
     ctx.body = { code: 200, msg: "发送成功", data: sms };
   }
 
-  async getHotPost(ctx) {
+  async getHotPost(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 10;
@@ -64,7 +66,7 @@ class PublicController {
     ctx.body = { code: 200, data: result, total, msg: "获取热门文章成功" };
   }
 
-  async getHotComments(ctx) {
+  async getHotComments(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 10;
@@ -76,7 +78,7 @@ class PublicController {
     ctx.body = { code: 200, data: result, total, msg: "获取热门评论成功" };
   }
 
-  async getHotSignRecord(ctx) {
+  async getHotSignRecord(ctx: HandlerContext) {
     const params = ctx.query;
     const page = params.page ? parseInt(params.page) : 0;
     const limit = params.limit ? parseInt(params.limit) : 10;
@@ -87,7 +89,7 @@ class PublicController {
       total = 0;
     if (index === "0") {
       result = await User.getTotalSign(page, limit);
-      total = await User.getTotalSignCount();
+      total = await User.getTotalSignCount(0, 0);
     } else if (index === "1") {
       // result = await SignRecord.getLatestSign(page, limit);
       // total = await SignRecord.getSignCount();
@@ -97,7 +99,7 @@ class PublicController {
     ctx.body = { code: 200, data: result, total, msg: "获取签到排行成功" };
   }
 
-  getSubIds(ctx) {
+  getSubIds(ctx: HandlerContext) {
     ctx.body = { code: 200, data: subIds };
   }
 }

@@ -1,78 +1,80 @@
-import Menu from "../model/Menus";
-import Role from "../model/Roles";
-import User from "../model/User";
-import Post from "../model/Post";
-import Comments from "@/model/Comments";
-import SignRecord from "../model/SignRecord";
+import Menu from "../model/Menus.ts";
+import Role from "../model/Roles.ts";
+import User from "../model/User.ts";
+import Post from "../model/Post.ts";
+import Comments from "../model/Comments.ts";
+import SignRecord from "../model/SignRecord.ts";
 import dayjs from "dayjs";
-import { getMenuData, getRights, sortMenus } from "@/common/Utils";
+import { getMenuData, getRights, sortMenus } from "../common/Utils.ts";
 import qs from "qs";
+import weekday from "dayjs/plugin/weekday.js";
 
-const weekday = require("dayjs/plugin/weekday");
+type HandlerContext = import("../types.ts").AppContext;
+
 dayjs.extend(weekday);
 
 class AdminController {
-  async getMenu(ctx) {
+  async getMenu(ctx: HandlerContext) {
     const result = await Menu.find();
     ctx.body = { code: 200, data: sortMenus(result) };
   }
 
-  async addMenu(ctx) {
+  async addMenu(ctx: HandlerContext) {
     const { body } = ctx.request;
     const menu = new Menu(body);
     const result = await menu.save();
     ctx.body = { code: 200, data: result };
   }
 
-  async updateMenu(ctx) {
+  async updateMenu(ctx: HandlerContext) {
     const { body } = ctx.request;
-    const data = { ...body };
+    const data = { ...(body as Record<string, unknown>) };
     delete data._id;
     const result = await Menu.updateOne({ _id: body._id }, { ...data });
     ctx.body = { code: 200, data: result };
   }
 
-  async deleteMenu(ctx) {
+  async deleteMenu(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Menu.deleteOne({ _id: body._id });
     ctx.body = { code: 200, data: result };
   }
 
-  async getRole(ctx) {
+  async getRole(ctx: HandlerContext) {
     const result = await Role.find();
     ctx.body = { code: 200, data: result };
   }
 
-  async addRole(ctx) {
+  async addRole(ctx: HandlerContext) {
     const { body } = ctx.request;
     const role = new Role(body);
     const result = await role.save();
     ctx.body = { code: 200, data: result };
   }
 
-  async updateRole(ctx) {
+  async updateRole(ctx: HandlerContext) {
     const { body } = ctx.request;
-    const data = { ...body };
+    const data = { ...(body as Record<string, unknown>) };
     delete data._id;
     const result = await Role.updateOne({ _id: body._id }, { ...data });
     ctx.body = { code: 200, data: result };
   }
 
-  async deleteRole(ctx) {
+  async deleteRole(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Role.deleteOne({ _id: body._id });
     ctx.body = { code: 200, data: result };
   }
 
-  async getRolesNames(ctx) {
+  async getRolesNames(ctx: HandlerContext) {
     const result = await Role.find({}, { menu: 0, desc: 0 });
     ctx.body = { code: 200, data: result };
   }
 
-  async getRoutes(ctx) {
+  async getRoutes(ctx: HandlerContext) {
     const user = await User.findOne({ _id: ctx._id }, { roles: 1 });
     const { roles } = user;
-    let menus = [];
+    let menus: string[] = [];
     for (let i = 0; i < roles?.length; i++) {
       const role = roles[i];
       const rights = await Role.findOne({ role }, { menu: 1 });
@@ -85,11 +87,11 @@ class AdminController {
     ctx.body = { code: 200, data: routes };
   }
 
-  async getOperations(ctx) {
+  async getOperations(ctx: HandlerContext) {
     const user = await User.findOne({ _id: ctx._id }, { roles: 1 });
     const { roles } = user;
 
-    let menus = [];
+    let menus: string[] = [];
     for (let i = 0; i < roles?.length; i++) {
       const role = roles[i];
       const rights = await Role.findOne({ role }, { menu: 1 });
@@ -103,7 +105,7 @@ class AdminController {
     return operations;
   }
 
-  async getStats(ctx) {
+  async getStats(ctx: HandlerContext) {
     let result = {};
     const inforCardData = [];
     const time = dayjs().format("YYYY-MM-DD 00:00:00");
@@ -115,8 +117,8 @@ class AdminController {
     }).countDocuments();
     const postsCount = await Post.find({}).countDocuments();
     const commentsNewCount = await Comments.find({ created: { $gte: time } }).countDocuments();
-    const starttime = dayjs(nowZero).weekday(1);
-    const endtime = dayjs(nowZero).weekday(8);
+    const starttime = dayjs(nowZero).weekday(1).toDate();
+    const endtime = dayjs(nowZero).weekday(8).toDate();
     const weekEndCount = await Comments.find({ created: { $gte: starttime, $lte: endtime }, isBest: "1" }).countDocuments();
     const signWeekCount = await SignRecord.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments();
     const postWeekCount = await Post.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments();
@@ -130,8 +132,8 @@ class AdminController {
 
     // 2. 左侧饼图
     const postsCatalogCount = await Post.aggregate([{ $group: { _id: "$catalog", count: { $sum: 1 } } }]);
-    const pieData = {};
-    postsCatalogCount.forEach((item) => {
+    const pieData: Record<string, number> = {};
+    postsCatalogCount.forEach((item: { _id: string; count: number }) => {
       pieData[item._id] = item.count;
     });
 
@@ -153,22 +155,23 @@ class AdminController {
 
     // 4. 底部的数据
     const startDay = dayjs().subtract(7, "day").format();
-    const _aggregate = async (model) => {
+    const _aggregate = async (model: {
+      aggregate: (pipeline: object[]) => Promise<Array<{ _id: string; count: number }>>;
+    }): Promise<Record<string, number>> => {
       let result = await model.aggregate([
         { $match: { created: { $gte: new Date(startDay) } } },
         { $project: { month: { $dateToString: { format: "%Y-%m-%d", date: "$created" } } } },
         { $group: { _id: "$month", count: { $sum: 1 } } },
         { $sort: { _id: 1 } },
       ]);
-      result = result.reduce((obj, item) => ({ ...obj, [item._id]: item.count }), {});
-      return result;
+      return result.reduce<Record<string, number>>((obj, item) => ({ ...obj, [item._id]: item.count }), {});
     };
     const userWeekData = await _aggregate(User);
     const signWeekData = await _aggregate(SignRecord);
     const postWeekData = await _aggregate(Post);
     const commentsWeekData = await _aggregate(Comments);
 
-    const dataArr = [];
+    const dataArr: string[] = [];
     for (let i = 0; i < 6; i++) {
       dataArr.push(
         dayjs()
@@ -177,8 +180,8 @@ class AdminController {
       );
     }
 
-    const addData = (obj) => {
-      const arr = [];
+    const addData = (obj: Record<string, number>): number[] => {
+      const arr: number[] = [];
       dataArr.forEach((item) => {
         if (obj[item]) {
           arr.push(obj[item]);
@@ -200,25 +203,18 @@ class AdminController {
     ctx.body = { code: 200, data: result };
   }
 
-  async getCommentsAll(ctx) {
+  async getCommentsAll(ctx: HandlerContext) {
     const params = qs.parse(ctx.query);
     let options = {};
     if (params.options) {
       options = params.options;
     }
-    const page = params.page ? parseInt(params.page) : 0;
-    const limit = params.limit ? parseInt(params.limit) : 20;
+    const page = params.page ? parseInt(String(params.page), 10) : 0;
+    const limit = params.limit ? parseInt(String(params.limit), 10) : 20;
     // 使用MongoDB中的视图，效率提升1倍
     // const test = await CommentsUsers.find({ 'uid.name': { $regex: 'admin1', $options: 'i' } })
     const result = await Comments.getCommentsOptions(options, page, limit);
     let total = await Comments.getCommentsOptionsCount(options);
-    if (typeof total === "object") {
-      if (total.length > 0) {
-        total = total[0].count;
-      } else {
-        total = 0;
-      }
-    }
     ctx.body = {
       code: 200,
       data: result,
@@ -226,7 +222,7 @@ class AdminController {
     };
   }
 
-  async updateCommentsBatch(ctx) {
+  async updateCommentsBatch(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Comments.updateMany({ _id: { $in: body.ids } }, { $set: { ...body.settings } });
     ctx.body = {
@@ -235,7 +231,7 @@ class AdminController {
     };
   }
 
-  async deleteCommentsBatch(ctx) {
+  async deleteCommentsBatch(ctx: HandlerContext) {
     const { body } = ctx.request;
     const result = await Comments.deleteMany({ _id: { $in: body.ids } });
     ctx.body = {

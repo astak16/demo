@@ -1,11 +1,13 @@
-import log4js from "@/config/Log4j";
-import ErrorRecord from "../model/ErrorRecord";
-import User from "../model/User";
-import { isDevMode } from "../config";
+import log4js from "../config/Log4j.ts";
+import ErrorRecord from "../model/ErrorRecord.ts";
+import User from "../model/User.ts";
+import { isDevMode } from "../config/index.ts";
+import type { Next } from "koa";
+import type { AppContext } from "../types.ts";
 
 const logger = log4js.getLogger("error");
 
-export default async (ctx, next) => {
+export default async (ctx: AppContext, next: Next) => {
   try {
     await next();
     // 1. 收集用户错误的请求路径的日志 -> 造成大量的垃圾数据
@@ -32,39 +34,40 @@ export default async (ctx, next) => {
       };
       ctx.throw({
         code: ctx.status,
-        message: codeMessage[ctx.status],
+        message: codeMessage[ctx.status as keyof typeof codeMessage],
       });
     }
-  } catch (error) {
-    logger.error(`${ctx.url} ${ctx.method} ${ctx.status} ${error.stack}`);
-    let user = "";
+  } catch (error: unknown) {
+    const requestError = error instanceof Error ? error : new Error(String(error));
+    logger.error(`${ctx.url} ${ctx.method} ${ctx.status} ${requestError.stack}`);
+    let user: { username?: string } | null = null;
     if (ctx._id) {
       user = await User.findOne({ _id: ctx._id });
     }
     await ErrorRecord.create({
-      message: error.message,
-      code: ctx.response.status,
+      message: requestError.message,
+      code: String(ctx.response.status),
       method: ctx.method,
       path: ctx.path,
       param: ctx.method === "GET" ? ctx.query : ctx.request.body,
-      username: user.username,
-      stack: error.stack,
+      username: user?.username ?? "",
+      stack: requestError.stack,
     });
-    if (401 == error.status) {
+    if (401 == (error as { status?: number }).status) {
       ctx.status = 401;
       ctx.body = {
         code: 401,
         msg: "Protected resource, use Authorization header to get access\n",
       };
     } else {
-      ctx.status = error.status || 500;
+      ctx.status = (error as { status?: number }).status || 500;
       ctx.body = Object.assign(
         {
           code: ctx.status,
-          msg: error.message,
+          msg: requestError.message,
         },
         console.error(error),
-        process.env.NODE_ENV === "development" ? { stack: error.stack } : {},
+        process.env.NODE_ENV === "development" ? { stack: requestError.stack } : {},
       );
     }
   }

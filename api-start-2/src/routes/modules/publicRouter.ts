@@ -1,10 +1,10 @@
 import Router from "@koa/router";
-import publicController from "@/api/PublicController";
-import contentController from "@/api/ContentController";
-import userController from "@/api/UserController";
-// import userController from "@/api/UserController";
-import commentsController from "@/api/CommentController";
-// import adminController from "@/api/AdminController";
+import publicController from "../../api/PublicController.ts";
+import contentController from "../../api/ContentController.ts";
+import userController from "../../api/UserController.ts";
+// import userController from "../../api/UserController";
+import commentsController from "../../api/CommentController.ts";
+// import adminController from "../../api/AdminController";
 
 const router = new Router();
 

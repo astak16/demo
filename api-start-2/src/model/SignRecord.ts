@@ -1,4 +1,4 @@
-import mongoose from "@/config/DBHelpler";
+import mongoose from "../config/DBHelpler.ts";
 import dayjs from "dayjs";
 
 const Schema = mongoose.Schema;
@@ -10,16 +10,14 @@ const SignRecordSchema = new Schema({
 });
 
 SignRecordSchema.pre("save", function (next) {
-  this.created = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+  this.created = new Date();
 });
 
-SignRecordSchema.pre("update", function (next) {
-  this.updated = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+SignRecordSchema.pre(["updateOne", "findOneAndUpdate"], function () {
+  this.set({ updated: new Date() });
 });
 
-SignRecordSchema.post("save", function (error, doc, next) {
+SignRecordSchema.post("save", function (error: Error & { code?: number; name: string }, _doc: unknown, next: (error?: Error) => void) {
   if (error.name === "MongoServerError" && error.code === 11000) {
     next(new Error("用户名已存在"));
   } else {
@@ -53,6 +51,15 @@ SignRecordSchema.statics = {
   },
 };
 
-const SignRecord = mongoose.model("sign_record", SignRecordSchema);
+const SignRecordBase = mongoose.model("sign_record", SignRecordSchema);
+type SignRecordWithStatics = typeof SignRecordBase & {
+  findByUid(uid: string): ReturnType<typeof SignRecordBase.findOne>;
+  getLatestSign(page: number, limit: number): ReturnType<typeof SignRecordBase.find>;
+  getSignCount(): ReturnType<typeof SignRecordBase.countDocuments>;
+  getTopSign(page: number, limit: number): ReturnType<typeof SignRecordBase.find>;
+  getTopSignCount(): ReturnType<typeof SignRecordBase.countDocuments>;
+};
+
+const SignRecord = SignRecordBase as SignRecordWithStatics;
 
 export default SignRecord;

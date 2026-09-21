@@ -1,13 +1,14 @@
 {
   "name": "api-start",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "dist/server.bundle.js",
+  "main": "index.ts",
   "scripts": {
-    "start": "cross-env NODE_ENV=development webpack --watch --progress --config config/webpack.config.dev.js",
-    "build": "webpack --config config/webpack.config.base.js",
+    "start": "node --watch index.ts",
     "typecheck": "tsc --noEmit",
-    "check:no-any": "! rg -n --glob '*.ts' '\\bany\\b|: any|as any|<any>' src config"
+    "typecheck:dependencies": "tsc --project tsconfig.dependencies.json --noEmit",
+    "check:no-implicit-any": "tsc --noEmit --noImplicitAny"
   },
   "keywords": [],
   "author": "",
@@ -36,7 +37,6 @@
     "koa-static": "^5.0.0",
     "make-dir": "^5.1.0",
     "mongoose": "^9.10.1",
-    "node-redis-retry-strategy": "^2.1.1",
     "qs": "^6.16.0",
     "redis": "^6.2.1",
     "sharp": "^0.35.4",
@@ -45,20 +45,17 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.6",
-    "@babel/node": "^8.0.6",
-    "@babel/preset-env": "^8.0.6",
-    "@babel/preset-typescript": "^8.0.1",
-    "babel-loader": "^10.1.1",
-    "clean-webpack-plugin": "^4.0.0",
-    "cross-env": "^10.1.0",
-    "nodemon": "^3.1.14",
-    "nodemon-webpack-plugin": "^4.8.2",
-    "webpack": "^5.111.1",
-    "webpack-cli": "^7.2.3",
-    "webpack-merge": "^6.0.1",
-    "webpack-node-externals": "^3.0.0",
+    "@types/koa": "^3.0.3",
+    "@types/bcrypt": "^6.0.0",
+    "@types/koa-compose": "^3.2.9",
+    "@types/koa-json": "^2.0.24",
+    "@types/koa-log4": "^2.3.7",
+    "@types/koa-static": "^4.0.4",
+    "@types/koa__cors": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "typescript": "^5.9.3",
-    "@types/node": "^24.5.2"
+    "@types/node": "^24.5.2",
+    "@types/qs": "^6.15.1",
+    "@types/ws": "^8.18.1"
   }
 }

@@ -1,6 +1,6 @@
-import { adminEmail } from "@/config";
-import User from "@/model/User";
-import { setValue } from "@/config/RedisConfig";
+import { adminEmail } from "../config/index.ts";
+import User from "../model/User.ts";
+import { setValue } from "../config/RedisConfig.ts";
 
 export const init = async () => {
   if (adminEmail && adminEmail.length > 0) {
@@ -8,7 +8,9 @@ export const init = async () => {
     const arr = [];
     for (let email of emails) {
       const user = await User.findOne({ username: email });
-      arr.push(user._id);
+      if (user) {
+        arr.push(user._id.toString());
+      }
     }
     setValue("admin", JSON.stringify(arr));
   }

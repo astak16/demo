@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import loginController from "@/api/LoginController";
+import loginController from "../../api/LoginController.ts";
 
 const router = new Router();
 

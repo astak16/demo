@@ -1,6 +1,6 @@
-import mongoose from "@/config/DBHelpler";
+import mongoose from "../config/DBHelpler.ts";
 import dayjs from "dayjs";
-import { getTempName } from "@/common/Utils";
+import { getTempName } from "../common/Utils.ts";
 
 const Schema = mongoose.Schema;
 
@@ -25,16 +25,14 @@ const UserSchema = new Schema({
 });
 
 UserSchema.pre("save", function (next) {
-  this.created = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+  this.created = new Date();
 });
 
-UserSchema.pre("update", function (next) {
-  this.updated = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+UserSchema.pre(["updateOne", "findOneAndUpdate"], function () {
+  this.set({ updated: new Date() });
 });
 
-UserSchema.post("save", function (error, doc, next) {
+UserSchema.post("save", function (error: Error & { code?: number; name: string }, _doc: unknown, next: (error?: Error) => void) {
   if (error.name === "MongoServerError" && error.code === 11000) {
     next(new Error("用户名已存在"));
   } else {
@@ -43,14 +41,14 @@ UserSchema.post("save", function (error, doc, next) {
 });
 
 UserSchema.statics = {
-  findOrCreateByMobile(user) {
+  findOrCreateByMobile(user: Record<string, string>) {
     return this.findOne({ mobile: user.mobile }, { unionid: 0, password: 0 }).then(
-      (obj) => obj || this.create({ mobile: user.mobile, username: getTempName(), name: getTempName(), roles: ["user"] }),
+      (obj: unknown) => obj || this.create({ mobile: user.mobile, username: getTempName(), name: getTempName(), roles: ["user"] }),
     );
   },
-  findOrCreateByUnionid(user) {
+  findOrCreateByUnionid(user: Record<string, string>) {
     return this.findOne({ unionid: user.unionid }, { unionid: 0, password: 0 }).then(
-      (obj) =>
+      (obj: unknown) =>
         obj ||
         this.create({
           openid: user.openid,
@@ -88,6 +86,17 @@ UserSchema.statics = {
   },
 };
 
-const UserModel = mongoose.model("users", UserSchema);
+const UserModelBase = mongoose.model("users", UserSchema);
+type UserModelWithStatics = typeof UserModelBase & {
+  findOrCreateByMobile(user: Record<string, string>): ReturnType<typeof UserModelBase.findOne>;
+  findOrCreateByUnionid(user: Record<string, string>): ReturnType<typeof UserModelBase.findOne>;
+  findByID(id: string): ReturnType<typeof UserModelBase.findOne>;
+  getList(options: Record<string, unknown>, sort: string, page: number, limit: number): ReturnType<typeof UserModelBase.find>;
+  countList(options: Record<string, unknown>): ReturnType<typeof UserModelBase.countDocuments>;
+  getTotalSign(page: number, limit: number): ReturnType<typeof UserModelBase.find>;
+  getTotalSignCount(page: number, limit: number): ReturnType<typeof UserModelBase.countDocuments>;
+};
+
+const UserModel = UserModelBase as UserModelWithStatics;
 
 export default UserModel;

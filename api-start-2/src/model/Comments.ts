@@ -1,9 +1,48 @@
-import mongoose from "../config/DBHelpler";
+import mongoose from "../config/DBHelpler.ts";
 import dayjs from "dayjs";
+import type { Model } from "mongoose";
+
+interface CommentFilter {
+  item?: "uid" | "tid" | "cuid" | "created" | "status" | "isBest";
+  search?: string | string[];
+}
+
+interface CommentDocument {
+  tid?: string;
+  uid?: string;
+  cuid?: string;
+  content?: string;
+  created?: Date;
+  hands: number;
+  status: string;
+  isRead: string;
+  isBest: string;
+}
+
+interface CommentView extends CommentDocument {
+  _id: string;
+  handed?: string;
+  toJSON(): Record<string, unknown>;
+}
+
+interface CommentModel extends Model<CommentDocument> {
+  findByTid(id: string): Promise<unknown[]>;
+  findByCid(id: string): Promise<CommentView | null>;
+  getCommentsList(id: string, page: number, limit: number): Promise<CommentView[]>;
+  queryCount(id: string): Promise<number>;
+  getCommetsPublic(id: string, page: number, limit: number): Promise<unknown[]>;
+  getCommentsPublic(id: string, page: number, limit: number): Promise<unknown[]>;
+  getMsgList(id: string, page: number, limit: number): Promise<unknown[]>;
+  getTotal(id: string): Promise<number>;
+  getCommentsOptions(options: CommentFilter, page: number, limit: number): Promise<unknown[]>;
+  getCommentsOptionsCount(options: CommentFilter): Promise<number>;
+  getHotComments(page: number, limit: number, index: string): Promise<unknown[]>;
+  getHotCommentsCount(index: string): Promise<number>;
+}
 
 const Schema = mongoose.Schema;
 
-const CommentsSchema = new Schema(
+const CommentsSchema = new Schema<CommentDocument, CommentModel>(
   {
     tid: { type: String, ref: "posts" },
     uid: { type: String, ref: "users" },
@@ -19,11 +58,10 @@ const CommentsSchema = new Schema(
 );
 
 CommentsSchema.pre("save", function (next) {
-  this.created = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  next();
+  this.created = new Date();
 });
 
-CommentsSchema.post("save", function (error, doc, next) {
+CommentsSchema.post("save", function (error: Error & { code?: number; name: string }, _doc: unknown, next: (error?: Error) => void) {
   if (error.name === "MongoError" && error.code === 11000) {
     next(new Error("There was a duplicate key error"));
   } else {
@@ -61,6 +99,13 @@ CommentsSchema.statics = {
         path: "tid",
         select: "_id title",
       })
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ created: -1 });
+  },
+  getCommentsPublic: function (id, page, limit) {
+    return this.find({ cuid: id })
+      .populate({ path: "tid", select: "_id title" })
       .skip(page * limit)
       .limit(limit)
       .sort({ created: -1 });
@@ -311,12 +356,47 @@ CommentsSchema.statics = {
   //     .limit(limit)
   //     .sort({ created: -1 })
   // }
+  getCommentsOptions: async function (options: CommentFilter, page: number, limit: number) {
+    const query: Record<string, unknown> = {};
+    const search = Array.isArray(options.search) ? options.search[0] : options.search;
+
+    if (options.item && search) {
+      if (options.item === "created" && Array.isArray(options.search) && options.search.length > 1) {
+        query.created = { $gte: new Date(options.search[0]), $lt: new Date(options.search[1]) };
+      } else if (options.item !== "created") {
+        query[options.item] = search;
+      }
+    }
+
+    return this.find(query)
+      .populate({ path: "tid", select: "_id title" })
+      .populate({ path: "cuid", select: "_id name" })
+      .populate({ path: "uid", select: "_id name" })
+      .skip(page * limit)
+      .limit(limit)
+      .sort({ created: -1 })
+      .exec();
+  },
+  getCommentsOptionsCount: async function (options: CommentFilter) {
+    const query: Record<string, unknown> = {};
+    const search = Array.isArray(options.search) ? options.search[0] : options.search;
+
+    if (options.item && search) {
+      if (options.item === "created" && Array.isArray(options.search) && options.search.length > 1) {
+        query.created = { $gte: new Date(options.search[0]), $lt: new Date(options.search[1]) };
+      } else if (options.item !== "created") {
+        query[options.item] = search;
+      }
+    }
+
+    return this.countDocuments(query);
+  },
   getHotComments: function (page, limit, index) {
     if (index === "0") {
       // 总评论记数 -> aggregate聚合查询
       return this.aggregate([
         // 匹配30天内的评论数据
-        { $match: { created: { $gte: new Date(dayjs().subtract(30, "day")) } } },
+        { $match: { created: { $gte: dayjs().subtract(30, "day").toDate() } } },
         { $group: { _id: "$cuid", count: { $sum: 1 } } },
         { $addFields: { userId: { $toObjectId: "$_id" } } },
         { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "cuid" } },
@@ -346,7 +426,7 @@ CommentsSchema.statics = {
       // 总评论记数 -> aggregate聚合查询
       const result = await this.aggregate([
         // 匹配30天内的评论数据
-        { $match: { created: { $gte: new Date(dayjs().subtract(30, "day")) } } },
+        { $match: { created: { $gte: dayjs().subtract(30, "day").toDate() } } },
         { $group: { _id: "$cuid", count: { $sum: 1 } } },
         { $group: { _id: "null", total: { $sum: 1 } } },
       ]);
@@ -358,6 +438,6 @@ CommentsSchema.statics = {
   },
 };
 
-const Comments = mongoose.model("comments", CommentsSchema);
+const Comments = mongoose.model<CommentDocument, CommentModel>("comments", CommentsSchema);
 
 export default Comments;

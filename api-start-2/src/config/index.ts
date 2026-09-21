@@ -1,4 +1,7 @@
 import path from "path";
+import { fileURLToPath } from "url";
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 export const port = 3000;
 export const REDIS = {
@@ -19,7 +22,7 @@ export const DB_NAME = process.env.DB_NAME || "testdb";
 // export const DB_URL = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 export const DB_URL = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 export const baseUrl = "http://localhost:3000";
-export const UploadFilePath = path.join(path.resolve(__dirname, "../../public/uploads"));
+export const UploadFilePath = path.join(path.resolve(currentDir, "../../public/uploads"));
 
 export const isDevMode = process.env.NODE_ENV !== "production";
 

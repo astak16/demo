@@ -1,4 +1,4 @@
-import mongoose from "@/config/DBHelpler";
+import mongoose from "../config/DBHelpler.ts";
 
 const Schema = mongoose.Schema;
 
@@ -13,9 +13,8 @@ const ErrorRecordSchema = new Schema({
   created: { type: Date },
 });
 
-ErrorRecordSchema.pre("save", function (next) {
+ErrorRecordSchema.pre("save", function () {
   this.created = new Date();
-  next();
 });
 
 const ErrorRecord = mongoose.model("error_record", ErrorRecordSchema);

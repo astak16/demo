@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import CommentController from "@/api/CommentController";
+import CommentController from "../../api/CommentController.ts";
 
 const router = new Router();
 
