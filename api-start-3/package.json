@@ -19,7 +19,8 @@
   "type": "module",
   "dependencies": {
     "@koa/router": "^15.7.0",
-    "koa": "^3.2.1"
+    "koa": "^3.2.1",
+    "mongoose": "^9.10.1"
   },
   "devDependencies": {
     "@types/koa": "^3.0.3",

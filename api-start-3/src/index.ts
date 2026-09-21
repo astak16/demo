@@ -1,6 +1,9 @@
 import Koa from "koa";
 import { port } from "./config";
 import routers from "./routers";
+import { connectDB } from "./config/dbHelper";
+
+connectDB();
 
 const app = new Koa();
 
