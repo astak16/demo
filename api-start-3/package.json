@@ -2,7 +2,7 @@
   "name": "api-start-3",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "start": "tsx src/index.ts"
   },
@@ -12,7 +12,7 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "^11.13.0",
+      "version": "^12.5.1",
       "onFail": "download"
     }
   },
@@ -21,10 +21,15 @@
     "@koa/router": "^15.7.0",
     "koa": "^3.2.1",
     "mongoose": "^9.10.1",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
+    "pino-roll": "^4.0.0",
     "redis": "^6.2.1"
   },
   "devDependencies": {
     "@types/koa": "^3.0.3",
-    "tsx": "^4.23.13"
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
   }
 }
