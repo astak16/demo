@@ -1,0 +1,27 @@
+{
+  "name": "api-start-3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.13.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "dependencies": {
+    "koa": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/koa": "^3.0.3",
+    "tsx": "^4.23.13"
+  }
+}
