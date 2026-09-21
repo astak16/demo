@@ -20,7 +20,8 @@
   "dependencies": {
     "@koa/router": "^15.7.0",
     "koa": "^3.2.1",
-    "mongoose": "^9.10.1"
+    "mongoose": "^9.10.1",
+    "redis": "^6.2.1"
   },
   "devDependencies": {
     "@types/koa": "^3.0.3",
