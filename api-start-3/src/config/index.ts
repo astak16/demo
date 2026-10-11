@@ -11,3 +11,5 @@ export const REDIS = {
   port: process.env.REDIS_PORT || 6379,
   password: process.env.REDIS_PASS, //|| "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81",
 };
+
+export const isDevMode = process.env.NODE_ENV !== "production";

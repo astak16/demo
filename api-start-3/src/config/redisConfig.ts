@@ -1,5 +1,6 @@
 import { createClient } from "redis";
 import { REDIS } from "../config";
+import logger from "./logger";
 
 const { host, port } = REDIS;
 
@@ -12,11 +13,11 @@ export const client = createClient({
 });
 
 export const connectRedis = async () => {
-  client.on("error", (err) => console.log("Redis Client Error", err));
+  client.on("error", (err) => logger.error("Redis Client Error", err));
   await client.connect();
-  console.log("Redis connected successfully");
-  client.on("end", () => console.log("Redis connection has closed"));
-  client.on("reconnection", (o) => console.log("Redis is reconnection", o.attempt, o.delay));
+  logger.info("Redis connected successfully");
+  client.on("end", () => logger.info("Redis connection has closed"));
+  client.on("reconnection", (o) => logger.info("Redis is reconnection", o.attempt, o.delay));
 };
 
 export const setValue = async (key: string, value?: string | null | Record<string, string>, time?: number) => {
@@ -43,7 +44,7 @@ export const getValue = async (key: string) => {
 export const delValue = async (key: string) => {
   const result = await client.del(key);
   if (result === 1) {
-    console.log("delete successfully");
+    logger.info("delete successfully");
   }
   return result;
 };
