@@ -6,6 +6,17 @@ import bcrypt from "bcrypt";
 export const reg = async (ctx: AppContext) => {
   const { body } = ctx.request;
   const { sid, code, username, password } = body;
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    typeof sid !== "string" ||
+    typeof code !== "string" ||
+    !username ||
+    !password
+  ) {
+    ctx.body = { code: 400, msg: "参数错误" };
+    return;
+  }
   let msg = {};
   let check = true;
   if (await checkCode(sid, code)) {
@@ -29,4 +40,38 @@ export const reg = async (ctx: AppContext) => {
     msg = { ...msg, code: ["验证码已经失效，请重新获取！"] };
   }
   ctx.body = { code: 500, msg };
+};
+
+export const login = async (ctx: AppContext) => {
+  const { body } = ctx.request;
+  const { username, password, sid, code } = body;
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    typeof sid !== "string" ||
+    typeof code !== "string" ||
+    !username ||
+    !password
+  ) {
+    ctx.body = { code: 400, msg: "参数错误" };
+    return;
+  }
+
+  if (!(await checkCode(sid, code))) {
+    ctx.body = { code: 401, msg: "图片验证码不正确，请检查" };
+    return;
+  }
+
+  let user = await UserModel.findOne({ username });
+
+  const ok = !!user?.password && (await bcrypt.compare(password, user.password));
+  if (!user || !ok) {
+    ctx.body = { code: 401, msg: "用户名或密码错误" };
+    return;
+  }
+
+  ctx.body = {
+    code: 200,
+    data: user,
+  };
 };
