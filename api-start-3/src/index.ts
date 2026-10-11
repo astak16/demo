@@ -1,11 +1,11 @@
 import Koa from "koa";
 import { port } from "./config";
-import routers from "./routers";
 import { connectDB } from "./config/dbHelper";
 import { connectRedis } from "./config/redisConfig";
 import logger from "./config/logger";
 import Logger from "./common/Logger";
 import KoaBody from "koa-body";
+import routers from "./routers";
 
 const app = new Koa();
 app.use(Logger);
