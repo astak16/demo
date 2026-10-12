@@ -22,3 +22,7 @@ export const generateToken = (payload: AuthPayload, expire: SignOptions["expires
     throw new Error("生成 token 失败");
   }
 };
+
+export const getJWTPayload = (token: string): AuthPayload => {
+  return jwt.verify(token.split(" ")[1], JWT_SECRET) as AuthPayload;
+};

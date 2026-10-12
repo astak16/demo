@@ -187,6 +187,9 @@ importers:
       mongoose:
         specifier: ^9.10.1
         version: 9.10.1
+      nodemailer:
+        specifier: ^10.1.0
+        version: 10.1.0
       pino:
         specifier: ^10.3.1
         version: 10.3.1
@@ -196,12 +199,18 @@ importers:
       pino-roll:
         specifier: ^4.0.0
         version: 4.0.0
+      qs:
+        specifier: ^6.16.0
+        version: 6.16.0
       redis:
         specifier: ^6.2.1
         version: 6.2.1
       svg-captcha:
         specifier: ^1.4.0
         version: 1.4.0
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -218,6 +227,9 @@ importers:
       '@types/node':
         specifier: ^26.6.2
         version: 26.6.2
+      '@types/qs':
+        specifier: ^6.15.1
+        version: 6.15.1
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -986,6 +998,10 @@ packages:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
 
+  nodemailer@10.1.0:
+    resolution: {integrity: sha512-fXW8AulB25aOTuwfRYV6lqHyfz2VM4rr4SGXH03mE7x5znEUpzL5mu6anARUpZN7744Ziwkmr4AxSLPJsBQspg==}
+    engines: {node: '>=20.0.0'}
+
   object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
@@ -1178,6 +1194,10 @@ packages:
   unpipe@1.0.0:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
     engines: {node: '>= 0.8'}
+
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
+    hasBin: true
 
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
@@ -1833,6 +1853,8 @@ snapshots:
 
   node-gyp-build@4.8.4: {}
 
+  nodemailer@10.1.0: {}
+
   object-inspect@1.13.4: {}
 
   on-exit-leak-free@2.1.2: {}
@@ -2057,6 +2079,8 @@ snapshots:
   undici-types@8.9.0: {}
 
   unpipe@1.0.0: {}
+
+  uuid@14.0.3: {}
 
   vary@1.1.2: {}
 
