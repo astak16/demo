@@ -16,3 +16,10 @@ export interface AppContext extends Context {
   isAdmin?: boolean;
   request: Context["request"] & { body: RequestBody; files?: Record<string, UploadedFile | UploadedFile[] | undefined> };
 }
+
+export interface AuthPayload {
+  _id: string;
+  username?: string;
+  roles?: string[];
+  [key: string]: JsonValue | undefined;
+}

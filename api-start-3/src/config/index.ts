@@ -6,6 +6,8 @@ export const DB_NAME = process.env.DB_NAME || "testdb2";
 
 export const DB_URL = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 
+export const JWT_SECRET = "abcdefghijklmnopqrstuvwxyz";
+
 export const REDIS = {
   host: process.env.REDIS_HOST || "localhost",
   port: process.env.REDIS_PORT || 6379,

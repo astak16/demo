@@ -1,4 +1,4 @@
-import { checkCode } from "../common/Utils";
+import { checkCode, generateToken } from "../common/Utils";
 import { withBody } from "../common/Validate";
 import { RegSchema, LoginSchema } from "../dto/login";
 import UserModel from "../model/user";
@@ -47,9 +47,10 @@ export const login = withBody(LoginSchema, async (ctx, body) => {
     ctx.body = { code: 401, msg: "用户名或密码错误" };
     return;
   }
+  const token = generateToken({ _id: user._id.toString() }, "1d");
 
   ctx.body = {
     code: 200,
-    data: user,
+    data: { ...user.toJSON(), token },
   };
 });
