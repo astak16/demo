@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx --env-file=.env src/index.ts",
     "test": "node --import tsx --test --test-reporter=spec tests/*.test.ts",
-    "test:coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-include-all tests/*.test.ts"
+    "test:coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-include-all tests/*.test.ts",
+    "test:controller-coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-include='src/controller/**/*.ts' --test-coverage-include-all --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 tests/*.test.ts"
   },
   "keywords": [],
   "author": "",

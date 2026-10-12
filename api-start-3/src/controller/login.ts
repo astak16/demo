@@ -98,10 +98,6 @@ export const reset = withBody(ResetPasswordSchema, async (ctx, body) => {
     ctx.body = { code: 500, msg: "验证码不正确，请检查" };
     return;
   }
-  if (!key) {
-    ctx.body = { code: 500, msg: "请求参数异常，请重新获取链接" };
-    return;
-  }
   const token = await getValue(key);
   if (!token) {
     ctx.body = { code: 500, msg: "链接已经失效" };

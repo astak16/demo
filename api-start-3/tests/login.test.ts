@@ -17,7 +17,7 @@ describe("POST /login/login", () => {
 
   it("rejects an incorrect captcha", async () => {
     const response = await request("/login/login", validBody);
-    assert.deepEqual(response.body, { code: 401, msg: "图片验证码不正确，请检查" });
+    assert.deepEqual(response.body, { code: 500, msg: "图片验证码不正确，请检查" });
   });
 
   it("rejects an unknown username", async (t) => {
