@@ -1,9 +1,9 @@
 import Router from "@koa/router";
+import { basic } from "../../controller/user";
 
-const user = new Router({ prefix: "/user" });
-user.get("/", async (ctx) => {
-  /* ... */
-  ctx.body = { msg: "哈哈哈" };
-});
+const router = new Router({ prefix: "/user" });
 
-export default user;
+// 更新用户基信息
+router.post("/basic", basic);
+
+export default router;

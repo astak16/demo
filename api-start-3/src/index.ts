@@ -6,6 +6,7 @@ import logger from "./config/logger";
 import Logger from "./common/Logger";
 import KoaBody from "koa-body";
 import routers from "./routers";
+import { auth } from "./common/Auth";
 
 const app = new Koa();
 app.use(Logger);
@@ -16,6 +17,7 @@ app.use(
     onError: (err) => logger.error({ err }, "koa-body error"),
   }),
 );
+app.use(auth);
 app.use(routers.routes());
 
 async function bootstrap() {
