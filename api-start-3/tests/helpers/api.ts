@@ -4,6 +4,7 @@ import type { Server } from "node:http";
 import Koa from "koa";
 import KoaBody from "koa-body";
 import routers from "../../src/routers";
+import { auth } from "../../src/common/Auth";
 import { client } from "../../src/config/redisConfig";
 
 export const validBody = { sid: "captcha-id", code: "AbCd", username: "alice", password: "secret" };
@@ -26,6 +27,7 @@ export function setupApi() {
 
     const app = new Koa();
     app.use(KoaBody());
+    app.use(auth);
     app.use(routers.routes());
     await new Promise<void>((resolve, reject) => {
       server = app.listen(0, "127.0.0.1", resolve);
@@ -47,10 +49,10 @@ export function setupApi() {
     }
   });
 
-  async function request(path: string, body?: Record<string, unknown>) {
-    const response = await fetch(`${baseUrl}${path}`, body === undefined ? undefined : {
+  async function request(path: string, body?: Record<string, unknown>, headers?: Record<string, string>) {
+    const response = await fetch(`${baseUrl}${path}`, body === undefined ? { headers } : {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...headers },
       body: JSON.stringify(body),
     });
     return { status: response.status, body: await response.json() as Record<string, any> };

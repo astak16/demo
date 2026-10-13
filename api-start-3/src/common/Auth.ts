@@ -15,7 +15,7 @@ export const auth: Middleware = async (ctx, next) => {
   }
 
   try {
-    ctx.state.user = getJWTPayload(token);
+    ctx.state.user = getJWTPayload(`Bearer ${token}`);
   } catch (e) {
     ctx.status = 401;
     ctx.body = { code: 401, msg: e instanceof jwt.TokenExpiredError ? "登录过期" : "无效的token" };
