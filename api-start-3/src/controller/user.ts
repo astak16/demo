@@ -1,40 +1,52 @@
-import { generateToken } from "../common/Utils";
+import { generateToken, getJWTPayload } from "../common/Utils";
 import { withBody } from "../common/Validate";
 import { send } from "../config/MailConfig";
-import { setValue } from "../config/redisConfig";
-import { UpdateBasicInfoSchema, ChangePasswordSchema } from "../dto/user";
+import { getValue, setValue } from "../config/redisConfig";
+import { UpdateBasicInfoSchema, ChangePasswordSchema, UpdateUsernameSchema } from "../dto/user";
 import UserModel from "../model/user";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import bcrypt from "bcrypt";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
-  const { username } = body;
-  const user = await UserModel.findOne({ _id: ctx.state.user?._id });
-  let msg = "";
+  const { username, ...rest } = body;
+  const user = await UserModel.findById(ctx.state.user?._id);
+  if (!user) {
+    ctx.body = { code: 500, msg: "用户不存在" };
+    return;
+  }
+  let msg = "更新基本资料成功";
+  const key = uuidv4();
   if (username && user && username !== user.username) {
     const tmpUser = await UserModel.findOne({ username });
     if (tmpUser && tmpUser.password) {
       ctx.body = { code: 500, msg: "用户名已存在，请重新输入！" };
       return;
     }
-    const key = uuidv4();
     setValue(key, generateToken({ _id: user._id.toString() }, "30m"));
-    await send({
-      type: "email",
-      data: { username },
-      expire: dayjs().add(30, "minutes").format("YYYY-MM-DD HH:mm:ss"),
-      email: username,
-      user: user?.name ? user.name : username,
-    });
+    try {
+      await send({
+        type: "email",
+        data: { username },
+        expire: dayjs().add(30, "minutes").format("YYYY-MM-DD HH:mm:ss"),
+        email: username,
+        user: user?.name ? user.name : username,
+      });
+    } catch (error) {
+      ctx.body = { code: 500, msg: "确认邮件发送失败，请稍后再试" };
+      return;
+    }
     msg = "更新基本资料成功，账号修改需要邮件确认，请查收邮件！";
   }
-  const result = await UserModel.updateOne({ _id: user?._id.toString() }, body);
-  if (result.matchedCount === 1) {
-    ctx.body = { code: 200, msg: msg === "" ? "更新基本资料成功" : msg };
-  } else {
-    ctx.body = { code: 500, msg: "更新基本资料失败" };
+  if (Object.keys(rest).length > 0) {
+    const result = await UserModel.updateOne({ _id: user._id.toString() }, { $set: rest });
+    if (result.matchedCount !== 1) {
+      ctx.body = { code: 500, msg: "更新基本资料失败" };
+      return;
+    }
   }
+
+  ctx.body = { code: 200, msg, data: { key } };
 });
 
 export const changePassword = withBody(ChangePasswordSchema, async (ctx, body) => {
@@ -61,4 +73,15 @@ export const changePassword = withBody(ChangePasswordSchema, async (ctx, body) =
   await UserModel.updateOne({ _id: user?._id }, { $set: { password: hash } });
 
   ctx.body = { code: 200, msg: "密码更新成功" };
+});
+
+export const resetEmail = withBody(UpdateUsernameSchema, async (ctx, body) => {
+  const { key, username } = body;
+  const token = await getValue(key);
+  const userObj = getJWTPayload("Bearer " + token);
+  await UserModel.updateOne({ _id: userObj._id }, { $set: { username } });
+  ctx.body = {
+    code: 200,
+    msg: "更新用户名成功",
+  };
 });
