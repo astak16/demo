@@ -3,10 +3,12 @@ import { withBody } from "../common/Validate";
 import { send } from "../config/MailConfig";
 import { getValue, setValue } from "../config/redisConfig";
 import { UpdateBasicInfoSchema, ChangePasswordSchema, UpdateUsernameSchema } from "../dto/user";
+import { SetCollectSchema } from "../dto/userCollect";
 import UserModel from "../model/user";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import bcrypt from "bcrypt";
+import UserCollectModel from "../model/userCollect";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
   const { username, ...rest } = body;
@@ -84,4 +86,19 @@ export const resetEmail = withBody(UpdateUsernameSchema, async (ctx, body) => {
     code: 200,
     msg: "更新用户名成功",
   };
+});
+
+export const setCollect = withBody(SetCollectSchema, async (ctx, body) => {
+  const _id = ctx.state.user?._id!;
+  const { title, tid, isFav } = body;
+
+  if (isFav) {
+    // 当前已收藏 → 取消，没有记录时 deleteOne 也不会报错，天然幂等
+    await UserCollectModel.deleteOne({ uid: _id, tid });
+    ctx.body = { code: 200, msg: "取消收藏成功", data: { isCollect: 0 } };
+    return;
+  }
+
+  await UserCollectModel.updateOne({ uid: _id, tid }, { $setOnInsert: { title } }, { upsert: true });
+  ctx.body = { code: 200, msg: "收藏成功", data: { isCollect: 1 } };
 });
