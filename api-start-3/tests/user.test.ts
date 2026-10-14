@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import bcrypt from "bcrypt";
 import { JWT_SECRET } from "../src/config";
 import UserModel from "../src/model/user";
 import { setupApi } from "./helpers/api";
@@ -10,6 +11,8 @@ const { request, cache } = setupApi();
 const user = new UserModel({ username: "alice@example.com", name: "Alice" });
 const authHeader = { Authorization: `Bearer ${jwt.sign({ _id: user._id.toString() }, JWT_SECRET)}` };
 const postBasic = (body: Record<string, unknown>) => request("/user/basic", body, authHeader);
+const postChangePassword = (body: Record<string, unknown>, headers = authHeader) =>
+  request("/user/changePassword", body, headers);
 
 describe("POST /user/basic", () => {
   it("requires authentication", async () => {
@@ -91,5 +94,72 @@ describe("POST /user/basic", () => {
     t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 0 }));
     const response = await postBasic({ username: user.username });
     assert.deepEqual(response.body, { code: 500, msg: "更新基本资料失败" });
+  });
+});
+
+describe("POST /user/changePassword", () => {
+  const passwordBody = { oldpwd: "old-secret", newpwd: "new-secret" };
+
+  it("requires authentication", async () => {
+    const response = await request("/user/changePassword", passwordBody);
+    assert.equal(response.status, 401);
+    assert.deepEqual(response.body, { code: 401, msg: "未登录" });
+  });
+
+  it("validates both passwords", async () => {
+    const response = await postChangePassword({ oldpwd: "", newpwd: "" });
+    assert.equal(response.body.code, 400);
+    assert.ok(response.body.msg.oldpwd);
+    assert.ok(response.body.msg.newpwd);
+  });
+
+  it("rejects a token without a user ID", async () => {
+    const headers = { Authorization: `Bearer ${jwt.sign({}, JWT_SECRET)}` };
+    const response = await postChangePassword(passwordBody, headers);
+    assert.equal(response.status, 401);
+    assert.deepEqual(response.body, { code: 401, msg: "未登录" });
+  });
+
+  it("rejects when the user no longer exists", async (t) => {
+    t.mock.method(UserModel, "findOne", async () => null);
+    const response = await postChangePassword(passwordBody);
+    assert.deepEqual(response.body, { code: 500, msg: "原密码错误" });
+  });
+
+  it("rejects an account without a password", async (t) => {
+    t.mock.method(UserModel, "findOne", async () => user);
+    const response = await postChangePassword(passwordBody);
+    assert.deepEqual(response.body, { code: 500, msg: "原密码错误" });
+  });
+
+  it("rejects an incorrect old password", async (t) => {
+    const passwordUser = new UserModel({ password: await bcrypt.hash("different-secret", 5) });
+    t.mock.method(UserModel, "findOne", async () => passwordUser);
+    const response = await postChangePassword(passwordBody);
+    assert.deepEqual(response.body, { code: 500, msg: "原密码错误" });
+  });
+
+  it("rejects a new password identical to the old one", async (t) => {
+    const passwordUser = new UserModel({ password: await bcrypt.hash(passwordBody.oldpwd, 5) });
+    t.mock.method(UserModel, "findOne", async () => passwordUser);
+    const update = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await postChangePassword({ oldpwd: passwordBody.oldpwd, newpwd: passwordBody.oldpwd });
+    assert.deepEqual(response.body, { code: 500, msg: "新密码不能与原密码相同" });
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("writes a hash of the new password", async (t) => {
+    const passwordUser = new UserModel({ password: await bcrypt.hash(passwordBody.oldpwd, 5) });
+    t.mock.method(UserModel, "findOne", async () => passwordUser);
+    let update: { filter: unknown; fields: { $set: { password: string } } } | undefined;
+    t.mock.method(UserModel, "updateOne", async (filter: unknown, fields: { $set: { password: string } }) => {
+      update = { filter, fields };
+      return { matchedCount: 1 };
+    });
+    const response = await postChangePassword(passwordBody);
+    assert.deepEqual(response.body, { code: 200, msg: "密码更新成功" });
+    assert.deepEqual(update?.filter, { _id: passwordUser._id });
+    assert.notEqual(update?.fields.$set.password, passwordBody.newpwd);
+    assert.equal(await bcrypt.compare(passwordBody.newpwd, update!.fields.$set.password), true);
   });
 });
