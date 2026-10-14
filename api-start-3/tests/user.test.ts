@@ -29,23 +29,31 @@ describe("POST /user/basic", () => {
   });
 
   it("updates ordinary profile fields", async (t) => {
-    t.mock.method(UserModel, "findOne", async () => user);
+    t.mock.method(UserModel, "findById", async () => user);
     let update: { filter: unknown; fields: unknown } | undefined;
     t.mock.method(UserModel, "updateOne", async (filter: unknown, fields: unknown) => {
       update = { filter, fields };
       return { matchedCount: 1 };
     });
     const response = await postBasic({ name: "New name", location: "Shanghai" });
-    assert.deepEqual(response.body, { code: 200, msg: "更新基本资料成功" });
+    assert.equal(response.body.code, 200);
+    assert.equal(response.body.msg, "更新基本资料成功");
+    assert.match(response.body.data.key, /^[0-9a-f-]{36}$/i);
     assert.deepEqual(update, {
       filter: { _id: user._id.toString() },
-      fields: { name: "New name", location: "Shanghai" },
+      fields: { $set: { name: "New name", location: "Shanghai" } },
     });
   });
 
+  it("reports when the current user no longer exists", async (t) => {
+    t.mock.method(UserModel, "findById", async () => null);
+    const response = await postBasic({ name: "New name" });
+    assert.deepEqual(response.body, { code: 500, msg: "用户不存在" });
+  });
+
   it("rejects a username already used by a password account", async (t) => {
-    t.mock.method(UserModel, "findOne", async (filter: Record<string, unknown>) =>
-      "_id" in filter ? user : new UserModel({ username: "taken@example.com", password: "hash" }));
+    t.mock.method(UserModel, "findById", async () => user);
+    t.mock.method(UserModel, "findOne", async () => new UserModel({ username: "taken@example.com", password: "hash" }));
     const update = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await postBasic({ username: "taken@example.com" });
     assert.deepEqual(response.body, { code: 500, msg: "用户名已存在，请重新输入！" });
@@ -53,9 +61,9 @@ describe("POST /user/basic", () => {
   });
 
   it("sends confirmation mail for a changed username", async (t) => {
-    t.mock.method(UserModel, "findOne", async (filter: Record<string, unknown>) =>
-      "_id" in filter ? user : null);
-    t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
+    t.mock.method(UserModel, "findById", async () => user);
+    t.mock.method(UserModel, "findOne", async () => null);
+    const update = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
     let mail: Record<string, unknown> | undefined;
     t.mock.method(nodemailer, "createTransport", () => ({
       sendMail: async (message: Record<string, unknown>) => {
@@ -64,19 +72,20 @@ describe("POST /user/basic", () => {
       },
     }));
     const response = await postBasic({ username: "new@example.com" });
-    assert.deepEqual(response.body, { code: 200, msg: "更新基本资料成功，账号修改需要邮件确认，请查收邮件！" });
+    assert.equal(response.body.code, 200);
+    assert.equal(response.body.msg, "更新基本资料成功，账号修改需要邮件确认，请查收邮件！");
     assert.equal(mail?.to, "new@example.com");
     assert.match(String(mail?.html), /Alice/);
     assert.equal(cache.size, 1);
-    const token = [...cache.values()][0];
+    const token = cache.get(response.body.data.key)!;
     assert.equal((jwt.verify(token, JWT_SECRET) as jwt.JwtPayload)._id, user._id.toString());
+    assert.equal(update.mock.callCount(), 0);
   });
 
   it("uses the new username in mail when the account has no display name", async (t) => {
     const unnamedUser = new UserModel({ username: "old@example.com" });
-    t.mock.method(UserModel, "findOne", async (filter: Record<string, unknown>) =>
-      "_id" in filter ? unnamedUser : new UserModel({ username: "new@example.com" }));
-    t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
+    t.mock.method(UserModel, "findById", async () => unnamedUser);
+    t.mock.method(UserModel, "findOne", async () => new UserModel({ username: "new@example.com" }));
     let mail: Record<string, unknown> | undefined;
     t.mock.method(nodemailer, "createTransport", () => ({
       sendMail: async (message: Record<string, unknown>) => {
@@ -89,10 +98,38 @@ describe("POST /user/basic", () => {
     assert.match(String(mail?.html), /new@example.com/);
   });
 
+  it("does not update profile fields when confirmation mail fails", async (t) => {
+    t.mock.method(UserModel, "findById", async () => user);
+    t.mock.method(UserModel, "findOne", async () => null);
+    const update = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
+    t.mock.method(nodemailer, "createTransport", () => ({
+      sendMail: async () => { throw new Error("SMTP unavailable"); },
+    }));
+    const response = await postBasic({ username: "new@example.com", name: "New name" });
+    assert.deepEqual(response.body, { code: 500, msg: "确认邮件发送失败，请稍后再试" });
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("updates other fields while deferring a changed username", async (t) => {
+    t.mock.method(UserModel, "findById", async () => user);
+    t.mock.method(UserModel, "findOne", async () => null);
+    let fields: unknown;
+    t.mock.method(UserModel, "updateOne", async (_filter: unknown, update: unknown) => {
+      fields = update;
+      return { matchedCount: 1 };
+    });
+    t.mock.method(nodemailer, "createTransport", () => ({
+      sendMail: async () => ({ messageId: "test-message" }),
+    }));
+    const response = await postBasic({ username: "new@example.com", name: "New name" });
+    assert.equal(response.body.code, 200);
+    assert.deepEqual(fields, { $set: { name: "New name" } });
+  });
+
   it("reports when no record was updated", async (t) => {
-    t.mock.method(UserModel, "findOne", async () => user);
+    t.mock.method(UserModel, "findById", async () => user);
     t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 0 }));
-    const response = await postBasic({ username: user.username });
+    const response = await postBasic({ name: "New name" });
     assert.deepEqual(response.body, { code: 500, msg: "更新基本资料失败" });
   });
 });
