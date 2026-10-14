@@ -2,10 +2,11 @@ import { generateToken } from "../common/Utils";
 import { withBody } from "../common/Validate";
 import { send } from "../config/MailConfig";
 import { setValue } from "../config/redisConfig";
-import { UpdateBasicInfoSchema } from "../dto/user";
+import { UpdateBasicInfoSchema, ChangePasswordSchema } from "../dto/user";
 import UserModel from "../model/user";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
+import bcrypt from "bcrypt";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
   const { username } = body;
@@ -34,4 +35,30 @@ export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
   } else {
     ctx.body = { code: 500, msg: "更新基本资料失败" };
   }
+});
+
+export const changePassword = withBody(ChangePasswordSchema, async (ctx, body) => {
+  const { oldpwd, newpwd } = body;
+  const uid = ctx.state.user?._id;
+  if (!uid) {
+    ctx.status = 401;
+    ctx.body = { code: 401, msg: "未登录" };
+    return;
+  }
+  const user = await UserModel.findOne({ _id: ctx.state.user?._id });
+  const ok = !!user?.password && (await bcrypt.compare(oldpwd, user.password));
+  if (!ok) {
+    ctx.body = { code: 500, msg: "原密码错误" };
+    return;
+  }
+
+  if (oldpwd === newpwd) {
+    ctx.body = { code: 500, msg: "新密码不能与原密码相同" };
+    return;
+  }
+
+  const hash = await bcrypt.hash(newpwd, 10);
+  await UserModel.updateOne({ _id: user?._id }, { $set: { password: hash } });
+
+  ctx.body = { code: 200, msg: "密码更新成功" };
 });

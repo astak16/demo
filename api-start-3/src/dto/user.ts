@@ -8,3 +8,8 @@ export const UpdateBasicInfoSchema = z.object({
   regmark: z.string().min(1, "regmark不能为空字符串").optional(),
   pic: z.string().min(1, "pic不能为空字符串").optional(),
 });
+
+export const ChangePasswordSchema = z.object({
+  oldpwd: z.string().min(1, "password不能为空字符串"),
+  newpwd: z.string().min(1, "password不能为空字符串"),
+});
