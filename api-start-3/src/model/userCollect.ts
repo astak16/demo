@@ -2,7 +2,10 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const UserCollectSchema = new Schema({ uid: { type: String }, tid: { type: String }, title: { type: String } });
+const UserCollectSchema = new Schema(
+  { uid: { type: String }, tid: { type: String }, title: { type: String } },
+  { query: { byUid(uid: string) {} } },
+);
 
 const UserCollect = mongoose.model("user_collect", UserCollectSchema);
 

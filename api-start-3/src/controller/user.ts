@@ -1,14 +1,16 @@
 import { generateToken, getJWTPayload } from "../common/Utils";
-import { withBody } from "../common/Validate";
+import { withBody, withQuery } from "../common/Validate";
 import { send } from "../config/MailConfig";
 import { getValue, setValue } from "../config/redisConfig";
 import { UpdateBasicInfoSchema, ChangePasswordSchema, UpdateUsernameSchema } from "../dto/user";
-import { SetCollectSchema } from "../dto/userCollect";
+import { CollectSchema, SetCollectSchema } from "../dto/userCollect";
 import UserModel from "../model/user";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import bcrypt from "bcrypt";
 import UserCollectModel from "../model/userCollect";
+import { AppContext } from "../../types/types";
+import { paginate } from "../common/paginate";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
   const { username, ...rest } = body;
@@ -101,4 +103,15 @@ export const setCollect = withBody(SetCollectSchema, async (ctx, body) => {
 
   await UserCollectModel.updateOne({ uid: _id, tid }, { $setOnInsert: { title } }, { upsert: true });
   ctx.body = { code: 200, msg: "收藏成功", data: { isCollect: 1 } };
+});
+
+export const getCollectByUid = withQuery(CollectSchema, async (ctx, query) => {
+  const uid = ctx.state.user?._id!;
+  const { page, limit } = query;
+
+  const { total, list, hasMore } = await paginate(UserCollectModel, { uid }, { page, limit, select: "tid title created" });
+  ctx.body = {
+    code: 200,
+    data: { list, total, hasMore },
+  };
 });
