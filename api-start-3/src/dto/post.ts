@@ -3,6 +3,7 @@ import { CaptchaSchema } from "./login";
 import { Types } from "mongoose";
 
 const objectId = z.string().refine((v) => Types.ObjectId.isValid(v), { message: "Invalid ObjectId" });
+const tagId = z.string().min(1, "tag 不能为空");
 
 const PostSchema = z.object({
   _id: objectId,
@@ -14,7 +15,7 @@ const PostSchema = z.object({
   isEnd: z.string(),
   status: z.string(),
   sort: z.coerce.string(),
-  tags: z.array(objectId),
+  tags: z.array(tagId),
 });
 
 export const EditPostSchema = PostSchema.pick({ _id: true, title: true, content: true }).extend(CaptchaSchema.shape);

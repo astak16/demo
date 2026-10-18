@@ -1,4 +1,4 @@
-import mongoose, { type PopulateOptions } from "mongoose";
+import mongoose from "mongoose";
 import PostTagModel from "./postTag";
 import UserModel from "./user";
 
@@ -20,7 +20,7 @@ const PostSchema = new Schema(
     isTop: { type: String, default: "0" },
     sort: { type: String, default: 100 },
     tags: {
-      type: [{ type: Schema.Types.ObjectId, ref: PostTagModel.modelName }],
+      type: [{ type: String, ref: PostTagModel.modelName }],
       default: [],
     },
   },
@@ -37,21 +37,6 @@ const PostSchema = new Schema(
     },
   },
 );
-
-PostSchema.pre("init", function (raw) {
-  if (Array.isArray(raw.tags)) raw.tags = raw.tags.filter((tag: unknown) => mongoose.isValidObjectId(tag));
-});
-
-PostSchema.pre(["find", "findOne"], function () {
-  const populate = this.mongooseOptions().populate;
-  const tagsPopulate =
-    populate && !Array.isArray(populate) && typeof populate === "object"
-      ? (populate as unknown as Record<string, PopulateOptions>).tags
-      : undefined;
-  if (tagsPopulate) {
-    this.populate({ ...tagsPopulate, skipInvalidIds: true });
-  }
-});
 
 const Post = mongoose.model("post", PostSchema);
 

@@ -12,14 +12,18 @@ import z from "zod";
 
 export const getPosts = withQuery(PaginateSchema, async (ctx, query) => {
   const { page, limit } = query;
-  const result = await paginate(PostModel, {}, {
-    page,
-    limit,
-    populate: [
-      { path: "uid", select: "name" },
-      { path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } },
-    ],
-  });
+  const result = await paginate(
+    PostModel,
+    {},
+    {
+      page,
+      limit,
+      populate: [
+        { path: "uid", select: "name" },
+        { path: "tags", select: "tagName isDeleted", options: { includeDeleted: true } },
+      ],
+    },
+  );
   ctx.body = { code: 200, data: result };
 });
 
@@ -103,8 +107,17 @@ export const getTags = async (ctx: AppContext) => {
 };
 
 export const addTag = withBody(AddPostTagSchema, async (ctx, body) => {
-  const result = await PostTagModel.create(body);
-  ctx.body = { code: 200, data: { _id: result._id } };
+  try {
+    const result = await PostTagModel.create(body);
+    ctx.body = { code: 200, data: { _id: result._id, tagName: result.tagName } };
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+      ctx.status = 200;
+      ctx.body = { code: 500, msg: "标签 ID 已存在" };
+      return;
+    }
+    throw error;
+  }
 });
 
 export const editTag = withBody(EditPostTagSchema, async (ctx, body) => {
