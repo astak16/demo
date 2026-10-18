@@ -20,7 +20,6 @@ const PostSchema = new Schema({
     type: Array,
     default: [],
   },
-  isDeleted: { type: Number, default: 0 },
 });
 
 const Post = mongoose.model("post", PostSchema);

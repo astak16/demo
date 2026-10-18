@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import { JWT_SECRET } from "../src/config";
 import UserModel from "../src/model/user";
+import UserCollectModel from "../src/model/userCollect";
 import { setupApi } from "./helpers/api";
 
 const { request, cache } = setupApi();
@@ -198,5 +199,70 @@ describe("POST /user/changePassword", () => {
     assert.deepEqual(update?.filter, { _id: passwordUser._id });
     assert.notEqual(update?.fields.$set.password, passwordBody.newpwd);
     assert.equal(await bcrypt.compare(passwordBody.newpwd, update!.fields.$set.password), true);
+  });
+});
+
+describe("POST /user/setCollect", () => {
+  const body = { tid: "post-1", title: "A post" };
+
+  it("validates the collection request", async (t) => {
+    const update = t.mock.method(UserCollectModel, "updateOne", async () => ({}));
+    const response = await request("/user/setCollect", { tid: "", title: "", isFav: 2 }, authHeader);
+    assert.equal(response.body.code, 400);
+    for (const field of ["tid", "title", "isFav"]) assert.ok(response.body.msg[field]);
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("cancels an existing collection", async (t) => {
+    const remove = t.mock.method(UserCollectModel, "deleteOne", async () => ({ deletedCount: 1 }));
+    const response = await request("/user/setCollect", { ...body, isFav: 1 }, authHeader);
+    assert.deepEqual(response.body, { code: 200, msg: "取消收藏成功", data: { isCollect: 0 } });
+    assert.deepEqual(remove.mock.calls[0].arguments, [{ uid: user._id.toString(), tid: body.tid }]);
+  });
+
+  it("adds a collection with upsert", async (t) => {
+    const update = t.mock.method(UserCollectModel, "updateOne", async () => ({ modifiedCount: 1 }));
+    const response = await request("/user/setCollect", { ...body, isFav: 0 }, authHeader);
+    assert.deepEqual(response.body, { code: 200, msg: "收藏成功", data: { isCollect: 1 } });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { uid: user._id.toString(), tid: body.tid },
+      { $setOnInsert: { title: body.title } },
+      { upsert: true },
+    ]);
+  });
+});
+
+describe("GET /user/collect", () => {
+  it("validates pagination", async (t) => {
+    const find = t.mock.method(UserCollectModel, "find", () => { throw new Error("should not query"); });
+    const response = await request("/user/collect?page=-1&limit=0", undefined, authHeader);
+    assert.equal(response.body.code, 400);
+    assert.ok(response.body.msg.page);
+    assert.ok(response.body.msg.limit);
+    assert.equal(find.mock.callCount(), 0);
+  });
+
+  it("returns the requested page and total", async (t) => {
+    const list = [{ tid: "post-2", title: "Another post" }];
+    const calls: { filter?: unknown; sort?: unknown; skip?: number; limit?: number; select?: string } = {};
+    const query = {
+      sort(value: unknown) { calls.sort = value; return this; },
+      skip(value: number) { calls.skip = value; return this; },
+      limit(value: number) { calls.limit = value; return this; },
+      select(value: string) { calls.select = value; return this; },
+      async lean() { return list; },
+    };
+    t.mock.method(UserCollectModel, "find", (filter: unknown) => { calls.filter = filter; return query; });
+    const count = t.mock.method(UserCollectModel, "countDocuments", async () => 5);
+    const response = await request("/user/collect?page=1&limit=2", undefined, authHeader);
+    assert.deepEqual(response.body, { code: 200, data: { list, total: 5, hasMore: true } });
+    assert.deepEqual(calls, {
+      filter: { uid: user._id.toString() },
+      sort: { _id: -1, created: -1 },
+      skip: 2,
+      limit: 2,
+      select: "tid title created",
+    });
+    assert.deepEqual(count.mock.calls[0].arguments, [{ uid: user._id.toString() }]);
   });
 });

@@ -22,7 +22,27 @@ export function baseFields(schema: Schema) {
   schema.add({
     created: { type: String, default: now },
     updated: { type: String, default: now },
+    isDeleted: { type: Number, enum: [0, 1], default: 0 },
   });
+  schema.pre(
+    [
+      "find",
+      "findOne",
+      "countDocuments",
+      "distinct",
+      "updateOne",
+      "updateMany",
+      "findOneAndUpdate",
+      "replaceOne",
+      "findOneAndReplace",
+      "deleteOne",
+      "deleteMany",
+      "findOneAndDelete",
+    ],
+    function () {
+      this.where({ isDeleted: 0 });
+    },
+  );
   schema.set("timestamps", {
     createdAt: "created",
     updatedAt: "updated",

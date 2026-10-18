@@ -1,7 +1,11 @@
+import { fi } from "zod/locales";
+import { AppContext } from "../../types/types";
 import { checkCode } from "../common/Utils";
 import { withBody } from "../common/Validate";
 import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema } from "../dto/post";
+import { AddPostTagSchema, DeletePostTagSchema, EditPostTagSchema } from "../dto/postTag";
 import PostModel from "../model/post";
+import PostTagModel from "../model/postTag";
 import UserModel from "../model/user";
 import z from "zod";
 
@@ -72,11 +76,37 @@ export const uploadPostById = createEditPost(EditAllPostSchema); // 除 uid、_i
 export const deletedPost = withBody(DeletePostSchema, async (ctx, body) => {
   const _id = ctx.state.user!._id!;
   const { _ids } = body;
-  const res = await PostModel.updateMany(
-    { _id: { $in: _ids }, uid: _id, isEnd: "0", isDeleted: 0 },
-    { $set: { isDeleted: 1 } },
-  );
-  ctx.body = res.modifiedCount > 0
-    ? { code: 200, msg: "删除成功", data: { modifiedCount: res.modifiedCount } }
-    : { code: 500, msg: "没有可删除的文章" };
+  const res = await PostModel.updateMany({ _id: { $in: _ids }, uid: _id, isEnd: "0", isDeleted: 0 }, { $set: { isDeleted: 1 } });
+  ctx.body =
+    res.modifiedCount > 0
+      ? { code: 200, msg: "删除成功", data: { modifiedCount: res.modifiedCount } }
+      : { code: 500, msg: "没有可删除的文章" };
+});
+
+export const getTags = async (ctx: AppContext) => {
+  const result = await PostTagModel.find();
+  ctx.body = { code: 200, data: { _id: result } };
+};
+
+export const addTag = withBody(AddPostTagSchema, async (ctx, body) => {
+  const result = await PostTagModel.create(body);
+  ctx.body = { code: 200, data: { _id: result._id } };
+});
+
+export const editTag = withBody(EditPostTagSchema, async (ctx, body) => {
+  const { _id, ...field } = body;
+  const result = await PostTagModel.updateOne({ _id }, field);
+  if (result.modifiedCount) {
+    ctx.body = { code: 200, msg: "更新成功" };
+  } else {
+    ctx.body = { code: 500, msg: "更新失败" };
+  }
+});
+
+export const deleteTag = withBody(DeletePostTagSchema, async (ctx, body) => {
+  const result = await PostTagModel.updateMany({ _id: { $in: body._ids } }, { $set: { isDeleted: 1 } });
+  ctx.body =
+    result.modifiedCount > 0
+      ? { code: 200, msg: "删除成功", data: { modifiedCount: result.modifiedCount } }
+      : { code: 500, msg: "没有可删除的标签" };
 });
