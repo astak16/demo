@@ -20,7 +20,11 @@ export const getPosts = withQuery(PaginateSchema, async (ctx, query) => {
       limit,
       populate: [
         { path: "uid", select: "name" },
-        { path: "tags", select: "tagName isDeleted", options: { includeDeleted: true } },
+        {
+          path: "tags",
+          select: "tagName isDeleted",
+          options: { includeDeleted: true },
+        },
       ],
     },
   );
@@ -103,7 +107,7 @@ export const deletedPost = withBody(DeletePostSchema, async (ctx, body) => {
 
 export const getTags = async (ctx: AppContext) => {
   const result = await PostTagModel.find();
-  ctx.body = { code: 200, data: { _id: result } };
+  ctx.body = { code: 200, data: result };
 };
 
 export const addTag = withBody(AddPostTagSchema, async (ctx, body) => {
