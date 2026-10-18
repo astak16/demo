@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { addPost, updatePost, uploadPostById } from "../../controller/content";
+import { addPost, updatePost, uploadPostById, deletedPost } from "../../controller/content";
 
 const router = new Router();
 
@@ -10,5 +10,7 @@ router.post("/add", addPost);
 router.post("/update", updatePost);
 
 router.post("/updateId", uploadPostById);
+
+router.post("/delete", deletedPost);
 
 export default router;

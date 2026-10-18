@@ -124,6 +124,24 @@ describe("POST /content/add", () => {
   });
 });
 
+describe("POST /content/delete", () => {
+  it("marks the current user's active post as deleted", async (t) => {
+    const update = t.mock.method(PostModel, "updateMany", async () => ({ modifiedCount: 1 }));
+    const response = await request("/content/delete", { _ids: [validEdit._id] }, authHeader);
+    assert.deepEqual(response.body, { code: 200, msg: "删除成功", data: { modifiedCount: 1 } });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: { $in: [validEdit._id] }, uid, isEnd: "0", isDeleted: 0 },
+      { $set: { isDeleted: 1 } },
+    ]);
+  });
+
+  it("reports when no eligible post was deleted", async (t) => {
+    t.mock.method(PostModel, "updateMany", async () => ({ modifiedCount: 0 }));
+    const response = await request("/content/delete", { _ids: [validEdit._id] }, authHeader);
+    assert.deepEqual(response.body, { code: 500, msg: "没有可删除的文章" });
+  });
+});
+
 describe("POST /content/update", () => {
   it("requires authentication", async () => {
     const response = await request("/content/update", validEdit);

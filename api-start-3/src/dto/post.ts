@@ -6,7 +6,7 @@ const objectId = z.string().refine((v) => Types.ObjectId.isValid(v), { message: 
 
 const PostSchema = z.object({
   _id: objectId,
-  uid: objectId,
+  // uid: objectId,
   title: z.string().min(1, "title不能为空字符串"),
   content: z.string().min(1, "content不能为空字符串"),
   catalog: z.string().min(1, "catalog不能为空字符串"),
@@ -19,8 +19,8 @@ const PostSchema = z.object({
 
 export const EditPostSchema = PostSchema.pick({ _id: true, title: true, content: true }).extend(CaptchaSchema.shape);
 
-export const EditAllPostSchema = EditPostSchema.extend(
-  PostSchema.omit({ uid: true, _id: true, title: true, content: true }).partial().shape,
-);
+export const EditAllPostSchema = EditPostSchema.extend(PostSchema.omit({ _id: true, title: true, content: true }).partial().shape);
 
 export const AddPostSchema = PostSchema.pick({ title: true, content: true, catalog: true, fav: true }).extend(CaptchaSchema.shape);
+
+export const DeletePostSchema = z.object({ _ids: z.array(objectId) });

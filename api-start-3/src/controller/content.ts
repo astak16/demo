@@ -1,6 +1,6 @@
 import { checkCode } from "../common/Utils";
 import { withBody } from "../common/Validate";
-import { AddPostSchema, EditAllPostSchema, EditPostSchema } from "../dto/post";
+import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema } from "../dto/post";
 import PostModel from "../model/post";
 import UserModel from "../model/user";
 import z from "zod";
@@ -68,3 +68,15 @@ const createEditPost = <S extends typeof EditPostSchema | typeof EditAllPostSche
 
 export const updatePost = createEditPost(EditPostSchema); // 只能改 title、content
 export const uploadPostById = createEditPost(EditAllPostSchema); // 除 uid、_id 外都能改
+
+export const deletedPost = withBody(DeletePostSchema, async (ctx, body) => {
+  const _id = ctx.state.user!._id!;
+  const { _ids } = body;
+  const res = await PostModel.updateMany(
+    { _id: { $in: _ids }, uid: _id, isEnd: "0", isDeleted: 0 },
+    { $set: { isDeleted: 1 } },
+  );
+  ctx.body = res.modifiedCount > 0
+    ? { code: 200, msg: "删除成功", data: { modifiedCount: res.modifiedCount } }
+    : { code: 500, msg: "没有可删除的文章" };
+});
