@@ -18,7 +18,33 @@ export async function connectDB() {
 
 const now = () => dayjs().tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss");
 
+function removeInternalFields(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(removeInternalFields);
+  } else if (value && typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return;
+    const record = value as Record<string, unknown>;
+    delete record.isDeleted;
+    delete record.password;
+    Object.values(record).forEach(removeInternalFields);
+  }
+}
+
 export function baseFields(schema: Schema) {
+  const toJSON = schema.get("toJSON") ?? {};
+  const previousTransform = toJSON.transform as
+    | ((doc: unknown, ret: Record<string, unknown>, options: unknown) => Record<string, unknown> | void)
+    | undefined;
+  schema.set("toJSON", {
+    ...toJSON,
+    versionKey: false,
+    transform(doc, ret, options) {
+      const result = (previousTransform?.(doc, ret, options) ?? ret) as Record<string, unknown>;
+      removeInternalFields(result);
+      return result;
+    },
+  });
   schema.add({
     created: { type: String, default: now },
     updated: { type: String, default: now },

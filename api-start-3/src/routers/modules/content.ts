@@ -5,8 +5,6 @@ const router = new Router();
 
 router.prefix("/content");
 
-router.get("/getPosts", getPosts);
-
 router.post("/add", addPost);
 
 router.post("/update", updatePost);

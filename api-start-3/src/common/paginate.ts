@@ -25,7 +25,7 @@ export const paginate = async <T>(
   if (populate) {
     for (const option of Array.isArray(populate) ? populate : [populate]) query.populate(option);
   }
-  const [list, total] = await Promise.all([query.lean(), model.countDocuments(filter)]);
+  const [list, total] = await Promise.all([query.exec(), model.countDocuments(filter)]);
 
   return { list, total, page: p, limit: l, hasMore: (p + 1) * l < total };
 };

@@ -62,7 +62,7 @@ const createEditPost = <S extends typeof EditPostSchema | typeof EditAllPostSche
       return;
     }
 
-    const post = await PostModel.findById(_id).select("uid isEnd").lean();
+    const post = await PostModel.findById(_id).select("uid isEnd");
     if (!post) {
       ctx.body = { code: 500, msg: "文章不存在" };
       return;

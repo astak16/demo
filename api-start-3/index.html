@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API 接口清单</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f7fb; color: #172033; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1, h2, p { margin-top: 0; }
+    h1 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.04em; margin-bottom: 8px; }
+    .intro { color: #647187; line-height: 1.6; margin-bottom: 28px; }
+    .overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat, .panel, .module { background: #fff; border: 1px solid #e3e8f0; border-radius: 16px; box-shadow: 0 4px 20px rgba(30, 48, 80, .04); }
+    .stat { padding: 20px; }
+    .stat-label { color: #69768b; font-size: 13px; }
+    .stat-value { display: block; font-size: 28px; font-weight: 750; margin-top: 5px; font-variant-numeric: tabular-nums; }
+    .progress { height: 8px; background: #e9edf5; border-radius: 20px; overflow: hidden; margin: 0 0 24px; }
+    .progress > span { display: block; height: 100%; width: 0; background: #4267e9; transition: width .2s; }
+    .panel { padding: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+    .search { flex: 1 1 280px; min-width: 0; border: 1px solid #d5ddea; border-radius: 10px; padding: 11px 13px; font: inherit; outline-color: #4267e9; }
+    .filters { display: flex; gap: 6px; }
+    button { font: inherit; cursor: pointer; }
+    .filter, .reset { background: #fff; border: 1px solid #dbe2ee; color: #526077; border-radius: 9px; padding: 10px 12px; }
+    .filter[aria-pressed="true"] { background: #eaf0ff; color: #3155ca; border-color: #bdccff; font-weight: 650; }
+    .reset { margin-left: auto; }
+    .reset:hover { color: #c43c4a; border-color: #e8aeb6; }
+    .summary { color: #647187; font-size: 14px; margin-bottom: 16px; }
+    .module { margin-bottom: 14px; overflow: hidden; }
+    .module-head { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #edf0f5; }
+    .module h2 { font-size: 18px; margin: 0; }
+    .module-count { color: #718095; font-size: 13px; white-space: nowrap; }
+    .endpoint { display: grid; grid-template-columns: 26px 58px minmax(220px, 1fr) minmax(160px, .8fr); gap: 10px; align-items: center; padding: 13px 20px; border-bottom: 1px solid #f0f2f6; cursor: pointer; }
+    .endpoint:last-child { border-bottom: 0; }
+    .endpoint:hover { background: #f9fbff; }
+    .endpoint input { width: 18px; height: 18px; accent-color: #4267e9; cursor: pointer; }
+    .method { font-size: 11px; font-weight: 750; border-radius: 6px; padding: 5px 6px; text-align: center; }
+    .method.get { color: #117d62; background: #e6f7f0; }
+    .method.post { color: #a46b0c; background: #fff4dc; }
+    .path { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .description { color: #647187; font-size: 13px; }
+    .endpoint.done .path, .endpoint.done .description { color: #9aa5b6; text-decoration: line-through; }
+    .empty { background: #fff; border: 1px dashed #ccd6e5; border-radius: 14px; padding: 32px; text-align: center; color: #718095; }
+    .note { color: #7a8799; font-size: 12px; margin-top: 22px; line-height: 1.6; }
+    @media (max-width: 700px) {
+      main { padding: 28px 14px 50px; }
+      .overview { gap: 8px; }
+      .stat { padding: 14px; }
+      .stat-value { font-size: 23px; }
+      .endpoint { grid-template-columns: 22px 52px minmax(0, 1fr); padding: 12px 14px; }
+      .description { grid-column: 3; }
+      .module-head { padding: 16px 14px; }
+      .reset { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>API 接口清单</h1>
+    <p class="intro">来源：api-start/src/routes/modules · 按接口逐项勾选，进度自动保存在当前浏览器。</p>
+    <section class="overview" aria-label="进度统计">
+      <div class="stat"><span class="stat-label">接口总数</span><strong class="stat-value" id="total"></strong></div>
+      <div class="stat"><span class="stat-label">已完成</span><strong class="stat-value" id="completed"></strong></div>
+      <div class="stat"><span class="stat-label">完成率</span><strong class="stat-value" id="percentage"></strong></div>
+    </section>
+    <div class="progress" role="progressbar" aria-label="完成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-fill"></span></div>
+    <section class="panel" aria-label="筛选">
+      <input class="search" id="search" type="search" placeholder="搜索路径、方法或说明" aria-label="搜索接口">
+      <div class="filters" role="group" aria-label="完成状态">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">全部</button>
+        <button type="button" class="filter" data-filter="todo" aria-pressed="false">未完成</button>
+        <button type="button" class="filter" data-filter="done" aria-pressed="false">已完成</button>
+      </div>
+      <button type="button" class="reset" id="reset">重置进度</button>
+    </section>
+    <p class="summary" id="summary"></p>
+    <div id="list"></div>
+    <p class="note">仅统计路由文件中启用的 router.get / router.post 接口。完成状态保存在浏览器 localStorage 中，同一浏览器再次打开可继续使用。</p>
+  </main>
+  <script>
+    const endpoints = [{"module":"管理 /admin","method":"GET","path":"/admin/getTags","description":"获取标签列表"},{"module":"管理 /admin","method":"POST","path":"/admin/addTag","description":"添加标签"},{"module":"管理 /admin","method":"GET","path":"/admin/removeTag","description":"删除标签"},{"module":"管理 /admin","method":"POST","path":"/admin/editTag","description":"编辑标签"},{"module":"管理 /admin","method":"GET","path":"/admin/users","description":"查询所有用户"},{"module":"管理 /admin","method":"POST","path":"/admin/deleteUser","description":"删除用户"},{"module":"管理 /admin","method":"POST","path":"/admin/updateUser","description":"更新特定用户"},{"module":"管理 /admin","method":"POST","path":"/admin/updateUserSettings","description":"批量更新用户设置"},{"module":"管理 /admin","method":"POST","path":"/admin/addUser","description":"添加用户"},{"module":"管理 /admin","method":"GET","path":"/admin/checkname","description":"校验用户名是否冲突"},{"module":"管理 /admin","method":"POST","path":"/admin/addMenu","description":"添加菜单"},{"module":"管理 /admin","method":"GET","path":"/admin/getMenu","description":"获取菜单"},{"module":"管理 /admin","method":"POST","path":"/admin/deleteMenu","description":"删除菜单"},{"module":"管理 /admin","method":"POST","path":"/admin/updateMenu","description":"更新菜单"},{"module":"管理 /admin","method":"POST","path":"/admin/addRole","description":"添加角色"},{"module":"管理 /admin","method":"GET","path":"/admin/getRoles","description":"获取角色"},{"module":"管理 /admin","method":"POST","path":"/admin/deleteRole","description":"删除角色"},{"module":"管理 /admin","method":"POST","path":"/admin/updateRole","description":"更新角色"},{"module":"管理 /admin","method":"GET","path":"/admin/getComments","description":"获取评论"},{"module":"管理 /admin","method":"POST","path":"/admin/deleteComments","description":"删除评论"},{"module":"管理 /admin","method":"POST","path":"/admin/updateCommentsBatch","description":"批量更新评论"},{"module":"管理 /admin","method":"GET","path":"/admin/getRolesNames","description":"获取角色列表"},{"module":"管理 /admin","method":"GET","path":"/admin/getRoutes","description":"获取用户 -> 角色 -> 动态菜单信息"},{"module":"管理 /admin","method":"GET","path":"/admin/getstat","description":"获取统计数据"},{"module":"管理 /admin","method":"GET","path":"/admin/getError","description":"获取错误日志"},{"module":"管理 /admin","method":"POST","path":"/admin/deleteError","description":"删除错误日志"},{"module":"评论 /comments","method":"POST","path":"/comments/reply","description":"添加评论"},{"module":"评论 /comments","method":"POST","path":"/comments/update","description":"更新评论"},{"module":"评论 /comments","method":"GET","path":"/comments/accept","description":"设置最佳答案"},{"module":"评论 /comments","method":"GET","path":"/comments/hands","description":"评论点赞"},{"module":"内容 /content","method":"POST","path":"/content/upload","description":"上传图片"},{"module":"内容 /content","method":"POST","path":"/content/add","description":"发表新贴"},{"module":"内容 /content","method":"POST","path":"/content/wxAdd","description":"小程序发表新贴"},{"module":"内容 /content","method":"POST","path":"/content/update","description":"更新帖子"},{"module":"内容 /content","method":"POST","path":"/content/updateId","description":"按帖子 ID 更新"},{"module":"内容 /content","method":"POST","path":"/content/updatePostSettings","description":"批量更新帖子设置"},{"module":"内容 /content","method":"POST","path":"/content/delete","description":"删除帖子"},{"module":"登录 /login","method":"POST","path":"/login/forget","description":"忘记密码"},{"module":"登录 /login","method":"POST","path":"/login/login","description":"登录接口"},{"module":"登录 /login","method":"POST","path":"/login/reg","description":"注册用户"},{"module":"登录 /login","method":"POST","path":"/login/reset","description":"密码重置"},{"module":"登录 /login","method":"POST","path":"/login/wxLogin","description":"微信登录"},{"module":"登录 /login","method":"POST","path":"/login/loginByPhone","description":"手机登录"},{"module":"登录 /login","method":"POST","path":"/login/getMobile","description":"获取用户手机号"},{"module":"登录 /login","method":"POST","path":"/login/refresh","description":"刷新登录状态"},{"module":"登录 /login","method":"POST","path":"/login/wxOauth","description":"扫码登录"},{"module":"公开 /public","method":"GET","path":"/public/getCaptcha","description":"获取图片验证码"},{"module":"公开 /public","method":"GET","path":"/public/sendCode","description":"发送手机短信验证码"},{"module":"公开 /public","method":"GET","path":"/public/list","description":"获取文章列表"},{"module":"公开 /public","method":"GET","path":"/public/tips","description":"温馨提醒"},{"module":"公开 /public","method":"GET","path":"/public/links","description":"友情链接"},{"module":"公开 /public","method":"GET","path":"/public/topWeek","description":"回复周榜"},{"module":"公开 /public","method":"GET","path":"/public/resetEmail","description":"确认修改邮件"},{"module":"公开 /public","method":"GET","path":"/public/content/detail","description":"获取文章详情"},{"module":"公开 /public","method":"GET","path":"/public/comments","description":"获取评论列表"},{"module":"公开 /public","method":"GET","path":"/public/info","description":"获取用户基本信息"},{"module":"公开 /public","method":"GET","path":"/public/latestPost","description":"获取用户最近的发贴记录"},{"module":"公开 /public","method":"GET","path":"/public/latestComment","description":"获取用户最近的评论记录"},{"module":"公开 /public","method":"GET","path":"/public/hotPost","description":"热门帖子"},{"module":"公开 /public","method":"GET","path":"/public/hotComments","description":"热门评论"},{"module":"公开 /public","method":"GET","path":"/public/hotSignRecord","description":"签到排行"},{"module":"公开 /public","method":"GET","path":"/public/subids","description":"获取微信模板id"},{"module":"公开 /public","method":"POST","path":"/public/notify","description":"获取支付通知"},{"module":"用户 /user","method":"GET","path":"/user/fav","description":"用户签到"},{"module":"用户 /user","method":"POST","path":"/user/basic","description":"更新用户的基本信息"},{"module":"用户 /user","method":"POST","path":"/user/changePassword","description":"修改密码"},{"module":"用户 /user","method":"GET","path":"/user/setCollect","description":"取消 设置收藏"},{"module":"用户 /user","method":"GET","path":"/user/collect","description":"获取收藏列表"},{"module":"用户 /user","method":"GET","path":"/user/post","description":"获取用户发贴记录"},{"module":"用户 /user","method":"GET","path":"/user/deletePost","description":"删除发贴记录"},{"module":"用户 /user","method":"GET","path":"/user/getmsg","description":"获取历史消息"},{"module":"用户 /user","method":"GET","path":"/user/getHands","description":"获取点赞记录"},{"module":"用户 /user","method":"GET","path":"/user/setmsg","description":"设置消息状态"},{"module":"用户 /user","method":"POST","path":"/user/addError","description":"保存错误日志"},{"module":"用户 /user","method":"GET","path":"/user/wxUserCount","description":"微信个人中心统计数字"},{"module":"用户 /user","method":"POST","path":"/user/wxOrder","description":"微信用户下单"}];
+    const storageKey = "api-start-route-todo-v1";
+    let completed;
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      completed = new Set(Array.isArray(saved) ? saved : []);
+    } catch {
+      completed = new Set();
+    }
+    let filter = "all";
+    const search = document.getElementById("search");
+    const list = document.getElementById("list");
+    const keyOf = route => `${route.method} ${route.path}`;
+    const save = () => localStorage.setItem(storageKey, JSON.stringify([...completed]));
+
+    function render() {
+      const term = search.value.trim().toLocaleLowerCase();
+      const visible = endpoints.filter(route => {
+        const matchesText = `${route.method} ${route.path} ${route.description}`.toLocaleLowerCase().includes(term);
+        const isDone = completed.has(keyOf(route));
+        return matchesText && (filter === "all" || (filter === "done" ? isDone : !isDone));
+      });
+      const doneCount = endpoints.filter(route => completed.has(keyOf(route))).length;
+      const percent = Math.round(doneCount / endpoints.length * 100);
+      document.getElementById("total").textContent = endpoints.length;
+      document.getElementById("completed").textContent = doneCount;
+      document.getElementById("percentage").textContent = `${percent}%`;
+      document.getElementById("progress-fill").style.width = `${percent}%`;
+      document.querySelector(".progress").setAttribute("aria-valuenow", percent);
+      document.getElementById("summary").textContent = `当前显示 ${visible.length} 个接口 · 共 ${new Set(endpoints.map(route => route.module)).size} 个模块`;
+      list.replaceChildren();
+      if (!visible.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "没有符合条件的接口";
+        list.append(empty);
+        return;
+      }
+      for (const moduleName of [...new Set(visible.map(route => route.module))]) {
+        const routes = visible.filter(route => route.module === moduleName);
+        const section = document.createElement("section");
+        section.className = "module";
+        const header = document.createElement("div");
+        header.className = "module-head";
+        const title = document.createElement("h2");
+        title.textContent = moduleName;
+        const count = document.createElement("span");
+        count.className = "module-count";
+        count.textContent = `${routes.length} 个接口`;
+        header.append(title, count);
+        section.append(header);
+        for (const route of routes) {
+          const row = document.createElement("label");
+          row.className = `endpoint${completed.has(keyOf(route)) ? " done" : ""}`;
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = completed.has(keyOf(route));
+          checkbox.setAttribute("aria-label", `${route.method} ${route.path} 已完成`);
+          checkbox.addEventListener("change", () => {
+            if (checkbox.checked) completed.add(keyOf(route));
+            else completed.delete(keyOf(route));
+            save();
+            render();
+          });
+          const method = document.createElement("span");
+          method.className = `method ${route.method.toLowerCase()}`;
+          method.textContent = route.method;
+          const path = document.createElement("span");
+          path.className = "path";
+          path.textContent = route.path;
+          const description = document.createElement("span");
+          description.className = "description";
+          description.textContent = route.description;
+          row.append(checkbox, method, path, description);
+          section.append(row);
+        }
+        list.append(section);
+      }
+    }
+
+    search.addEventListener("input", render);
+    document.querySelectorAll(".filter").forEach(button => button.addEventListener("click", () => {
+      filter = button.dataset.filter;
+      document.querySelectorAll(".filter").forEach(item => item.setAttribute("aria-pressed", item === button));
+      render();
+    }));
+    document.getElementById("reset").addEventListener("click", () => {
+      if (!completed.size || !confirm("确定清除所有已完成状态吗？")) return;
+      completed.clear();
+      save();
+      render();
+    });
+    render();
+  </script>
+</body>
+</html>
