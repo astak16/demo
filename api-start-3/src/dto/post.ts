@@ -4,16 +4,11 @@ import { Types } from "mongoose";
 
 const objectId = z.string().refine((v) => Types.ObjectId.isValid(v), { message: "Invalid ObjectId" });
 
-const PostBaseSchema = z
-  .object({
-    title: z.string().min(1, "title不能为空字符串"),
-    content: z.string().min(1, "content不能为空字符串"),
-  })
-  .extend(CaptchaSchema.shape);
-
-const PostFieldsSchema = z.object({
-  uid: objectId,
+const PostSchema = z.object({
   _id: objectId,
+  uid: objectId,
+  title: z.string().min(1, "title不能为空字符串"),
+  content: z.string().min(1, "content不能为空字符串"),
   catalog: z.string().min(1, "catalog不能为空字符串"),
   fav: z.number().int().min(0).max(100),
   isEnd: z.string(),
@@ -22,8 +17,10 @@ const PostFieldsSchema = z.object({
   tags: z.array(z.string()),
 });
 
-export const AddPostSchema = PostBaseSchema.extend(PostFieldsSchema.pick({ catalog: true, fav: true }).shape);
+export const EditPostSchema = PostSchema.pick({ _id: true, title: true, content: true }).extend(CaptchaSchema.shape);
 
-export const EditPostSchema = PostBaseSchema.extend({ tid: objectId }).extend(
-  PostFieldsSchema.pick({ catalog: true, tags: true }).partial().shape,
+export const EditAllPostSchema = EditPostSchema.extend(
+  PostSchema.omit({ uid: true, _id: true, title: true, content: true }).partial().shape,
 );
+
+export const AddPostSchema = PostSchema.pick({ title: true, content: true, catalog: true, fav: true }).extend(CaptchaSchema.shape);

@@ -20,7 +20,7 @@ const validPost = {
 };
 const post = (body: Record<string, unknown>, headers = authHeader) => request("/content/add", body, headers);
 const validEdit = {
-  tid: "507f1f77bcf86cd799439011",
+  _id: "507f1f77bcf86cd799439011",
   title: "Updated article",
   content: "Updated body",
   sid: validPost.sid,
@@ -133,10 +133,10 @@ describe("POST /content/update", () => {
 
   it("validates required fields before looking up the post", async (t) => {
     const lookup = t.mock.method(PostModel, "findById", () => { throw new Error("should not query"); });
-    const response = await edit({ tid: "", title: "", content: "" });
+    const response = await edit({ _id: "", title: "", content: "" });
     assert.equal(response.status, 200);
     assert.equal(response.body.code, 400);
-    for (const field of ["tid", "title", "content", "sid", "code"]) {
+    for (const field of ["_id", "title", "content", "sid", "code"]) {
       assert.ok(response.body.msg[field], field);
     }
     assert.equal(lookup.mock.callCount(), 0);
@@ -160,7 +160,7 @@ describe("POST /content/update", () => {
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit(validEdit);
     assert.deepEqual(response.body, { code: 500, msg: "文章不存在" });
-    assert.deepEqual(lookup.mock.calls[0].arguments, [validEdit.tid]);
+    assert.deepEqual(lookup.mock.calls[0].arguments, [validEdit._id]);
     assert.equal(update.mock.callCount(), 0);
   });
 
@@ -195,7 +195,7 @@ describe("POST /content/update", () => {
     const response = await edit(validEdit);
     assert.deepEqual(response.body, { code: 500, msg: "文章不存在、已结束或没有操作权限" });
     assert.deepEqual(update.mock.calls[0].arguments, [
-      { _id: validEdit.tid, uid, isEnd: "0" },
+      { _id: validEdit._id, uid, isEnd: "0" },
       { $set: { title: validEdit.title, content: validEdit.content } },
     ]);
   });
@@ -207,10 +207,24 @@ describe("POST /content/update", () => {
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit({ ...validEdit, uid: "another-user", isEnd: "1", fav: 100 });
-    assert.deepEqual(response.body, { code: 200, data: { _id: validEdit.tid }, msg: "更新帖子成功" });
+    assert.deepEqual(response.body, { code: 200, data: { _id: validEdit._id }, msg: "更新帖子成功" });
     assert.deepEqual(update.mock.calls[0].arguments, [
-      { _id: validEdit.tid, uid, isEnd: "0" },
+      { _id: validEdit._id, uid, isEnd: "0" },
       { $set: { title: validEdit.title, content: validEdit.content } },
+    ]);
+  });
+
+  it("updates the catalog through /content/updateId", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await request("/content/updateId", { ...validEdit, catalog: "后端" }, authHeader);
+    assert.deepEqual(response.body, { code: 200, data: { _id: validEdit._id }, msg: "更新帖子成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: validEdit._id, uid, isEnd: "0" },
+      { $set: { title: validEdit.title, content: validEdit.content, catalog: "后端" } },
     ]);
   });
 });
