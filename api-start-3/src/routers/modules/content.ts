@@ -1,9 +1,11 @@
 import Router from "@koa/router";
-import { addPost, updatePost, uploadPostById, deletedPost } from "../../controller/content";
+import { addPost, updatePost, uploadPostById, deletedPost, getPosts } from "../../controller/content";
 
 const router = new Router();
 
 router.prefix("/content");
+
+router.get("/getPosts", getPosts);
 
 router.post("/add", addPost);
 

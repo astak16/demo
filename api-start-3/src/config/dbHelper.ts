@@ -40,7 +40,8 @@ export function baseFields(schema: Schema) {
       "findOneAndDelete",
     ],
     function () {
-      this.where({ isDeleted: 0 });
+      if ((this.getOptions() as unknown as { includeDeleted?: boolean }).includeDeleted) return;
+      this.where({ isDeleted: { $in: [0, null] } });
     },
   );
   schema.set("timestamps", {

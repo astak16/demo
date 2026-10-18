@@ -1,13 +1,29 @@
-import { fi } from "zod/locales";
 import { AppContext } from "../../types/types";
+import type { QueryOptions } from "mongoose";
+import { paginate } from "../common/paginate";
 import { checkCode } from "../common/Utils";
-import { withBody } from "../common/Validate";
+import { withBody, withQuery } from "../common/Validate";
+import { PaginateSchema } from "../dto/paginate";
 import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema } from "../dto/post";
 import { AddPostTagSchema, DeletePostTagSchema, EditPostTagSchema } from "../dto/postTag";
 import PostModel from "../model/post";
 import PostTagModel from "../model/postTag";
 import UserModel from "../model/user";
 import z from "zod";
+
+export const getPosts = withQuery(PaginateSchema, async (ctx, query) => {
+  const { page, limit } = query;
+  const result = await paginate(PostModel, {}, {
+    page,
+    limit,
+    populate: [
+      { path: "uid", select: "name" },
+      { path: "tags", select: "tagName tagClass" },
+    ],
+    queryOptions: { includeDeletedTags: true } as unknown as QueryOptions,
+  });
+  ctx.body = { code: 200, data: result };
+});
 
 export const addPost = withBody(AddPostSchema, async (ctx, body) => {
   const { sid, code, fav, ...rest } = body;

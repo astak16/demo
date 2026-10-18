@@ -14,6 +14,7 @@ const validPost = {
   title: "Test article",
   catalog: "news",
   content: "Article body",
+  tags: ["6ad49f2efaeec26fb582e893"],
   fav: 0,
   sid: "post-captcha",
   code: "AbCd",
@@ -28,6 +29,40 @@ const validEdit = {
 };
 const edit = (body: Record<string, unknown>, headers = authHeader) => request("/content/update", body, headers);
 
+describe("GET /content/getPosts", () => {
+  it("validates pagination before querying posts", async (t) => {
+    const find = t.mock.method(PostModel, "find", () => { throw new Error("should not query"); });
+    const response = await request("/content/getPosts?page=-1&limit=0", undefined, authHeader);
+    assert.equal(response.body.code, 400);
+    assert.ok(response.body.msg.page);
+    assert.ok(response.body.msg.limit);
+    assert.equal(find.mock.callCount(), 0);
+  });
+
+  it("returns a page of posts with populated tags", async (t) => {
+    const tags = [{ _id: "6ad49f2efaeec26fb582e893", tagName: "TypeScript", tagClass: "language" }];
+    const list = [{ _id: validEdit._id, title: "A post", tags }];
+    const calls: { filter?: unknown; sort?: unknown; skip?: number; limit?: number; populate?: unknown } = {};
+    const query = {
+      sort(value: unknown) { calls.sort = value; return this; },
+      skip(value: number) { calls.skip = value; return this; },
+      limit(value: number) { calls.limit = value; return this; },
+      populate(value: unknown) { calls.populate = value; return this; },
+      async lean() { return list; },
+    };
+    t.mock.method(PostModel, "find", (filter: unknown) => { calls.filter = filter; return query; });
+    const count = t.mock.method(PostModel, "countDocuments", async () => 3);
+
+    const response = await request("/content/getPosts?page=1&limit=2", undefined, authHeader);
+    assert.deepEqual(response.body, { code: 200, data: { list, total: 3, page: 1, limit: 2, hasMore: false } });
+    assert.deepEqual(calls, {
+      filter: {}, sort: { created: -1, _id: -1 }, skip: 2, limit: 2,
+      populate: { path: "tags", select: "tagName tagClass" },
+    });
+    assert.deepEqual(count.mock.calls[0].arguments, [{}]);
+  });
+});
+
 describe("POST /content/add", () => {
   it("requires authentication", async () => {
     const response = await request("/content/add", validPost);
@@ -40,7 +75,7 @@ describe("POST /content/add", () => {
     const response = await post({ title: "", catalog: "", content: "", fav: -1 });
     assert.equal(response.status, 200);
     assert.equal(response.body.code, 400);
-    for (const field of ["title", "catalog", "content", "fav", "sid", "code"]) {
+    for (const field of ["title", "catalog", "content", "tags", "fav", "sid", "code"]) {
       assert.ok(response.body.msg[field], field);
     }
     assert.equal(create.mock.callCount(), 0);
@@ -75,6 +110,7 @@ describe("POST /content/add", () => {
       title: validPost.title,
       catalog: validPost.catalog,
       content: validPost.content,
+      tags: validPost.tags,
       fav: 0,
       uid,
     });
@@ -243,6 +279,29 @@ describe("POST /content/update", () => {
     assert.deepEqual(update.mock.calls[0].arguments, [
       { _id: validEdit._id, uid, isEnd: "0" },
       { $set: { title: validEdit.title, content: validEdit.content, catalog: "后端" } },
+    ]);
+  });
+
+  it("rejects non-ObjectId tag references through /content/updateId", async (t) => {
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await request("/content/updateId", { ...validEdit, tags: ["not-an-id"] }, authHeader);
+    assert.equal(response.body.code, 400);
+    assert.ok(response.body.msg.tags);
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("updates tag references through /content/updateId", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const tags = ["507f1f77bcf86cd799439012"];
+    const response = await request("/content/updateId", { ...validEdit, tags }, authHeader);
+    assert.equal(response.body.code, 200);
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: validEdit._id, uid, isEnd: "0" },
+      { $set: { title: validEdit.title, content: validEdit.content, tags } },
     ]);
   });
 });

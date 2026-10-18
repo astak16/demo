@@ -14,13 +14,15 @@ const PostSchema = z.object({
   isEnd: z.string(),
   status: z.string(),
   sort: z.coerce.string(),
-  tags: z.array(z.string()),
+  tags: z.array(objectId),
 });
 
 export const EditPostSchema = PostSchema.pick({ _id: true, title: true, content: true }).extend(CaptchaSchema.shape);
 
 export const EditAllPostSchema = EditPostSchema.extend(PostSchema.omit({ _id: true, title: true, content: true }).partial().shape);
 
-export const AddPostSchema = PostSchema.pick({ title: true, content: true, catalog: true, fav: true }).extend(CaptchaSchema.shape);
+export const AddPostSchema = PostSchema.pick({ title: true, content: true, tags: true, catalog: true, fav: true }).extend(
+  CaptchaSchema.shape,
+);
 
 export const DeletePostSchema = z.object({ _ids: z.array(objectId) });

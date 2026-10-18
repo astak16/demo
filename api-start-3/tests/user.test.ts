@@ -258,7 +258,7 @@ describe("GET /user/collect", () => {
     assert.deepEqual(response.body, { code: 200, data: { list, total: 5, hasMore: true } });
     assert.deepEqual(calls, {
       filter: { uid: user._id.toString() },
-      sort: { _id: -1, created: -1 },
+      sort: { created: -1, _id: -1 },
       skip: 2,
       limit: 2,
       select: "tid title created",

@@ -6,7 +6,6 @@ const PostTagSchema = new Schema(
   {
     tagName: { type: String, default: "" },
     tagClass: { type: String, default: "" },
-    isDeleted: { type: Number, enum: [0, 1], default: 0 },
   },
   {
     toJSON: {
