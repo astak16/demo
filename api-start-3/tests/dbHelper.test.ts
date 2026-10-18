@@ -80,7 +80,7 @@ describe("baseFields soft deletion filter", () => {
 describe("post tag population", () => {
   it("includes legacy tags without an isDeleted field", async (t) => {
     const postId = new mongoose.Types.ObjectId();
-    const tagId = new mongoose.Types.ObjectId();
+    const tagId = "legacy";
     const tagFilters: Record<string, any>[] = [];
 
     t.mock.method(PostModel.collection, "find", () => ({
@@ -88,10 +88,10 @@ describe("post tag population", () => {
     }));
     t.mock.method(PostTagModel.collection, "find", (filter: Record<string, any>) => {
       tagFilters.push(filter);
-      return { toArray: async () => [{ _id: tagId, tagName: "Legacy tag", tagClass: "legacy" }] };
+      return { toArray: async () => [{ _id: tagId, tagName: "Legacy tag" }] };
     });
 
-    const posts = await PostModel.find().populate({ path: "tags", select: "tagName tagClass" });
+    const posts = await PostModel.find().populate({ path: "tags", select: "tagName" });
     assert.equal(posts[0].tags.length, 1);
     assert.equal((posts[0].tags[0] as any).tagName, "Legacy tag");
     assert.deepEqual(tagFilters[0].isDeleted, { $in: [0, null] });
@@ -99,7 +99,7 @@ describe("post tag population", () => {
 
   it("populates deleted tags and exposes the author's model name", async (t) => {
     const postId = new mongoose.Types.ObjectId();
-    const tagId = new mongoose.Types.ObjectId();
+    const tagId = "docker";
     const authorId = new mongoose.Types.ObjectId();
     const missingAuthorId = new mongoose.Types.ObjectId();
     const tagFilters: Record<string, unknown>[] = [];
@@ -120,7 +120,7 @@ describe("post tag population", () => {
 
     const posts = await PostModel.find()
       .populate({ path: "uid", select: "name" })
-      .populate({ path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } });
+      .populate({ path: "tags", select: "tagName isDeleted", options: { includeDeleted: true } });
 
     const output = posts.map((post) => post.toJSON() as Record<string, any>);
 
@@ -129,7 +129,7 @@ describe("post tag population", () => {
     assert.equal(output[0].uname, "Alice");
     assert.equal(output[0].tags.length, 1);
     assert.equal(output[0].tags[0].tagName, "Deleted tag");
-    assert.equal("isDeleted" in output[0].tags[0], false);
+    assert.equal(output[0].tags[0].isDeleted, 1);
     assert.equal("isDeleted" in output[0], false);
     assert.equal("isDeleted" in tagFilters[0], false);
     assert.equal(output[1].uid, null);
@@ -160,8 +160,8 @@ describe("post tag population", () => {
     assert.equal("uname" in document.toObject(), false);
   });
 
-  it("omits the deletion marker when serializing populated tags", async (t) => {
-    const tagId = new mongoose.Types.ObjectId();
+  it("keeps the deletion marker when populated tags include deleted records", async (t) => {
+    const tagId = "docker";
     t.mock.method(PostModel.collection, "find", () => ({
       toArray: async () => [{ _id: new mongoose.Types.ObjectId(), tags: [tagId], isDeleted: 0 }],
     }));
@@ -173,6 +173,6 @@ describe("post tag population", () => {
       .populate({ path: "tags", options: { sort: { tagName: 1 }, includeDeleted: true } });
     const output = post.toJSON() as Record<string, any>;
     assert.equal(output.tags[0].tagName, "Deleted tag");
-    assert.equal("isDeleted" in output.tags[0], false);
+    assert.equal(output.tags[0].isDeleted, 1);
   });
 });

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import jwt from "jsonwebtoken";
 import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
+import { addTag } from "../src/controller/content";
 import PostModel from "../src/model/post";
 import PostTagModel from "../src/model/postTag";
 import UserModel from "../src/model/user";
@@ -10,35 +11,35 @@ import { setupApi } from "./helpers/api";
 
 const { request } = setupApi();
 const authHeader = { Authorization: `Bearer ${jwt.sign({ _id: "tag-editor" }, JWT_SECRET)}` };
-const tagId = "507f1f77bcf86cd799439011";
+const tagId = "docker";
 
 describe("admin post tags", () => {
   it("hides internal fields when serializing a tag document", () => {
     const tag = new PostTagModel({
-      tagName: "TypeScript", tagClass: "language", isDeleted: 1,
+      _id: tagId, tagName: "TypeScript", isDeleted: 1,
       created: "2026-10-18", updated: "2026-10-18",
     });
     const json = tag.toJSON() as Record<string, unknown>;
+    assert.equal(json._id, tagId);
     assert.equal(json.tagName, "TypeScript");
-    assert.equal(json.tagClass, "language");
     for (const field of ["isDeleted", "__v"]) {
       assert.equal(Object.hasOwn(json, field), false, field);
     }
-    assert.equal(json.created, "2026-10-18");
-    assert.equal(json.updated, "2026-10-18");
+    tag.$locals.includeDeleted = true;
+    assert.equal((tag.toJSON() as Record<string, unknown>).isDeleted, 1);
   });
 
   it("stores post tags as references to post tag documents", async () => {
     const path = PostModel.schema.path("tags");
     assert.equal(path.instance, "Array");
-    assert.equal(path.getEmbeddedSchemaType()?.instance, "ObjectId");
+    assert.equal(path.getEmbeddedSchemaType()?.instance, "String");
     assert.equal(path.getEmbeddedSchemaType()?.options.ref, PostTagModel.modelName);
 
     assert.deepEqual(new PostModel().tags, []);
 
     const post = new PostModel({ tags: [tagId] });
     assert.equal(post.tags[0].toString(), tagId);
-    await assert.rejects(new PostModel({ tags: ["not-an-id"] }).validate());
+    await new PostModel({ tags: ["not-an-id"] }).validate();
   });
 
   it("stores the post author as a reference to a user document", async () => {
@@ -56,26 +57,42 @@ describe("admin post tags", () => {
     const tags = [{ _id: tagId, tagName: "TypeScript" }];
     const find = t.mock.method(PostTagModel, "find", async () => tags);
     const response = await request("/admin/getTags", undefined, authHeader);
-    assert.deepEqual(response.body, { code: 200, data: { _id: tags } });
+    assert.deepEqual(response.body, { code: 200, data: tags });
     assert.equal(find.mock.callCount(), 1);
   });
 
   it("validates and creates a tag", async (t) => {
-    const create = t.mock.method(PostTagModel, "create", async () => ({ _id: tagId }));
-    const invalid = await request("/admin/addTag", { tagName: "" }, authHeader);
+    const create = t.mock.method(PostTagModel, "create", async () => ({ _id: tagId, tagName: "TypeScript" }));
+    const invalid = await request("/admin/addTag", { tagName: "TypeScript" }, authHeader);
     assert.equal(invalid.body.code, 400);
-    assert.ok(invalid.body.msg.tagName);
+    assert.ok(invalid.body.msg._id);
     assert.equal(create.mock.callCount(), 0);
 
-    const body = { tagName: "TypeScript", tagClass: "language" };
+    const body = { _id: tagId, tagName: "TypeScript" };
     const response = await request("/admin/addTag", body, authHeader);
-    assert.deepEqual(response.body, { code: 200, data: { _id: tagId } });
+    assert.deepEqual(response.body, { code: 200, data: body });
     assert.deepEqual(create.mock.calls[0].arguments, [body]);
+  });
+
+  it("reports a duplicate tag ID", async (t) => {
+    t.mock.method(PostTagModel, "create", async () => {
+      throw Object.assign(new Error("duplicate key"), { code: 11000 });
+    });
+    const response = await request("/admin/addTag", { _id: tagId, tagName: "TypeScript" }, authHeader);
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, { code: 500, msg: "标签 ID 已存在" });
+  });
+
+  it("propagates unrelated database errors", async (t) => {
+    const failure = new Error("database unavailable");
+    t.mock.method(PostTagModel, "create", async () => { throw failure; });
+    const ctx = { request: { body: { _id: tagId, tagName: "TypeScript" } } } as unknown as Parameters<typeof addTag>[0];
+    await assert.rejects(addTag(ctx, async () => {}), failure);
   });
 
   it("validates and edits a tag", async (t) => {
     const update = t.mock.method(PostTagModel, "updateOne", async () => ({ modifiedCount: 1 }));
-    const invalid = await request("/admin/editTag", { _id: "bad-id" }, authHeader);
+    const invalid = await request("/admin/editTag", { _id: "" }, authHeader);
     assert.equal(invalid.body.code, 400);
     assert.ok(invalid.body.msg._id);
     assert.equal(update.mock.callCount(), 0);
@@ -93,7 +110,7 @@ describe("admin post tags", () => {
 
   it("validates and soft deletes tags", async (t) => {
     const update = t.mock.method(PostTagModel, "updateMany", async () => ({ modifiedCount: 1 }));
-    const invalid = await request("/admin/deleteTag", { _ids: ["bad-id"] }, authHeader);
+    const invalid = await request("/admin/deleteTag", { _ids: [""] }, authHeader);
     assert.equal(invalid.body.code, 400);
     assert.ok(invalid.body.msg._ids);
     assert.equal(update.mock.callCount(), 0);

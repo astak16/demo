@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
 import { addPost } from "../src/controller/content";
 import PostModel from "../src/model/post";
+import PostTagModel from "../src/model/postTag";
 import UserModel from "../src/model/user";
 import { setupApi } from "./helpers/api";
 
@@ -14,7 +17,7 @@ const validPost = {
   title: "Test article",
   catalog: "news",
   content: "Article body",
-  tags: ["6ad49f2efaeec26fb582e893"],
+  tags: ["docker"],
   fav: 0,
   sid: "post-captcha",
   code: "AbCd",
@@ -28,6 +31,31 @@ const validEdit = {
   code: validPost.code,
 };
 const edit = (body: Record<string, unknown>, headers = authHeader) => request("/content/update", body, headers);
+
+describe("GET /public/list", () => {
+  it("paginates posts and includes deleted populated tags", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    const tagFilters: Record<string, unknown>[] = [];
+    t.mock.method(PostModel.collection, "find", () => ({
+      toArray: async () => [{ _id: postId, title: "Docker post", tags: ["docker"], isDeleted: 0 }],
+    }));
+    t.mock.method(PostModel.collection, "countDocuments", async () => 2);
+    t.mock.method(PostTagModel.collection, "find", (filter: Record<string, unknown>) => {
+      tagFilters.push(filter);
+      return { toArray: async () => [{ _id: "docker", tagName: "容器", isDeleted: 1 }] };
+    });
+
+    const response = await request("/public/list?page=0&limit=1");
+    assert.equal(response.status, 200);
+    assert.equal(response.body.code, 200);
+    assert.equal(response.body.data.total, 2);
+    assert.equal(response.body.data.hasMore, true);
+    assert.equal(response.body.data.list[0]._id, postId.toString());
+    assert.deepEqual(response.body.data.list[0].tags, [{ _id: "docker", tagName: "容器", isDeleted: 1 }]);
+    assert.equal("isDeleted" in response.body.data.list[0], false);
+    assert.equal("isDeleted" in tagFilters[0], false);
+  });
+});
 
 describe("POST /content/add", () => {
   it("requires authentication", async () => {
@@ -248,9 +276,9 @@ describe("POST /content/update", () => {
     ]);
   });
 
-  it("rejects non-ObjectId tag references through /content/updateId", async (t) => {
+  it("rejects tag objects through /content/updateId", async (t) => {
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
-    const response = await request("/content/updateId", { ...validEdit, tags: ["not-an-id"] }, authHeader);
+    const response = await request("/content/updateId", { ...validEdit, tags: [{ _id: "docker", tagName: "容器" }] }, authHeader);
     assert.equal(response.body.code, 400);
     assert.ok(response.body.msg.tags);
     assert.equal(update.mock.callCount(), 0);
@@ -262,7 +290,7 @@ describe("POST /content/update", () => {
       select: async () => ({ uid, isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
-    const tags = ["507f1f77bcf86cd799439012"];
+    const tags = ["docker"];
     const response = await request("/content/updateId", { ...validEdit, tags }, authHeader);
     assert.equal(response.body.code, 200);
     assert.deepEqual(update.mock.calls[0].arguments, [
