@@ -19,6 +19,14 @@ const validPost = {
   code: "AbCd",
 };
 const post = (body: Record<string, unknown>, headers = authHeader) => request("/content/add", body, headers);
+const validEdit = {
+  tid: "507f1f77bcf86cd799439011",
+  title: "Updated article",
+  content: "Updated body",
+  sid: validPost.sid,
+  code: validPost.code,
+};
+const edit = (body: Record<string, unknown>, headers = authHeader) => request("/content/update", body, headers);
 
 describe("POST /content/add", () => {
   it("requires authentication", async () => {
@@ -112,6 +120,97 @@ describe("POST /content/add", () => {
     assert.deepEqual(update.mock.calls.map((call) => call.arguments), [
       [{ _id: uid, favs: { $gte: 5 } }, { $inc: { favs: -5 } }],
       [{ _id: uid }, { $inc: { favs: 5 } }],
+    ]);
+  });
+});
+
+describe("POST /content/update", () => {
+  it("requires authentication", async () => {
+    const response = await request("/content/update", validEdit);
+    assert.equal(response.status, 401);
+    assert.deepEqual(response.body, { code: 401, msg: "未登录" });
+  });
+
+  it("validates required fields before looking up the post", async (t) => {
+    const lookup = t.mock.method(PostModel, "findById", () => { throw new Error("should not query"); });
+    const response = await edit({ tid: "", title: "", content: "" });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.code, 400);
+    for (const field of ["tid", "title", "content", "sid", "code"]) {
+      assert.ok(response.body.msg[field], field);
+    }
+    assert.equal(lookup.mock.callCount(), 0);
+  });
+
+  it("rejects a missing or incorrect captcha without looking up the post", async (t) => {
+    const lookup = t.mock.method(PostModel, "findById", () => { throw new Error("should not query"); });
+    for (const captcha of [undefined, "wrong"]) {
+      if (captcha) cache.set(validEdit.sid, captcha);
+      const response = await edit(validEdit);
+      assert.deepEqual(response.body, { code: 500, msg: "验证码错误，修改文章失败" });
+    }
+    assert.equal(lookup.mock.callCount(), 0);
+  });
+
+  it("reports when the post does not exist", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    const lookup = t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => null }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await edit(validEdit);
+    assert.deepEqual(response.body, { code: 500, msg: "文章不存在" });
+    assert.deepEqual(lookup.mock.calls[0].arguments, [validEdit.tid]);
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("rejects edits by another user", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid: "another-user", isEnd: "0" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await edit(validEdit);
+    assert.deepEqual(response.body, { code: 500, msg: "没有操作权限" });
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("rejects edits to a finished post", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid, isEnd: "1" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await edit(validEdit);
+    assert.deepEqual(response.body, { code: 500, msg: "文章已结束，无法编辑" });
+    assert.equal(update.mock.callCount(), 0);
+  });
+
+  it("reports a post changed since it was looked up", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 0 }));
+    const response = await edit(validEdit);
+    assert.deepEqual(response.body, { code: 500, msg: "文章不存在、已结束或没有操作权限" });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: validEdit.tid, uid, isEnd: "0" },
+      { $set: { title: validEdit.title, content: validEdit.content } },
+    ]);
+  });
+
+  it("updates only editable fields for the author", async (t) => {
+    cache.set(validEdit.sid, validEdit.code);
+    t.mock.method(PostModel, "findById", () => ({
+      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+    }));
+    const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const response = await edit({ ...validEdit, uid: "another-user", isEnd: "1", fav: 100 });
+    assert.deepEqual(response.body, { code: 200, data: { _id: validEdit.tid }, msg: "更新帖子成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: validEdit.tid, uid, isEnd: "0" },
+      { $set: { title: validEdit.title, content: validEdit.content } },
     ]);
   });
 });

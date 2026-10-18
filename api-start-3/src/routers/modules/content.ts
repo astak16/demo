@@ -9,4 +9,6 @@ router.post("/add", addPost);
 
 router.post("/update", updatePost);
 
+router.post("/uploadId", updatePost);
+
 export default router;
