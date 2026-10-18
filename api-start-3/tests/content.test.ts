@@ -57,7 +57,7 @@ describe("GET /content/getPosts", () => {
     assert.deepEqual(response.body, { code: 200, data: { list, total: 3, page: 1, limit: 2, hasMore: false } });
     assert.deepEqual(calls, {
       filter: {}, sort: { created: -1, _id: -1 }, skip: 2, limit: 2,
-      populate: { path: "tags", select: "tagName tagClass" },
+      populate: { path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } },
     });
     assert.deepEqual(count.mock.calls[0].arguments, [{}]);
   });

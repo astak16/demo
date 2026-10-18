@@ -36,6 +36,23 @@ describe("baseFields soft deletion filter", () => {
     ]);
   });
 
+  it("allows a query to include deleted records", async (t) => {
+    const filters: Record<string, unknown>[] = [];
+    t.mock.method(Model.collection, "find", (filter: Record<string, unknown>) => {
+      filters.push(filter);
+      return { toArray: async () => [] };
+    });
+    t.mock.method(Model.collection, "countDocuments", async (filter: Record<string, unknown>) => {
+      filters.push(filter);
+      return 0;
+    });
+
+    await Model.find({ isDeleted: 1 }).setOptions({ includeDeleted: true });
+    await Model.countDocuments({ isDeleted: 1 }).setOptions({ includeDeleted: true });
+
+    assert.deepEqual(filters, [{ isDeleted: 1 }, { isDeleted: 1 }]);
+  });
+
   it("restricts updates while allowing a soft delete of an active record", async (t) => {
     const calls: Array<[Record<string, unknown>, Record<string, any>]> = [];
     const collection = Model.collection as any;
@@ -103,8 +120,7 @@ describe("post tag population", () => {
 
     const posts = await PostModel.find()
       .populate({ path: "uid", select: "name" })
-      .populate({ path: "tags", select: "tagName tagClass" })
-      .setOptions({ includeDeletedTags: true } as any)
+      .populate({ path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } })
       .lean();
 
     assert.equal(posts.length, 2);
@@ -150,8 +166,7 @@ describe("post tag population", () => {
     }));
 
     const [post] = await PostModel.find()
-      .populate({ path: "tags", options: { sort: { tagName: 1 } } })
-      .setOptions({ includeDeletedTags: true } as any)
+      .populate({ path: "tags", options: { sort: { tagName: 1 }, includeDeleted: true } })
       .lean();
     assert.equal((post.tags[0] as any).isDeleted, 1);
   });

@@ -26,19 +26,12 @@ const PostSchema = new Schema({
 
 PostSchema.pre(["find", "findOne"], function () {
   const populate = this.mongooseOptions().populate;
-  const tagsPopulate = populate && !Array.isArray(populate) && typeof populate === "object"
-    ? (populate as unknown as Record<string, PopulateOptions>).tags
-    : undefined;
+  const tagsPopulate =
+    populate && !Array.isArray(populate) && typeof populate === "object"
+      ? (populate as unknown as Record<string, PopulateOptions>).tags
+      : undefined;
   if (tagsPopulate) {
-    const includeDeletedTags = (this.getOptions() as unknown as { includeDeletedTags?: boolean }).includeDeletedTags === true;
-    this.populate({
-      ...tagsPopulate,
-      skipInvalidIds: true,
-      ...(includeDeletedTags && {
-        select: `${tagsPopulate.select ?? ""} isDeleted`.trim(),
-        options: { ...tagsPopulate.options, includeDeleted: true } as unknown as PopulateOptions["options"],
-      }),
-    });
+    this.populate({ ...tagsPopulate, skipInvalidIds: true });
   }
 });
 

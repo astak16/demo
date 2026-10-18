@@ -24,18 +24,16 @@ describe("paginate", () => {
     });
   });
 
-  it("clamps page size and applies select, multiple populations, and query options", async () => {
+  it("clamps page size and applies select and multiple populations", async () => {
     const calls: Record<string, unknown> = { populate: [] };
     const filter = { status: "0" };
     const populate = [{ path: "owner", select: "name" }, { path: "category", select: "label" }];
-    const queryOptions = { maxTimeMS: 1000 };
     const query = {
       sort(value: unknown) { calls.sort = value; return this; },
       skip(value: number) { calls.skip = value; return this; },
       limit(value: number) { calls.limit = value; return this; },
       select(value: string) { calls.select = value; return this; },
       populate(value: unknown) { (calls.populate as unknown[]).push(value); return this; },
-      setOptions(value: unknown) { calls.options = value; return this; },
       async lean() { return []; },
     };
     const model = {
@@ -45,11 +43,11 @@ describe("paginate", () => {
 
     assert.deepEqual(await paginate(model, filter, {
       page: 2.9, limit: 200, sort: { created: 1, _id: 1 }, select: "title",
-      populate, queryOptions,
+      populate,
     }), { list: [], total: 201, page: 2, limit: 100, hasMore: false });
     assert.deepEqual(calls, {
       find: filter, count: filter, sort: { created: 1, _id: 1 }, skip: 200, limit: 100,
-      select: "title", populate, options: queryOptions,
+      select: "title", populate,
     });
   });
 
@@ -75,4 +73,5 @@ describe("paginate", () => {
     assert.equal(calls.skip, 0);
     assert.equal(calls.limit, 1);
   });
+
 });

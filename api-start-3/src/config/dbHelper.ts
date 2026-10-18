@@ -40,7 +40,7 @@ export function baseFields(schema: Schema) {
       "findOneAndDelete",
     ],
     function () {
-      if ((this.getOptions() as unknown as { includeDeleted?: boolean }).includeDeleted) return;
+      if (this.getOptions().includeDeleted) return;
       this.where({ isDeleted: { $in: [0, null] } });
     },
   );

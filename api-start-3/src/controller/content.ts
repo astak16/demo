@@ -1,5 +1,4 @@
 import { AppContext } from "../../types/types";
-import type { QueryOptions } from "mongoose";
 import { paginate } from "../common/paginate";
 import { checkCode } from "../common/Utils";
 import { withBody, withQuery } from "../common/Validate";
@@ -18,9 +17,8 @@ export const getPosts = withQuery(PaginateSchema, async (ctx, query) => {
     limit,
     populate: [
       { path: "uid", select: "name" },
-      { path: "tags", select: "tagName tagClass" },
+      { path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } },
     ],
-    queryOptions: { includeDeletedTags: true } as unknown as QueryOptions,
   });
   ctx.body = { code: 200, data: result };
 });
