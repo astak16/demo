@@ -91,7 +91,7 @@ describe("post tag population", () => {
       return { toArray: async () => [{ _id: tagId, tagName: "Legacy tag", tagClass: "legacy" }] };
     });
 
-    const posts = await PostModel.find().populate({ path: "tags", select: "tagName tagClass" }).lean();
+    const posts = await PostModel.find().populate({ path: "tags", select: "tagName tagClass" });
     assert.equal(posts[0].tags.length, 1);
     assert.equal((posts[0].tags[0] as any).tagName, "Legacy tag");
     assert.deepEqual(tagFilters[0].isDeleted, { $in: [0, null] });
@@ -120,18 +120,20 @@ describe("post tag population", () => {
 
     const posts = await PostModel.find()
       .populate({ path: "uid", select: "name" })
-      .populate({ path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } })
-      .lean();
+      .populate({ path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } });
+
+    const output = posts.map((post) => post.toJSON() as Record<string, any>);
 
     assert.equal(posts.length, 2);
-    assert.equal(posts[0].uid?.toString(), authorId.toString());
-    assert.equal((posts[0] as any).uname, "Alice");
-    assert.equal(posts[0].tags.length, 1);
-    assert.equal((posts[0].tags[0] as any).tagName, "Deleted tag");
-    assert.equal((posts[0].tags[0] as any).isDeleted, 1);
+    assert.equal(output[0].uid?.toString(), authorId.toString());
+    assert.equal(output[0].uname, "Alice");
+    assert.equal(output[0].tags.length, 1);
+    assert.equal(output[0].tags[0].tagName, "Deleted tag");
+    assert.equal("isDeleted" in output[0].tags[0], false);
+    assert.equal("isDeleted" in output[0], false);
     assert.equal("isDeleted" in tagFilters[0], false);
-    assert.equal(posts[1].uid, null);
-    assert.equal((posts[1] as any).uname, null);
+    assert.equal(output[1].uid, null);
+    assert.equal(output[1].uname, null);
   });
 
   it("uses null for an author without a name and leaves unpopulated posts alone", async (t) => {
@@ -143,20 +145,22 @@ describe("post tag population", () => {
       toArray: async () => [{ _id: authorId, isDeleted: 0 }],
     }));
 
-    const [populated] = await PostModel.find().populate({ path: "uid", select: "name" }).lean();
-    assert.equal(populated.uid?.toString(), authorId.toString());
-    assert.equal((populated as any).uname, null);
+    const [populated] = await PostModel.find().populate({ path: "uid", select: "name" });
+    const populatedJSON = populated.toJSON() as Record<string, unknown>;
+    assert.equal(populatedJSON.uid?.toString(), authorId.toString());
+    assert.equal(populatedJSON.uname, null);
 
-    const [plain] = await PostModel.find().lean();
-    assert.equal(plain.uid?.toString(), authorId.toString());
-    assert.equal("uname" in plain, false);
+    const [plain] = await PostModel.find();
+    const plainJSON = plain.toJSON() as Record<string, unknown>;
+    assert.equal(plainJSON.uid?.toString(), authorId.toString());
+    assert.equal("uname" in plainJSON, false);
 
     const [document] = await PostModel.find();
     assert.equal(document.uid?.toString(), authorId.toString());
     assert.equal("uname" in document.toObject(), false);
   });
 
-  it("includes the deletion marker when tag population has no select", async (t) => {
+  it("omits the deletion marker when serializing populated tags", async (t) => {
     const tagId = new mongoose.Types.ObjectId();
     t.mock.method(PostModel.collection, "find", () => ({
       toArray: async () => [{ _id: new mongoose.Types.ObjectId(), tags: [tagId], isDeleted: 0 }],
@@ -166,8 +170,9 @@ describe("post tag population", () => {
     }));
 
     const [post] = await PostModel.find()
-      .populate({ path: "tags", options: { sort: { tagName: 1 }, includeDeleted: true } })
-      .lean();
-    assert.equal((post.tags[0] as any).isDeleted, 1);
+      .populate({ path: "tags", options: { sort: { tagName: 1 }, includeDeleted: true } });
+    const output = post.toJSON() as Record<string, any>;
+    assert.equal(output.tags[0].tagName, "Deleted tag");
+    assert.equal("isDeleted" in output.tags[0], false);
   });
 });

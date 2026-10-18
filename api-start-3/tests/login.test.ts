@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
 import UserModel from "../src/model/user";
 import { setupApi, validBody } from "./helpers/api";

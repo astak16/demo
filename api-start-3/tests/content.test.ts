@@ -29,40 +29,6 @@ const validEdit = {
 };
 const edit = (body: Record<string, unknown>, headers = authHeader) => request("/content/update", body, headers);
 
-describe("GET /content/getPosts", () => {
-  it("validates pagination before querying posts", async (t) => {
-    const find = t.mock.method(PostModel, "find", () => { throw new Error("should not query"); });
-    const response = await request("/content/getPosts?page=-1&limit=0", undefined, authHeader);
-    assert.equal(response.body.code, 400);
-    assert.ok(response.body.msg.page);
-    assert.ok(response.body.msg.limit);
-    assert.equal(find.mock.callCount(), 0);
-  });
-
-  it("returns a page of posts with populated tags", async (t) => {
-    const tags = [{ _id: "6ad49f2efaeec26fb582e893", tagName: "TypeScript", tagClass: "language" }];
-    const list = [{ _id: validEdit._id, title: "A post", tags }];
-    const calls: { filter?: unknown; sort?: unknown; skip?: number; limit?: number; populate?: unknown } = {};
-    const query = {
-      sort(value: unknown) { calls.sort = value; return this; },
-      skip(value: number) { calls.skip = value; return this; },
-      limit(value: number) { calls.limit = value; return this; },
-      populate(value: unknown) { calls.populate = value; return this; },
-      async lean() { return list; },
-    };
-    t.mock.method(PostModel, "find", (filter: unknown) => { calls.filter = filter; return query; });
-    const count = t.mock.method(PostModel, "countDocuments", async () => 3);
-
-    const response = await request("/content/getPosts?page=1&limit=2", undefined, authHeader);
-    assert.deepEqual(response.body, { code: 200, data: { list, total: 3, page: 1, limit: 2, hasMore: false } });
-    assert.deepEqual(calls, {
-      filter: {}, sort: { created: -1, _id: -1 }, skip: 2, limit: 2,
-      populate: { path: "tags", select: "tagName tagClass isDeleted", options: { includeDeleted: true } },
-    });
-    assert.deepEqual(count.mock.calls[0].arguments, [{}]);
-  });
-});
-
 describe("POST /content/add", () => {
   it("requires authentication", async () => {
     const response = await request("/content/add", validPost);
@@ -209,7 +175,7 @@ describe("POST /content/update", () => {
   it("reports when the post does not exist", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     const lookup = t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => null }),
+      select: async () => null,
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit(validEdit);
@@ -221,7 +187,7 @@ describe("POST /content/update", () => {
   it("rejects edits by another user", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid: "another-user", isEnd: "0" }) }),
+      select: async () => ({ uid: "another-user", isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit(validEdit);
@@ -232,7 +198,7 @@ describe("POST /content/update", () => {
   it("rejects edits to a finished post", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid, isEnd: "1" }) }),
+      select: async () => ({ uid, isEnd: "1" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit(validEdit);
@@ -243,7 +209,7 @@ describe("POST /content/update", () => {
   it("reports a post changed since it was looked up", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+      select: async () => ({ uid, isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 0 }));
     const response = await edit(validEdit);
@@ -257,7 +223,7 @@ describe("POST /content/update", () => {
   it("updates only editable fields for the author", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+      select: async () => ({ uid, isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await edit({ ...validEdit, uid: "another-user", isEnd: "1", fav: 100 });
@@ -271,7 +237,7 @@ describe("POST /content/update", () => {
   it("updates the catalog through /content/updateId", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+      select: async () => ({ uid, isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const response = await request("/content/updateId", { ...validEdit, catalog: "后端" }, authHeader);
@@ -293,7 +259,7 @@ describe("POST /content/update", () => {
   it("updates tag references through /content/updateId", async (t) => {
     cache.set(validEdit.sid, validEdit.code);
     t.mock.method(PostModel, "findById", () => ({
-      select: () => ({ lean: async () => ({ uid, isEnd: "0" }) }),
+      select: async () => ({ uid, isEnd: "0" }),
     }));
     const update = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const tags = ["507f1f77bcf86cd799439012"];

@@ -11,7 +11,7 @@ describe("paginate", () => {
       sort(value: unknown) { calls.sort = value; return this; },
       skip(value: number) { calls.skip = value; return this; },
       limit(value: number) { calls.limit = value; return this; },
-      async lean() { return list; },
+      async exec() { return list; },
     };
     const model = {
       find(filter: unknown) { calls.find = filter; return query; },
@@ -34,7 +34,7 @@ describe("paginate", () => {
       limit(value: number) { calls.limit = value; return this; },
       select(value: string) { calls.select = value; return this; },
       populate(value: unknown) { (calls.populate as unknown[]).push(value); return this; },
-      async lean() { return []; },
+      async exec() { return []; },
     };
     const model = {
       find(value: unknown) { calls.find = value; return query; },
@@ -59,7 +59,7 @@ describe("paginate", () => {
       skip(value: number) { calls.skip = value; return this; },
       limit(value: number) { calls.limit = value; return this; },
       populate(value: unknown) { calls.populate = value; return this; },
-      async lean() { return []; },
+      async exec() { return []; },
     };
     const model = {
       find() { return query; },

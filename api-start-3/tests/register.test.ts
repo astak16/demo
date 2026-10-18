@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import bcrypt from "bcrypt";
+import "../src/config/dbHelper";
 import UserModel from "../src/model/user";
 import { setupApi, validBody } from "./helpers/api";
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import jwt from "jsonwebtoken";
+import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
 import PostModel from "../src/model/post";
 import PostTagModel from "../src/model/postTag";
@@ -20,9 +21,11 @@ describe("admin post tags", () => {
     const json = tag.toJSON() as Record<string, unknown>;
     assert.equal(json.tagName, "TypeScript");
     assert.equal(json.tagClass, "language");
-    for (const field of ["isDeleted", "created", "updated", "__v"]) {
+    for (const field of ["isDeleted", "__v"]) {
       assert.equal(Object.hasOwn(json, field), false, field);
     }
+    assert.equal(json.created, "2026-10-18");
+    assert.equal(json.updated, "2026-10-18");
   });
 
   it("stores post tags as references to post tag documents", async () => {

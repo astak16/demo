@@ -250,7 +250,7 @@ describe("GET /user/collect", () => {
       skip(value: number) { calls.skip = value; return this; },
       limit(value: number) { calls.limit = value; return this; },
       select(value: string) { calls.select = value; return this; },
-      async lean() { return list; },
+      async exec() { return list; },
     };
     t.mock.method(UserCollectModel, "find", (filter: unknown) => { calls.filter = filter; return query; });
     const count = t.mock.method(UserCollectModel, "countDocuments", async () => 5);

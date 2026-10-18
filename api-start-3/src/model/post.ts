@@ -38,6 +38,10 @@ const PostSchema = new Schema(
   },
 );
 
+PostSchema.pre("init", function (raw) {
+  if (Array.isArray(raw.tags)) raw.tags = raw.tags.filter((tag: unknown) => mongoose.isValidObjectId(tag));
+});
+
 PostSchema.pre(["find", "findOne"], function () {
   const populate = this.mongooseOptions().populate;
   const tagsPopulate =
