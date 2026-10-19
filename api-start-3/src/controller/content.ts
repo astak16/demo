@@ -2,13 +2,16 @@ import { AppContext } from "../../types/types";
 import { paginate } from "../common/paginate";
 import { checkCode } from "../common/Utils";
 import { withBody, withQuery } from "../common/Validate";
-import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema, FilterPostSchema } from "../dto/post";
+import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema, FilterPostSchema, PostDetailSchema } from "../dto/post";
 import { AddPostTagSchema, DeletePostTagSchema, EditPostTagSchema } from "../dto/postTag";
 import PostModel from "../model/post";
 import PostTagModel from "../model/postTag";
 import UserModel from "../model/user";
 import LinkModel from "../model/link";
 import z from "zod";
+import Post from "../model/post";
+import UserCollectModel from "../model/userCollect";
+import PostHistory from "../model/postHistory";
 
 export const getPosts = withQuery(FilterPostSchema, async (ctx, query) => {
   const { page, limit, title, catalog, isTop, isEnd, status, tags } = query;
@@ -152,7 +155,7 @@ export const deleteTag = withBody(DeletePostTagSchema, async (ctx, body) => {
 });
 
 export const getTips = async (ctx: AppContext) => {
-  const result = await LinkModel.find({ type: "tip" }).select("title -_id");
+  const result = await LinkModel.find({ type: "tip" }).select({ title: 1, _id: 0 });
   ctx.body = { code: 200, data: result };
 };
 
@@ -160,3 +163,36 @@ export const getLinks = async (ctx: AppContext) => {
   const result = await LinkModel.find({ type: "link" }).select("title link -_id");
   ctx.body = { code: 200, data: result };
 };
+
+export const getTopWeek = async (ctx: AppContext) => {
+  const result = await Post.getTopWeek();
+  ctx.body = { code: 200, data: result };
+};
+
+export const getPostDetail = withQuery(PostDetailSchema, async (ctx, query) => {
+  const _id = query._id;
+  const post = await PostModel.findByIdAndUpdate(_id, { $inc: { reads: 1 } }, { new: true }).populate({
+    path: "uid",
+    select: "name",
+  });
+  if (!post) {
+    ctx.body = { code: 200, msg: "文章不存在" };
+    return;
+  }
+
+  let isFav = 0;
+  const user = ctx.state.user;
+  if (user) {
+    const [userCollect] = await Promise.all([
+      UserCollectModel.exists({ uid: user._id, tid: post._id.toString() }),
+      PostHistory.addOrUpdateVisitHistory(post._id.toString(), user._id),
+    ]);
+    isFav = userCollect ? 1 : 0;
+  }
+
+  ctx.body = {
+    code: 200,
+    data: { ...post.toJSON(), isFav },
+    msg: "查询文章详情成功",
+  };
+});

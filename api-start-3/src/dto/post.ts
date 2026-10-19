@@ -37,3 +37,5 @@ export const FilterPostSchema = PostSchema.pick({ title: true, catalog: true, is
     tags: z.array(z.string().min(1, "tag 不能为空字符")).optional(),
     ...PaginateSchema.shape,
   });
+
+export const PostDetailSchema = PostSchema.pick({ _id: true });

@@ -7,6 +7,6 @@ const UserCollectSchema = new Schema(
   { query: { byUid(uid: string) {} } },
 );
 
-const UserCollect = mongoose.model("user_collect", UserCollectSchema);
+const UserCollect = mongoose.model("user_collects", UserCollectSchema);
 
 export default UserCollect;

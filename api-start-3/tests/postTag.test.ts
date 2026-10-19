@@ -27,6 +27,11 @@ describe("admin post tags", () => {
     }
     tag.$locals.includeDeleted = true;
     assert.equal((tag.toJSON() as Record<string, unknown>).isDeleted, 1);
+
+    const legacyTag = new PostTagModel({ _id: tagId, tagName: "Legacy tag" });
+    delete (legacyTag as any)._doc.isDeleted;
+    const legacyJson = legacyTag.toJSON() as Record<string, unknown>;
+    assert.deepEqual(legacyJson, { _id: tagId, tagName: "Legacy tag" });
   });
 
   it("stores post tags as references to post tag documents", async () => {
@@ -88,6 +93,12 @@ describe("admin post tags", () => {
     t.mock.method(PostTagModel, "create", async () => { throw failure; });
     const ctx = { request: { body: { _id: tagId, tagName: "TypeScript" } } } as unknown as Parameters<typeof addTag>[0];
     await assert.rejects(addTag(ctx, async () => {}), failure);
+  });
+
+  it("propagates falsy database errors", async (t) => {
+    t.mock.method(PostTagModel, "create", async () => { throw null; });
+    const ctx = { request: { body: { _id: tagId, tagName: "TypeScript" } } } as unknown as Parameters<typeof addTag>[0];
+    await assert.rejects(addTag(ctx, async () => {}), (error) => error === null);
   });
 
   it("validates and edits a tag", async (t) => {

@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
 import { addPost } from "../src/controller/content";
+import LinkModel from "../src/model/link";
 import PostModel from "../src/model/post";
 import PostTagModel from "../src/model/postTag";
 import UserModel from "../src/model/user";
@@ -31,6 +32,42 @@ const validEdit = {
   code: validPost.code,
 };
 const edit = (body: Record<string, unknown>, headers = authHeader) => request("/content/update", body, headers);
+
+describe("GET /public/links and /public/tips", () => {
+  it("returns link titles and URLs without IDs", async (t) => {
+    const filters: Record<string, unknown>[] = [];
+    const projections: Record<string, unknown>[] = [];
+    t.mock.method(LinkModel.collection, "find", (filter: Record<string, unknown>, options: Record<string, any>) => {
+      filters.push(filter);
+      projections.push(options.projection);
+      return { toArray: async () => [{ title: "Project site", link: "https://example.com" }] };
+    });
+
+    const response = await request("/public/links");
+
+    assert.equal(response.body.code, 200);
+    assert.deepEqual(response.body.data, [{ title: "Project site", link: "https://example.com" }]);
+    assert.equal(filters[0].type, "link");
+    assert.deepEqual(projections[0], { title: 1, link: 1, _id: 0 });
+  });
+
+  it("returns tip titles without IDs or links", async (t) => {
+    const filters: Record<string, unknown>[] = [];
+    const projections: Record<string, unknown>[] = [];
+    t.mock.method(LinkModel.collection, "find", (filter: Record<string, unknown>, options: Record<string, any>) => {
+      filters.push(filter);
+      projections.push(options.projection);
+      return { toArray: async () => [{ title: "Tip of the day" }] };
+    });
+
+    const response = await request("/public/tips");
+
+    assert.equal(response.body.code, 200);
+    assert.deepEqual(response.body.data, [{ title: "Tip of the day" }]);
+    assert.equal(filters[0].type, "tip");
+    assert.deepEqual(projections[0], { title: 1, _id: 0 });
+  });
+});
 
 describe("GET /public/list", () => {
   it("paginates posts and includes deleted populated tags", async (t) => {
@@ -73,11 +110,21 @@ describe("GET /public/list", () => {
     });
     t.mock.method(PostModel.collection, "countDocuments", async () => 1);
 
-    const response = await request("/public/list?page=1&tags=koa&tags=b33");
+    const response = await request(
+      "/public/list?page=1&title=Koa&catalog=news&isTop=1&isEnd=0&status=1&tags=koa&tags=b33",
+    );
 
     assert.equal(response.body.code, 200);
     assert.deepEqual(tagLookups[0]._id.$in, ["koa", "b33"]);
-    assert.deepEqual(postFilters[0].tags.$in, ["koa"]);
+    assert.deepEqual(postFilters[0], {
+      title: { $regex: "Koa" },
+      catalog: "news",
+      isTop: "1",
+      isEnd: "0",
+      status: "1",
+      tags: { $in: ["koa"] },
+      isDeleted: { $in: [0, null] },
+    });
     assert.equal(response.body.data.list[0]._id, postId.toString());
   });
 });

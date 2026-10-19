@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import PostTagModel from "./postTag";
 import UserModel from "./user";
+import dayjs from "dayjs";
 
 const Schema = mongoose.Schema;
 
@@ -33,6 +34,13 @@ const PostSchema = new Schema(
         output.uid = author?._id ?? null;
         output.uname = author?.name ?? null;
         return ret;
+      },
+    },
+    statics: {
+      getTopWeek() {
+        return this.find({ create: { $gte: dayjs().subtract(7, "day") } }, { answer: 1, title: 1 })
+          .sort({ answer: -1 })
+          .limit(15);
       },
     },
   },
