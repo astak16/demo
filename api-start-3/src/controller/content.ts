@@ -2,32 +2,40 @@ import { AppContext } from "../../types/types";
 import { paginate } from "../common/paginate";
 import { checkCode } from "../common/Utils";
 import { withBody, withQuery } from "../common/Validate";
-import { PaginateSchema } from "../dto/paginate";
-import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema } from "../dto/post";
+import { AddPostSchema, DeletePostSchema, EditAllPostSchema, EditPostSchema, FilterPostSchema } from "../dto/post";
 import { AddPostTagSchema, DeletePostTagSchema, EditPostTagSchema } from "../dto/postTag";
 import PostModel from "../model/post";
 import PostTagModel from "../model/postTag";
 import UserModel from "../model/user";
 import z from "zod";
 
-export const getPosts = withQuery(PaginateSchema, async (ctx, query) => {
-  const { page, limit } = query;
-  const result = await paginate(
-    PostModel,
-    {},
-    {
-      page,
-      limit,
-      populate: [
-        { path: "uid", select: "name" },
-        {
-          path: "tags",
-          select: "tagName isDeleted",
-          options: { includeDeleted: true },
-        },
-      ],
-    },
-  );
+export const getPosts = withQuery(FilterPostSchema, async (ctx, query) => {
+  const { page, limit, title, catalog, isTop, isEnd, status, tags } = query;
+  const options: Record<string, any> = {};
+  if (title) options.title = { $regex: title };
+  if (catalog) options.catalog = catalog;
+  if (isTop) options.isTop = isTop;
+  if (isEnd) options.isEnd = isEnd;
+  if (status) options.status = status;
+  if (tags?.length) {
+    const existingTags = await PostTagModel.find({ _id: { $in: tags } })
+      .setOptions({ includeDeleted: true })
+      .select("_id");
+    options.tags = { $in: existingTags.map((tag) => tag._id) };
+  }
+
+  const result = await paginate(PostModel, options, {
+    page,
+    limit,
+    populate: [
+      { path: "uid", select: "name" },
+      {
+        path: "tags",
+        select: "tagName isDeleted",
+        options: { includeDeleted: true },
+      },
+    ],
+  });
   ctx.body = { code: 200, data: result };
 });
 

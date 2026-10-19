@@ -45,7 +45,7 @@ describe("GET /public/list", () => {
       return { toArray: async () => [{ _id: "docker", tagName: "容器", isDeleted: 1 }] };
     });
 
-    const response = await request("/public/list?page=0&limit=1");
+    const response = await request("/public/list?page=1&limit=1");
     assert.equal(response.status, 200);
     assert.equal(response.body.code, 200);
     assert.equal(response.body.data.total, 2);

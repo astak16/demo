@@ -18,7 +18,7 @@ describe("paginate", () => {
       async countDocuments(filter: unknown) { calls.count = filter; return 11; },
     } as unknown as Model<{ _id: string }>;
 
-    assert.deepEqual(await paginate(model), { list, total: 11, page: 0, limit: 10, hasMore: true });
+    assert.deepEqual(await paginate(model), { list, total: 11, page: 1, limit: 10, hasMore: true });
     assert.deepEqual(calls, {
       find: {}, count: {}, sort: { created: -1, _id: -1 }, skip: 0, limit: 10,
     });
@@ -68,7 +68,7 @@ describe("paginate", () => {
 
     assert.deepEqual(await paginate(model, {}, {
       page: -3, limit: 0.5, populate: population,
-    }), { list: [], total: 0, page: 0, limit: 1, hasMore: false });
+    }), { list: [], total: 0, page: 1, limit: 1, hasMore: false });
     assert.equal(calls.populate, population);
     assert.equal(calls.skip, 0);
     assert.equal(calls.limit, 1);
