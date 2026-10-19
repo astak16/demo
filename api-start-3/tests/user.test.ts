@@ -259,7 +259,7 @@ describe("GET /user/collect", () => {
     assert.deepEqual(calls, {
       filter: { uid: user._id.toString() },
       sort: { created: -1, _id: -1 },
-      skip: 2,
+      skip: 0,
       limit: 2,
       select: "tid title created",
     });

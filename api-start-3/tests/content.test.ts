@@ -49,11 +49,36 @@ describe("GET /public/list", () => {
     assert.equal(response.status, 200);
     assert.equal(response.body.code, 200);
     assert.equal(response.body.data.total, 2);
+    assert.equal(response.body.data.page, 1);
     assert.equal(response.body.data.hasMore, true);
     assert.equal(response.body.data.list[0]._id, postId.toString());
     assert.deepEqual(response.body.data.list[0].tags, [{ _id: "docker", tagName: "容器", isDeleted: 1 }]);
     assert.equal("isDeleted" in response.body.data.list[0], false);
     assert.equal("isDeleted" in tagFilters[0], false);
+  });
+
+  it("filters posts using tag IDs that exist in the tag collection", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    const postFilters: Record<string, any>[] = [];
+    const tagLookups: Record<string, any>[] = [];
+    t.mock.method(PostTagModel.collection, "find", (filter: Record<string, any>) => {
+      tagLookups.push(filter);
+      return {
+        toArray: async () => [{ _id: "koa", tagName: "Koa", isDeleted: 0 }],
+      };
+    });
+    t.mock.method(PostModel.collection, "find", (filter: Record<string, any>) => {
+      postFilters.push(filter);
+      return { toArray: async () => [{ _id: postId, title: "Koa post", tags: ["koa"], isDeleted: 0 }] };
+    });
+    t.mock.method(PostModel.collection, "countDocuments", async () => 1);
+
+    const response = await request("/public/list?page=1&tags=koa&tags=b33");
+
+    assert.equal(response.body.code, 200);
+    assert.deepEqual(tagLookups[0]._id.$in, ["koa", "b33"]);
+    assert.deepEqual(postFilters[0].tags.$in, ["koa"]);
+    assert.equal(response.body.data.list[0]._id, postId.toString());
   });
 });
 

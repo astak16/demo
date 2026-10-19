@@ -44,9 +44,9 @@ describe("paginate", () => {
     assert.deepEqual(await paginate(model, filter, {
       page: 2.9, limit: 200, sort: { created: 1, _id: 1 }, select: "title",
       populate,
-    }), { list: [], total: 201, page: 2, limit: 100, hasMore: false });
+    }), { list: [], total: 201, page: 2, limit: 100, hasMore: true });
     assert.deepEqual(calls, {
-      find: filter, count: filter, sort: { created: 1, _id: 1 }, skip: 200, limit: 100,
+      find: filter, count: filter, sort: { created: 1, _id: 1 }, skip: 100, limit: 100,
       select: "title", populate,
     });
   });
