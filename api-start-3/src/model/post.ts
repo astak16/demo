@@ -38,7 +38,7 @@ const PostSchema = new Schema(
     },
     statics: {
       getTopWeek() {
-        return this.find({ create: { $gte: dayjs().subtract(7, "day") } }, { answer: 1, title: 1 })
+        return this.find({ created: { $gte: dayjs().subtract(7, "day").toDate() } }, { answer: 1, title: 1 })
           .sort({ answer: -1 })
           .limit(15);
       },

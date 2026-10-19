@@ -1,11 +1,8 @@
 import mongoose from "mongoose";
-import dayjs from "dayjs";
 import UserModel from "./user";
 import PostModel from "./post";
 
 const Schema = mongoose.Schema;
-
-const now = () => dayjs().tz("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss");
 
 const PostHistorySchema = new Schema(
   {

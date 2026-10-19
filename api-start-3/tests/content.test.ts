@@ -7,7 +7,9 @@ import { JWT_SECRET } from "../src/config";
 import { addPost } from "../src/controller/content";
 import LinkModel from "../src/model/link";
 import PostModel from "../src/model/post";
+import PostHistory from "../src/model/postHistory";
 import PostTagModel from "../src/model/postTag";
+import UserCollectModel from "../src/model/userCollect";
 import UserModel from "../src/model/user";
 import { setupApi } from "./helpers/api";
 
@@ -66,6 +68,90 @@ describe("GET /public/links and /public/tips", () => {
     assert.deepEqual(response.body.data, [{ title: "Tip of the day" }]);
     assert.equal(filters[0].type, "tip");
     assert.deepEqual(projections[0], { title: 1, _id: 0 });
+  });
+});
+
+describe("GET /public/topWeek", () => {
+  it("returns the posts from the weekly ranking", async (t) => {
+    const posts = [{ _id: "post-1", title: "Popular post", answer: 12 }];
+    const getTopWeek = t.mock.method(PostModel, "getTopWeek", async () => posts);
+
+    const response = await request("/public/topWeek");
+
+    assert.deepEqual(response.body, { code: 200, data: posts });
+    assert.equal(getTopWeek.mock.callCount(), 1);
+  });
+});
+
+describe("GET /public/content/detail", () => {
+  it("returns the incremented post, author, and favorite status", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    const updatedPost = {
+      _id: postId,
+      toJSON: () => ({ _id: postId.toString(), title: "Updated title", reads: 9, uname: "Alice" }),
+    };
+    const populateOptions: Record<string, unknown>[] = [];
+    const update = t.mock.method(PostModel, "findByIdAndUpdate", (id, update, options) => ({
+      populate: async (selection: Record<string, unknown>) => {
+        populateOptions.push(selection);
+        return updatedPost;
+      },
+    }) as any);
+    const exists = t.mock.method(UserCollectModel, "exists", async () => ({ _id: "collect-id" } as any));
+    const history = t.mock.method(PostHistory, "addOrUpdateVisitHistory", async () => ({} as any));
+
+    const response = await request(`/public/content/detail?_id=${postId}`, undefined, authHeader);
+
+    assert.deepEqual(response.body, {
+      code: 200,
+      data: { _id: postId.toString(), title: "Updated title", reads: 9, uname: "Alice", isFav: 1 },
+      msg: "查询文章详情成功",
+    });
+    assert.deepEqual(update.mock.calls[0].arguments, [postId.toString(), { $inc: { reads: 1 } }, { new: true }]);
+    assert.deepEqual(populateOptions, [{ path: "uid", select: "name" }]);
+    assert.deepEqual(exists.mock.calls[0].arguments, [{ uid, tid: postId.toString() }]);
+    assert.deepEqual(history.mock.calls[0].arguments, [postId.toString(), uid]);
+  });
+
+  it("returns isFav zero when the logged-in user has not collected the post", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    const updatedPost = {
+      _id: postId,
+      toJSON: () => ({ _id: postId.toString(), title: "Uncollected post", reads: 1 }),
+    };
+    t.mock.method(PostModel, "findByIdAndUpdate", () => ({ populate: async () => updatedPost }) as any);
+    t.mock.method(UserCollectModel, "exists", async () => null);
+    t.mock.method(PostHistory, "addOrUpdateVisitHistory", async () => ({} as any));
+
+    const response = await request(`/public/content/detail?_id=${postId}`, undefined, authHeader);
+
+    assert.equal(response.body.data.isFav, 0);
+  });
+
+  it("returns isFav zero for an unauthenticated visitor", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    const updatedPost = {
+      _id: postId,
+      toJSON: () => ({ _id: postId.toString(), title: "Public post", reads: 1 }),
+    };
+    t.mock.method(PostModel, "findByIdAndUpdate", () => ({ populate: async () => updatedPost }) as any);
+    const exists = t.mock.method(UserCollectModel, "exists", async () => null);
+    const history = t.mock.method(PostHistory, "addOrUpdateVisitHistory", async () => ({} as any));
+
+    const response = await request(`/public/content/detail?_id=${postId}`);
+
+    assert.equal(response.body.data.isFav, 0);
+    assert.equal(exists.mock.callCount(), 0);
+    assert.equal(history.mock.callCount(), 0);
+  });
+
+  it("reports a missing post", async (t) => {
+    const postId = new mongoose.Types.ObjectId();
+    t.mock.method(PostModel, "findByIdAndUpdate", () => ({ populate: async () => null }) as any);
+
+    const response = await request(`/public/content/detail?_id=${postId}`);
+
+    assert.deepEqual(response.body, { code: 200, msg: "文章不存在" });
   });
 });
 
