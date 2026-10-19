@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import { getCaptcha } from "../../controller/public";
 import { resetEmail } from "../../controller/user";
-import { getPosts } from "../../controller/content";
+import { getPosts, getTips, getLinks } from "../../controller/content";
 
 const router = new Router();
 
@@ -14,5 +14,9 @@ router.get("/getCaptcha", getCaptcha);
 router.post("/resetEmail", resetEmail);
 
 router.get("/list", getPosts);
+
+router.get("/tips", getTips);
+
+router.get("/links", getLinks);
 
 export default router;

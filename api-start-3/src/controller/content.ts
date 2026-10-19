@@ -7,6 +7,7 @@ import { AddPostTagSchema, DeletePostTagSchema, EditPostTagSchema } from "../dto
 import PostModel from "../model/post";
 import PostTagModel from "../model/postTag";
 import UserModel from "../model/user";
+import LinkModel from "../model/link";
 import z from "zod";
 
 export const getPosts = withQuery(FilterPostSchema, async (ctx, query) => {
@@ -149,3 +150,13 @@ export const deleteTag = withBody(DeletePostTagSchema, async (ctx, body) => {
       ? { code: 200, msg: "删除成功", data: { modifiedCount: result.modifiedCount } }
       : { code: 500, msg: "没有可删除的标签" };
 });
+
+export const getTips = async (ctx: AppContext) => {
+  const result = await LinkModel.find({ type: "tip" }).select("title -_id");
+  ctx.body = { code: 200, data: result };
+};
+
+export const getLinks = async (ctx: AppContext) => {
+  const result = await LinkModel.find({ type: "link" }).select("title link -_id");
+  ctx.body = { code: 200, data: result };
+};
