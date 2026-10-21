@@ -5,6 +5,7 @@ import login from "./modules/login";
 import publicR from "./modules/public";
 import content from "./modules/content";
 import admin from "./modules/admin";
+import comment from "./modules/comment";
 
 const api = new Router();
 
@@ -13,6 +14,7 @@ api.use(publicR.routes());
 api.use(login.routes());
 api.use(content.routes());
 api.use(admin.routes());
+api.use(comment.routes());
 api.use(test.routes());
 
 export default api;
