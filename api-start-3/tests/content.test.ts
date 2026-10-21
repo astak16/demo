@@ -88,7 +88,13 @@ describe("GET /public/content/detail", () => {
     const postId = new mongoose.Types.ObjectId();
     const updatedPost = {
       _id: postId,
-      toJSON: () => ({ _id: postId.toString(), title: "Updated title", reads: 9, uname: "Alice" }),
+      toJSON: () => ({
+        _id: postId.toString(),
+        title: "Updated title",
+        reads: 9,
+        uname: "Alice",
+        tags: [{ _id: "frontEnd", tagName: "前端", isDeleted: 1 }],
+      }),
     };
     const populateOptions: Record<string, unknown>[] = [];
     const update = t.mock.method(PostModel, "findByIdAndUpdate", (id, update, options) => ({
@@ -104,11 +110,23 @@ describe("GET /public/content/detail", () => {
 
     assert.deepEqual(response.body, {
       code: 200,
-      data: { _id: postId.toString(), title: "Updated title", reads: 9, uname: "Alice", isFav: 1 },
+      data: {
+        _id: postId.toString(),
+        title: "Updated title",
+        reads: 9,
+        uname: "Alice",
+        tags: [{ _id: "frontEnd", tagName: "前端", isDeleted: 1 }],
+        isFav: 1,
+      },
       msg: "查询文章详情成功",
     });
     assert.deepEqual(update.mock.calls[0].arguments, [postId.toString(), { $inc: { reads: 1 } }, { new: true }]);
-    assert.deepEqual(populateOptions, [{ path: "uid", select: "name" }]);
+    assert.deepEqual(populateOptions, [
+      [
+        { path: "uid", select: "name" },
+        { path: "tags", select: "tagName isDeleted", options: { includeDeleted: true } },
+      ],
+    ]);
     assert.deepEqual(exists.mock.calls[0].arguments, [{ uid, tid: postId.toString() }]);
     assert.deepEqual(history.mock.calls[0].arguments, [postId.toString(), uid]);
   });

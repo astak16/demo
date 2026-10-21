@@ -171,10 +171,14 @@ export const getTopWeek = async (ctx: AppContext) => {
 
 export const getPostDetail = withQuery(PostDetailSchema, async (ctx, query) => {
   const _id = query._id;
-  const post = await PostModel.findByIdAndUpdate(_id, { $inc: { reads: 1 } }, { new: true }).populate({
-    path: "uid",
-    select: "name",
-  });
+  const post = await PostModel.findByIdAndUpdate(_id, { $inc: { reads: 1 } }, { new: true }).populate([
+    { path: "uid", select: "name" },
+    {
+      path: "tags",
+      select: "tagName isDeleted",
+      options: { includeDeleted: true },
+    },
+  ]);
   if (!post) {
     ctx.body = { code: 200, msg: "文章不存在" };
     return;
