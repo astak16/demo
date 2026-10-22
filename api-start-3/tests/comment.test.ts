@@ -287,6 +287,14 @@ describe("POST /comment/accept", () => {
 });
 
 describe("POST /comment/hands", () => {
+  it("defines a unique index for a user's like on each comment", () => {
+    assert.ok(
+      CommentHandModel.schema.indexes().some(
+        ([keys, options]) => keys.cid === 1 && keys.uid === 1 && options.unique === true,
+      ),
+    );
+  });
+
   it("increments the comment's like count for a new like", async (t) => {
     t.mock.method(CommentHandModel, "findOne", async () => null);
     const create = t.mock.method(CommentHandModel, "create", async () => ({ _id: "hand-id" }));
@@ -322,6 +330,17 @@ describe("POST /comment/hands", () => {
     const response = await likeComment({ cid: commentId });
 
     assert.deepEqual(response.body, { code: 500, msg: "你已经点过赞了，请勿重新点赞" });
+    assert.equal(increment.mock.callCount(), 0);
+  });
+
+  it("returns a failure when creating the like record fails", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => null);
+    t.mock.method(CommentHandModel, "create", async () => { throw new Error("database unavailable"); });
+    const increment = t.mock.method(CommentModel, "findOneAndUpdate", async () => ({ _id: commentId }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 500, msg: "点赞失败！" });
     assert.equal(increment.mock.callCount(), 0);
   });
 
