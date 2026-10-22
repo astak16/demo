@@ -7,3 +7,5 @@ export const AddCommentSchema = z.object({
   tid: id,
   content: z.string().min(1, "content 不能为空"),
 });
+
+export const EditCommentSchema = AddCommentSchema.pick({ content: true }).extend({ _id: id });
