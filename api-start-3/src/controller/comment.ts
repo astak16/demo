@@ -1,10 +1,12 @@
 import { AppContext } from "../../types/types";
 import { withBody } from "../common/Validate";
 import logger from "../config/logger";
-import { AddCommentSchema, EditCommentSchema, SetBestSchema } from "../dto/comment";
+import { AddCommentSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
 import CommentModel from "../model/comment";
 import PostModel from "../model/post";
 import UserModel from "../model/user";
+import CommentHandModel from "../model/commentHand";
+import { Types } from "mongoose";
 
 const canReply = async (ctx: AppContext) => {
   const _id = ctx.state.user!._id!;
@@ -106,5 +108,36 @@ export const setBest = withBody(SetBestSchema, async (ctx, body) => {
   } catch (err) {
     logger.error({ err }, "采纳评论失败");
     ctx.body = { code: 500, msg: "采纳失败" };
+  }
+});
+
+export const setHands = withBody(SetHandSchema, async (ctx, body) => {
+  const uid = ctx.state.user!._id;
+  const { cid } = body;
+  const existing = await CommentHandModel.findOne({ cid, uid });
+  if (existing) {
+    ctx.body = { code: 500, msg: "你已经点过赞了，请勿重新点赞" };
+    return;
+  }
+
+  let handId: Types.ObjectId | undefined;
+  try {
+    const hand = await CommentHandModel.create({ cid, uid });
+    handId = hand._id;
+    const comment = await CommentModel.findOneAndUpdate({ _id: cid }, { $inc: { hands: 1 } });
+    if (!comment) {
+      await CommentHandModel.deleteOne({ _id: handId });
+      ctx.body = { code: 500, msg: "点赞失败！" };
+      return;
+    }
+    ctx.body = { code: 200, msg: "点赞成功！" };
+  } catch (err) {
+    if (handId) await CommentHandModel.deleteOne({ _id: handId });
+    if (err && typeof err === "object" && "code" in err && err.code === 11000) {
+      ctx.body = { code: 500, msg: "你已经点过赞了，请勿重新点赞" };
+      return;
+    }
+    logger.error({ err }, "评论点赞失败");
+    ctx.body = { code: 500, msg: "点赞失败！" };
   }
 });

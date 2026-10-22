@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { JWT_SECRET } from "../src/config";
 import CommentModel from "../src/model/comment";
+import CommentHandModel from "../src/model/commentHand";
 import PostModel from "../src/model/post";
 import UserModel from "../src/model/user";
 import { setupApi } from "./helpers/api";
@@ -16,6 +17,8 @@ const authHeader = { Authorization: `Bearer ${jwt.sign({ _id: uid }, JWT_SECRET)
 const addComment = (body: Record<string, unknown>) => request("/comment/reply", body, authHeader);
 const editComment = (body: Record<string, unknown>) => request("/comment/update", body, authHeader);
 const acceptComment = (body: Record<string, unknown>) => request("/comment/accept", body, authHeader);
+const likeComment = (body: Record<string, unknown>, headers: Record<string, string> = authHeader) =>
+  request("/comment/hands", body, headers);
 
 describe("POST /comment/reply", () => {
   it("creates a comment and increments the post answer count", async (t) => {
@@ -280,5 +283,80 @@ describe("POST /comment/accept", () => {
 
     assert.deepEqual(response.body, { code: 500, msg: "采纳失败" });
     assert.equal(postUpdate.mock.callCount(), 0);
+  });
+});
+
+describe("POST /comment/hands", () => {
+  it("increments the comment's like count for a new like", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => null);
+    const create = t.mock.method(CommentHandModel, "create", async () => ({ _id: "hand-id" }));
+    const increment = t.mock.method(CommentModel, "findOneAndUpdate", async () => ({ _id: commentId }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 200, msg: "点赞成功！" });
+    assert.deepEqual(create.mock.calls[0].arguments, [{ cid: commentId, uid }]);
+    assert.deepEqual(increment.mock.calls[0].arguments, [
+      { _id: commentId },
+      { $inc: { hands: 1 } },
+    ]);
+  });
+
+  it("rejects a repeated like before writing", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => ({ _id: "hand-id" }));
+    const create = t.mock.method(CommentHandModel, "create", async () => ({ _id: "new-hand-id" }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 500, msg: "你已经点过赞了，请勿重新点赞" });
+    assert.equal(create.mock.callCount(), 0);
+  });
+
+  it("rejects a concurrent duplicate like using the unique index error", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => null);
+    t.mock.method(CommentHandModel, "create", async () => {
+      throw Object.assign(new Error("duplicate like"), { code: 11000 });
+    });
+    const increment = t.mock.method(CommentModel, "findOneAndUpdate", async () => ({ _id: commentId }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 500, msg: "你已经点过赞了，请勿重新点赞" });
+    assert.equal(increment.mock.callCount(), 0);
+  });
+
+  it("removes the like record if the comment does not exist", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => null);
+    t.mock.method(CommentHandModel, "create", async () => ({ _id: "hand-id" }));
+    t.mock.method(CommentModel, "findOneAndUpdate", async () => null);
+    const remove = t.mock.method(CommentHandModel, "deleteOne", async () => ({ deletedCount: 1 }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 500, msg: "点赞失败！" });
+    assert.deepEqual(remove.mock.calls[0].arguments, [{ _id: "hand-id" }]);
+  });
+
+  it("removes the like record when incrementing the comment fails", async (t) => {
+    t.mock.method(CommentHandModel, "findOne", async () => null);
+    t.mock.method(CommentHandModel, "create", async () => ({ _id: "hand-id" }));
+    t.mock.method(CommentModel, "findOneAndUpdate", async () => { throw new Error("increment failed"); });
+    const remove = t.mock.method(CommentHandModel, "deleteOne", async () => ({ deletedCount: 1 }));
+
+    const response = await likeComment({ cid: commentId });
+
+    assert.deepEqual(response.body, { code: 500, msg: "点赞失败！" });
+    assert.deepEqual(remove.mock.calls[0].arguments, [{ _id: "hand-id" }]);
+  });
+
+  it("validates the comment ID and requires authentication", async (t) => {
+    const find = t.mock.method(CommentHandModel, "findOne", async () => null);
+    const invalid = await likeComment({ cid: "not-an-object-id" });
+    assert.equal(invalid.body.code, 400);
+    assert.ok(invalid.body.msg.cid);
+    assert.equal(find.mock.callCount(), 0);
+
+    const unauthorized = await likeComment({ cid: commentId }, {});
+    assert.equal(unauthorized.status, 401);
   });
 });

@@ -97,7 +97,7 @@ describe("GET /public/content/detail", () => {
       }),
     };
     const populateOptions: Record<string, unknown>[] = [];
-    const update = t.mock.method(PostModel, "findByIdAndUpdate", (id, update, options) => ({
+    const update = t.mock.method(PostModel, "findByIdAndUpdate", (id: unknown, update: unknown, options: unknown) => ({
       populate: async (selection: Record<string, unknown>) => {
         populateOptions.push(selection);
         return updatedPost;

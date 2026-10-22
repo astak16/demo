@@ -11,3 +11,5 @@ export const AddCommentSchema = z.object({
 export const EditCommentSchema = AddCommentSchema.pick({ content: true }).extend({ _id: id });
 
 export const SetBestSchema = AddCommentSchema.pick({ tid: true }).extend({ _id: id });
+
+export const SetHandSchema = z.object({ cid: id });
