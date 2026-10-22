@@ -158,7 +158,6 @@ describe("POST /comment/accept", () => {
 
   it("closes the post, marks its comment best, and awards the author", async (t) => {
     t.mock.method(PostModel, "findById", async () => openPost);
-    t.mock.method(CommentModel, "findOne", async () => ({ _id: commentId, tid: postId, cuid: "comment-author" }));
     const closePost = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     const markBest = t.mock.method(CommentModel, "findOneAndUpdate", async () => ({ _id: commentId, cuid: "comment-author" }));
     const award = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
@@ -183,7 +182,6 @@ describe("POST /comment/accept", () => {
 
   it("accepts a post without a bounty without changing the author's points", async (t) => {
     t.mock.method(PostModel, "findById", async () => ({ ...openPost, fav: undefined }));
-    t.mock.method(CommentModel, "findOne", async () => ({ _id: commentId, tid: postId, cuid: "comment-author" }));
     t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
     t.mock.method(CommentModel, "findOneAndUpdate", async () => ({ _id: commentId, cuid: "comment-author" }));
     const award = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
@@ -216,17 +214,17 @@ describe("POST /comment/accept", () => {
     const close = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
 
     const notOwner = await acceptComment({ tid: postId, _id: commentId });
-    assert.deepEqual(notOwner.body, { code: 500, msg: "文章已经结贴，无法重新设置" });
+    assert.deepEqual(notOwner.body, { code: 500, msg: "非本人无法设置" });
 
     const closed = await acceptComment({ tid: postId, _id: commentId });
     assert.deepEqual(closed.body, { code: 500, msg: "文章已经结贴，无法重新设置" });
 
     const noOwner = await acceptComment({ tid: postId, _id: commentId });
-    assert.deepEqual(noOwner.body, { code: 500, msg: "文章已经结贴，无法重新设置" });
+    assert.deepEqual(noOwner.body, { code: 500, msg: "非本人无法设置" });
     assert.equal(close.mock.callCount(), 0);
   });
 
-  it("rejects a comment that does not belong to the post", async (t) => {
+  it("rejects a missing, unrelated, or already accepted comment", async (t) => {
     t.mock.method(PostModel, "findById", async () => openPost);
     t.mock.method(CommentModel, "findOneAndUpdate", async () => null);
     const close = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
@@ -252,20 +250,8 @@ describe("POST /comment/accept", () => {
     assert.equal(unmarkBest.mock.callCount(), 1);
   });
 
-  it("does not close the post if the comment was already accepted", async (t) => {
-    t.mock.method(PostModel, "findById", async () => openPost);
-    const close = t.mock.method(PostModel, "updateOne", async () => ({ matchedCount: 1 }));
-    t.mock.method(CommentModel, "findOneAndUpdate", async () => null);
-
-    const response = await acceptComment({ tid: postId, _id: commentId });
-
-    assert.deepEqual(response.body, { code: 500, msg: "评论不存在、不属于该文章或已被采纳" });
-    assert.equal(close.mock.callCount(), 0);
-  });
-
   it("rolls back the post and comment when awarding points fails", async (t) => {
     t.mock.method(PostModel, "findById", async () => openPost);
-    t.mock.method(CommentModel, "findOne", async () => ({ _id: commentId, cuid: "comment-author" }));
     const postUpdates: unknown[][] = [];
     t.mock.method(PostModel, "updateOne", async (...args: unknown[]) => {
       postUpdates.push(args);

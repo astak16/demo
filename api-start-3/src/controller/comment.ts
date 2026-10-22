@@ -67,17 +67,18 @@ export const setBest = withBody(SetBestSchema, async (ctx, body) => {
     return;
   }
 
-  if (post.uid?.toString() !== userId || post.isEnd !== "0") {
+  if (post.uid?.toString() !== userId) {
+    ctx.body = { code: 500, msg: "非本人无法设置" };
+    return;
+  }
+
+  if (post.isEnd !== "0") {
     ctx.body = { code: 500, msg: "文章已经结贴，无法重新设置" };
     return;
   }
 
   try {
-    const comment = await CommentModel.findOneAndUpdate(
-      { _id, tid, isBest: { $ne: "1" } },
-      { $set: { isBest: "1" } },
-      { new: true },
-    );
+    const comment = await CommentModel.findOneAndUpdate({ _id, tid, isBest: { $ne: "1" } }, { $set: { isBest: "1" } }, { new: true });
     if (!comment) {
       ctx.body = { code: 500, msg: "评论不存在、不属于该文章或已被采纳" };
       return;
