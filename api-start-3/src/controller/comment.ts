@@ -145,6 +145,6 @@ export const setHands = withBody(SetHandSchema, async (ctx, body) => {
 // item search
 export const getComments = withQuery(CommentAllSchema, async (ctx, query) => {
   const { item, search, page, limit } = query;
-  const result = await CommentModel.getCommentsOptions({ item, search }, page, limit);
-  ctx.body = { code: 200, data: result };
+  const { data, total } = await CommentModel.getCommentsOptions({ item, search }, page, limit);
+  ctx.body = { code: 200, data: { list: data, total } };
 });

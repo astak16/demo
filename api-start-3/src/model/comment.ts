@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 import PostModel from "./post";
 import UserModel from "./user";
+import dayjs from "dayjs";
 
 const Schema = mongoose.Schema;
+
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const CommentsSchema = new Schema(
   {
@@ -21,54 +24,118 @@ const CommentsSchema = new Schema(
       // - tid：按帖子标题搜索
       // - uid：按发帖用户姓名搜索
       // - cuid：按评论用户姓名搜索
-      getCommentsOptions(options: any, page: number, limit: number) {
-        let query: Record<string, any> = {};
-        if (options?.search) {
-          if (typeof options.search === "string" && options.search.trim() !== "") {
-            query[options.item] = options.search;
-          }
-        }
-        if (["tid", "cuid", "uid"].includes(options.item)) {
-          let arr: any[] = [
+      async getCommentsOptions(options: any, _page: number, limit: number) {
+        const page = _page - 1;
+        const item = options?.item;
+        const search = typeof options?.search === "string" ? options.search.trim() : options.search;
+
+        if (["tid", "cuid", "uid"].includes(item)) {
+          const pattern = new RegExp(escapeRegex(search), "i");
+
+          const arr: any[] = [
             {
+              // $lookup 相当于 left join
               $lookup: {
-                from: PostModel.modelName,
-                let: { pid: "$tid" },
-                pipeline: [{ $match: { $expr: { $eq: ["$_id", "$$pid"] } } }, { $project: { _id: 1, uid: 1, title: 1 } }],
-                as: "tid",
+                from: PostModel.collection.name, // 相当于 left join PostModel
+                let: { postId: "$tid" }, // 把 CommentModel._tid 命名成 postId 传给 PostModel
+                // pipeline 是聚合查询
+                pipeline: [
+                  // $match 类似于 where
+                  // $expr 按聚合表达式计算
+                  { $match: { $expr: { $eq: ["$_id", "$$postId"] } } }, // $eq 用来表达 $_id 和 $$postId 相等
+                  { $project: { _id: 1, uid: 1, title: 1 } }, // $project 用来裁剪字段，这里是保留 _id, uid, title
+                ],
+                // let 和 pipeline 这两个可以不写，简写成 localField 和 foreignField
+                // localField: "tid",  CommentModel.tid
+                // foreignField: "_id", PostModel._id
+                as: "post", // 命令为 post
               },
             },
-            { $replaceRoot: { newRoot: { $mergeObjects: [{ $arrayElemAt: ["$tid", 0] }, "$$ROOT"] } } },
-            { $unwind: "$tid" },
+            { $unwind: "$post" }, // {"post": [{ "_id": "...", "uid": "xxxx", "title": "文章标题" }} => {"post": { "_id": "...", "uid": "xxx" ,"title": "文章标题" }}
           ];
-          if (options.item === "tid") {
-            arr.push({
-              $match: { title: { $regex: options.search, $options: "i" } },
-            });
-          }
-          arr = arr.concat([{ $lookup: { from: UserModel.modelName, localField: "uid", foreignField: "_id", as: "uid" } }]);
-          if (options.item === "uid" && options.search.trim() !== "") {
-            arr.push({
-              $match: { "uid.name": { $regex: options.search, $options: "i" } },
-            });
-          }
-          arr.push({ $unwind: "$uid" });
-          arr = arr.concat([{ $lookup: { from: "users", localField: "cuid", foreignField: "_id", as: "cuid" } }]);
-          if (options.item === "cuid" && options.search.trim() !== "") {
-            arr.push({
-              $match: { "cuid.name": { $regex: options.search, $options: "i" } },
-            });
-          }
-          arr = arr.concat([
-            { $unwind: "$cuid" },
-            { $project: { tid: 1, cuid: { name: 1, _id: 1 }, uid: { name: 1, _id: 1 }, isBest: 1, status: 1, content: 1, created: 1 } },
-            { $sort: { created: -1 } },
-            { $skip: limit * (page - 1) },
-            { $limit: limit },
-          ]);
 
-          return this.aggregate(arr);
+          if (item === "tid" && search) {
+            arr.push({ $match: { "post.title": pattern } });
+          }
+
+          arr.push(
+            {
+              $lookup: {
+                from: UserModel.collection.name,
+                localField: "post.uid",
+                foreignField: "_id",
+                as: "postAuthor",
+              },
+            },
+            { $unwind: "$postAuthor" },
+            {
+              $lookup: {
+                from: UserModel.collection.name,
+                localField: "cuid",
+                foreignField: "_id",
+                as: "commentAuthor",
+              },
+            },
+            { $unwind: "$commentAuthor" },
+          );
+
+          if (item === "uid" && search) {
+            arr.push({ $match: { "postAuthor.name": pattern } });
+          }
+
+          if (item === "cuid" && search) {
+            arr.push({ $match: { "commentAuthor.name": pattern } });
+          }
+
+          arr.push({
+            $facet: {
+              data: [
+                { $sort: { created: -1, _id: -1 } },
+                { $skip: limit * page },
+                { $limit: limit },
+                {
+                  $project: {
+                    tid: { _id: "$post._id", uid: "$post.uid", title: "$post.title" },
+                    cuid: { _id: "$commentAuthor._id", name: "$commentAuthor.name" },
+                    uid: { _id: "$postAuthor._id", name: "$postAuthor.name" },
+                    isBest: 1,
+                    status: 1,
+                    content: 1,
+                    created: 1,
+                  },
+                },
+              ],
+              total: [{ $count: "count" }],
+            },
+          });
+          arr.push({
+            $project: {
+              data: 1,
+              total: { $ifNull: [{ $arrayElemAt: ["$total.count", 0] }, 0] },
+            },
+          });
+
+          const [result] = await this.aggregate(arr);
+          return result ?? { data: [], total: 0 };
         }
+
+        if (options.item === "created") {
+          const start = options.search[0];
+          const end = options.search[1];
+          const filter = { created: { $gte: dayjs(start).format("YYYY-MM-DD"), $lt: dayjs(end).format("YYYY-MM-DD") } };
+          const [data, total] = await Promise.all([
+            this.find(filter)
+              .populate({ path: "tid", select: "_id title" })
+              .populate({ path: "cuid", select: "_id name" })
+              .populate({ path: "uid", select: "_id name" })
+              .skip(page * limit)
+              .limit(limit)
+              .sort({ created: -1 }),
+            this.countDocuments(filter),
+          ]);
+          return { data, total };
+        }
+        return { data: [], total: 0 };
       },
     },
   },
