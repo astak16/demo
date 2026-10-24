@@ -1,7 +1,7 @@
 import { AppContext } from "../../types/types";
-import { withBody } from "../common/Validate";
+import { withBody, withQuery } from "../common/Validate";
 import logger from "../config/logger";
-import { AddCommentSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
+import { AddCommentSchema, CommentAllSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
 import CommentModel from "../model/comment";
 import PostModel from "../model/post";
 import UserModel from "../model/user";
@@ -140,4 +140,11 @@ export const setHands = withBody(SetHandSchema, async (ctx, body) => {
     logger.error({ err }, "评论点赞失败");
     ctx.body = { code: 500, msg: "点赞失败！" };
   }
+});
+
+// item search
+export const getComments = withQuery(CommentAllSchema, async (ctx, query) => {
+  const { item, search, page, limit } = query;
+  const result = await CommentModel.getCommentsOptions({ item, search }, page, limit);
+  ctx.body = { code: 200, data: result };
 });

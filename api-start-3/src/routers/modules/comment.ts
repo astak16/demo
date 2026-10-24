@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { addComment, updateComment, setBest, setHands } from "../../controller/comment";
+import { addComment, updateComment, setBest, setHands, getComments } from "../../controller/comment";
 
 const router = new Router();
 

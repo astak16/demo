@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { z } from "zod";
+import { PaginateSchema } from "./paginate";
 
 const id = z.string().refine((v) => Types.ObjectId.isValid(v), { message: "Invalid ObjectId" });
 
@@ -13,3 +14,10 @@ export const EditCommentSchema = AddCommentSchema.pick({ content: true }).extend
 export const SetBestSchema = AddCommentSchema.pick({ tid: true }).extend({ _id: id });
 
 export const SetHandSchema = z.object({ cid: id });
+
+export const CommentAllSchema = z
+  .object({
+    item: z.string().min(1, "item 不能是空字符串").optional(),
+    search: z.string().min(1, "search 不能是空字符串").optional(),
+  })
+  .extend(PaginateSchema.shape);

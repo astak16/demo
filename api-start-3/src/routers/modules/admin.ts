@@ -1,6 +1,7 @@
 import Router from "@koa/router";
 import { getTags, addTag, deleteTag, editTag } from "../../controller/content";
 import { addRole, getRoles, deleteRole, editRole } from "../../controller/admin";
+import { getComments } from "../../controller/comment";
 
 const router = new Router();
 
@@ -21,5 +22,7 @@ router.post("/editRole", editRole);
 router.post("/deleteRole", deleteRole);
 
 router.get("/getRoles", getRoles);
+
+router.get("/comment/list", getComments);
 
 export default router;
