@@ -27,10 +27,14 @@ const CommentsSchema = new Schema(
       async getCommentsOptions(options: any, _page: number, limit: number) {
         const page = _page - 1;
         const item = options?.item;
-        const search = typeof options?.search === "string" ? options.search.trim() : options.search;
+        const rawSearch = options?.search;
+        const searchValues = (Array.isArray(rawSearch) ? rawSearch : [rawSearch])
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter(Boolean);
 
         if (["tid", "cuid", "uid"].includes(item)) {
-          const pattern = new RegExp(escapeRegex(search), "i");
+          const pattern = searchValues.length ? new RegExp(searchValues.map(escapeRegex).join("|"), "i") : undefined;
 
           const arr: any[] = [
             {
@@ -54,7 +58,7 @@ const CommentsSchema = new Schema(
             { $unwind: "$post" }, // {"post": [{ "_id": "...", "uid": "xxxx", "title": "文章标题" }} => {"post": { "_id": "...", "uid": "xxx" ,"title": "文章标题" }}
           ];
 
-          if (item === "tid" && search) {
+          if (item === "tid" && pattern) {
             arr.push({ $match: { "post.title": pattern } });
           }
 
@@ -79,15 +83,16 @@ const CommentsSchema = new Schema(
             { $unwind: "$commentAuthor" },
           );
 
-          if (item === "uid" && search) {
+          if (item === "uid" && pattern) {
             arr.push({ $match: { "postAuthor.name": pattern } });
           }
 
-          if (item === "cuid" && search) {
+          if (item === "cuid" && pattern) {
             arr.push({ $match: { "commentAuthor.name": pattern } });
           }
 
           arr.push({
+            // ，可以让同一批筛选后的文档同时走多条子管道，并把各自结果放在同一个输出里
             $facet: {
               data: [
                 { $sort: { created: -1, _id: -1 } },
@@ -119,9 +124,8 @@ const CommentsSchema = new Schema(
           return result ?? { data: [], total: 0 };
         }
 
-        if (options.item === "created") {
-          const start = options.search[0];
-          const end = options.search[1];
+        if (item === "created" && searchValues.length === 2) {
+          const [start, end] = searchValues;
           const filter = { created: { $gte: dayjs(start).format("YYYY-MM-DD"), $lt: dayjs(end).format("YYYY-MM-DD") } };
           const [data, total] = await Promise.all([
             this.find(filter)

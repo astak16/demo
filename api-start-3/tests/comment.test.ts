@@ -20,6 +20,18 @@ const acceptComment = (body: Record<string, unknown>) => request("/comment/accep
 const likeComment = (body: Record<string, unknown>, headers: Record<string, string> = authHeader) =>
   request("/comment/hands", body, headers);
 
+describe("GET /admin/comment/list", () => {
+  it("returns the requested page and the unpaged total", async (t) => {
+    const rows = [{ _id: commentId, content: "A matching comment" }];
+    const lookup = t.mock.method(CommentModel, "getCommentsOptions", async () => ({ data: rows, total: 9 }));
+
+    const response = await request("/admin/comment/list?item=tid&search=question&page=2&limit=5", undefined, authHeader);
+
+    assert.deepEqual(response.body, { code: 200, data: { list: rows, total: 9 } });
+    assert.deepEqual(lookup.mock.calls[0].arguments, [{ item: "tid", search: "question" }, 2, 5]);
+  });
+});
+
 describe("POST /comment/reply", () => {
   it("creates a comment and increments the post answer count", async (t) => {
     t.mock.method(UserModel, "findById", async () => ({ status: "0" }));
