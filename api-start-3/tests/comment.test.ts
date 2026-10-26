@@ -7,7 +7,7 @@ import CommentModel from "../src/model/comment";
 import CommentHandModel from "../src/model/commentHand";
 import PostModel from "../src/model/post";
 import UserModel from "../src/model/user";
-import { deleteBatchComment, getComments } from "../src/controller/comment";
+import { deleteBatchComment, getComments, updateCommentsBatch } from "../src/controller/comment";
 import { setupApi } from "./helpers/api";
 
 const { request } = setupApi();
@@ -66,6 +66,40 @@ describe("POST /admin/deleteComments", () => {
     const response = await request("/admin/deleteComments", { _ids: [commentId] }, authHeader);
 
     assert.deepEqual(response.body, { code: 500, msg: "没有可删除的评论" });
+  });
+
+  it("covers the deleteBatchComment middleware directly", async (t) => {
+    const update = t.mock.method(CommentModel, "updateMany", async () => ({ modifiedCount: 1 }));
+    const ctx = { request: { body: { _ids: [commentId] } } } as any;
+
+    await deleteBatchComment(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, msg: "删除成功", data: { modifiedCount: 1 } });
+    assert.deepEqual(update.mock.calls[0].arguments[0], { _id: { $in: [commentId] } });
+  });
+});
+
+describe("POST /admin/updateCommentsBatch", () => {
+  it("updates the requested comments", async (t) => {
+    const update = t.mock.method(CommentModel, "updateMany", async () => ({ modifiedCount: 1 }));
+    const ctx = { request: { body: { _ids: [commentId], content: "Updated" } } } as any;
+
+    await updateCommentsBatch(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, msg: "更新成功", data: { modifiedCount: 1 } });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: { $in: [commentId] } },
+      { $set: { content: "Updated" } },
+    ]);
+  });
+
+  it("reports when no comment was updated", async (t) => {
+    t.mock.method(CommentModel, "updateMany", async () => ({ modifiedCount: 0 }));
+    const ctx = { request: { body: { _ids: [commentId] } } } as any;
+
+    await updateCommentsBatch(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 500, msg: "没有可更新的评论" });
   });
 });
 
