@@ -25,3 +25,8 @@ export const CommentAllSchema = z
 const commentId = z.string().refine((v) => Types.ObjectId.isValid(v), { message: "Invalid ObjectId" });
 
 export const DeleteCommentSchema = z.object({ _ids: z.array(commentId) });
+
+export const updateCommentsBatchSchema = z.object({
+  _ids: z.array(id),
+  content: z.string().min(1, "content 不能为空").optional(),
+});

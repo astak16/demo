@@ -1,7 +1,15 @@
 import { AppContext } from "../../types/types";
 import { withBody, withQuery } from "../common/Validate";
 import logger from "../config/logger";
-import { AddCommentSchema, CommentAllSchema, DeleteCommentSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
+import {
+  AddCommentSchema,
+  CommentAllSchema,
+  DeleteCommentSchema,
+  EditCommentSchema,
+  SetBestSchema,
+  SetHandSchema,
+  updateCommentsBatchSchema,
+} from "../dto/comment";
 import CommentModel from "../model/comment";
 import PostModel from "../model/post";
 import UserModel from "../model/user";
@@ -156,4 +164,14 @@ export const deleteBatchComment = withBody(DeleteCommentSchema, async (ctx, body
     result.modifiedCount > 0
       ? { code: 200, msg: "删除成功", data: { modifiedCount: result.modifiedCount } }
       : { code: 500, msg: "没有可删除的评论" };
+});
+
+export const updateCommentsBatch = withBody(updateCommentsBatchSchema, async (ctx, body) => {
+  const { _ids, ...field } = body;
+  console.log("field", field);
+  const result = await CommentModel.updateMany({ _id: { $in: _ids } }, { $set: { ...field } });
+  ctx.body =
+    result.modifiedCount > 0
+      ? { code: 200, msg: "更新成功", data: { modifiedCount: result.modifiedCount } }
+      : { code: 500, msg: "没有可更新的评论" };
 });
