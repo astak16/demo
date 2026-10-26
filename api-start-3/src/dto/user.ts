@@ -49,3 +49,5 @@ export const AddUserSchema = z.object({
 export const EditUserSchema = AddUserSchema.extend({ _id: userId });
 
 export const BatchEditUsersSchema = AddUserSchema.omit({ username: true, name: true }).extend({ _ids: z.array(userId) });
+
+export const CheckUsernameSchema = z.object({ username: z.string().min(1, "username不能为空字符串") });

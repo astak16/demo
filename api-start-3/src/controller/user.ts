@@ -11,6 +11,7 @@ import {
   EditUserSchema,
   AddUserSchema,
   BatchEditUsersSchema,
+  CheckUsernameSchema,
 } from "../dto/user";
 import { CollectSchema, SetCollectSchema } from "../dto/userCollect";
 import UserModel from "../model/user";
@@ -167,6 +168,17 @@ export const deleteUser = withBody(DeleteUserSchema, async (ctx, body) => {
     res.modifiedCount > 0
       ? { code: 200, msg: "删除成功", data: { modifiedCount: res.modifiedCount } }
       : { code: 500, msg: "没有可删除的用户" };
+});
+
+export const checkUsername = withQuery(CheckUsernameSchema, async (ctx, query) => {
+  const { username } = query;
+
+  const user = await UserModel.findOne({ username });
+  if (user) {
+    ctx.body = { code: 200, data: user };
+  } else {
+    ctx.body = { code: 200, data: null, msg: `没有找到 username: ${username} 对应的用户` };
+  }
 });
 
 export const setCollect = withBody(SetCollectSchema, async (ctx, body) => {
