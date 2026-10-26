@@ -1,6 +1,8 @@
 import { AppContext } from "../../types/types";
 import { withBody } from "../common/Validate";
+import { AddMenuSchema, EditMenuSchema, DeleteMenuSchema } from "../dto/menu";
 import { AddRoleSchema, DeleteRoleSchema, EditRoleSchema } from "../dto/role";
+import MenuModel from "../model/menu";
 import RoleModel from "../model/role";
 
 export const addRole = withBody(AddRoleSchema, async (ctx, body) => {
@@ -29,5 +31,35 @@ export const editRole = withBody(EditRoleSchema, async (ctx, body) => {
     ctx.body = { code: 200, msg: "更新成功" };
   } else {
     ctx.body = { code: 500, msg: "更新失败" };
+  }
+});
+
+export const getMenus = async (ctx: AppContext) => {
+  const result = await MenuModel.find();
+  ctx.body = { code: 200, data: result };
+};
+
+export const addMenu = withBody(AddMenuSchema, async (ctx, body) => {
+  const result = await MenuModel.create(body);
+  ctx.body = { code: 200, data: result };
+});
+
+export const updateMenu = withBody(EditMenuSchema, async (ctx, body) => {
+  const { _id, ...field } = body;
+  const result = await MenuModel.updateOne({ _id }, field);
+  if (result.matchedCount) {
+    ctx.body = { code: 200, msg: "更新成功" };
+  } else {
+    ctx.body = { code: 500, msg: "更新失败" };
+  }
+});
+
+export const deleteMenu = withBody(DeleteMenuSchema, async (ctx, body) => {
+  const { _id } = body;
+  const result = await MenuModel.updateOne({ _id }, { $set: { isDeleted: 1 } });
+  if (result.matchedCount) {
+    ctx.body = { code: 200, msg: "删除成功" };
+  } else {
+    ctx.body = { code: 500, msg: "删除失败" };
   }
 });

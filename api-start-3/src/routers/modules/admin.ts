@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 import { getTags, addTag, deleteTag, editTag } from "../../controller/content";
-import { addRole, getRoles, deleteRole, editRole } from "../../controller/admin";
+import { addRole, getRoles, deleteRole, editRole, getMenus, addMenu, updateMenu, deleteMenu } from "../../controller/admin";
 import { getComments, deleteBatchComment, updateCommentsBatch } from "../../controller/comment";
 import { getUsers, updateUser, deleteUser, addUser, updateUserSettings, checkUsername } from "../../controller/user";
 
@@ -41,5 +41,13 @@ router.post("/updateUser", updateUser);
 router.post("/updateUserSettings", updateUserSettings);
 
 router.get("/checkUsername", checkUsername);
+
+router.get("/getMenus", getMenus);
+
+router.post("/addMenu", addMenu);
+
+router.post("/updateMenu", updateMenu);
+
+router.post("/deleteMenu", deleteMenu);
 
 export default router;
