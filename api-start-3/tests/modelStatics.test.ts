@@ -58,3 +58,4 @@ describe("post history model statics", () => {
     ]);
   });
 });
+
