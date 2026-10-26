@@ -7,6 +7,7 @@ import CommentModel from "../src/model/comment";
 import CommentHandModel from "../src/model/commentHand";
 import PostModel from "../src/model/post";
 import UserModel from "../src/model/user";
+import { deleteBatchComment, getComments } from "../src/controller/comment";
 import { setupApi } from "./helpers/api";
 
 const { request } = setupApi();
@@ -29,6 +30,42 @@ describe("GET /admin/comment/list", () => {
 
     assert.deepEqual(response.body, { code: 200, data: { list: rows, total: 9 } });
     assert.deepEqual(lookup.mock.calls[0].arguments, [{ item: "tid", search: "question" }, 2, 5]);
+  });
+
+  it("covers the getComments middleware handler directly", async (t) => {
+    const rows = [{ _id: commentId, content: "Direct handler comment" }];
+    const lookup = t.mock.method(CommentModel, "getCommentsOptions", async () => ({ data: rows, total: 1 }));
+    const ctx = {
+      query: { item: "tid", search: "post-id", page: "1", limit: "10" },
+      request: { body: undefined },
+    } as any;
+
+    await getComments(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, data: { list: rows, total: 1 } });
+    assert.deepEqual(lookup.mock.calls[0].arguments, [{ item: "tid", search: "post-id" }, 1, 10]);
+  });
+});
+
+describe("POST /admin/deleteComments", () => {
+  it("soft deletes the requested comments", async (t) => {
+    const update = t.mock.method(CommentModel, "updateMany", async () => ({ modifiedCount: 2 }));
+
+    const response = await request("/admin/deleteComments", { _ids: [commentId] }, authHeader);
+
+    assert.deepEqual(response.body, { code: 200, msg: "删除成功", data: { modifiedCount: 2 } });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: { $in: [commentId] } },
+      { $set: { isDeleted: 1 } },
+    ]);
+  });
+
+  it("reports when no comment was deleted", async (t) => {
+    t.mock.method(CommentModel, "updateMany", async () => ({ modifiedCount: 0 }));
+
+    const response = await request("/admin/deleteComments", { _ids: [commentId] }, authHeader);
+
+    assert.deepEqual(response.body, { code: 500, msg: "没有可删除的评论" });
   });
 });
 

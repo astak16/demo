@@ -27,7 +27,8 @@ describe("comment list query", () => {
     const calls: unknown[] = [];
     const rows = [{ content: "matching comment" }];
     const query: any = {
-      populate() {
+      populate(...args: unknown[]) {
+        calls.push(["populate", ...args]);
         return this;
       },
       skip(value: number) {
@@ -52,12 +53,25 @@ describe("comment list query", () => {
       return 8;
     });
 
-    const response = await CommentModel.getCommentsOptions({ item: "created", search: ["2026-10-22", "2026-10-23"] }, 1, 5);
+    const response = await CommentModel.getCommentsOptions({ item: "created", search: ["2026-10-22", "2026-10-23"] }, 3, 5);
 
     assert.deepEqual(response, { data: rows, total: 8 });
     const filter = { created: { $gte: "2026-10-22", $lt: "2026-10-23" } };
     assert.deepEqual(find.mock.calls[0].arguments[0], filter);
     assert.deepEqual(count.mock.calls[0].arguments[0], filter);
+    assert.deepEqual(
+      calls.filter((call) => (call as any[])[0] === "populate").map((call) => (call as any[]).slice(1)),
+      [
+        [{ path: "tid", select: "_id title" }],
+        [{ path: "cuid", select: "_id name" }],
+        [{ path: "uid", select: "_id name" }],
+      ],
+    );
+    assert.deepEqual(calls.filter((call) => ["skip", "limit", "sort"].includes((call as any[])[0])), [
+      ["skip", 10],
+      ["limit", 5],
+      ["sort", { created: -1 }],
+    ]);
   });
 
   it("filters each associated field and accepts a scalar search string", async (t) => {
@@ -72,6 +86,20 @@ describe("comment list query", () => {
 
     assert.ok(pipelines[0].some((stage) => stage.$match?.["postAuthor.name"]?.source === "Alice"));
     assert.ok(pipelines[1].some((stage) => stage.$match?.["commentAuthor.name"]?.source === "Bob|Carol"));
+  });
+
+  it("escapes regular expression characters so they are searched literally", async (t) => {
+    let pipeline: any[] = [];
+    t.mock.method(CommentModel, "aggregate", (stages: any[]) => {
+      pipeline = stages;
+      return Promise.resolve([{ data: [], total: 0 }]) as any;
+    });
+
+    await CommentModel.getCommentsOptions({ item: "tid", search: "a+b.c" }, 1, 10);
+
+    const titlePattern = pipeline.find((stage) => stage.$match?.["post.title"])?.$match["post.title"];
+    assert.equal(titlePattern.test("a+b.c"), true);
+    assert.equal(titlePattern.test("aaabxc"), false);
   });
 
   it("omits text matches when the normalized search list is empty", async (t) => {
