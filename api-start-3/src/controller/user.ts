@@ -2,7 +2,7 @@ import { generateToken, getJWTPayload } from "../common/Utils";
 import { withBody, withQuery } from "../common/Validate";
 import { send } from "../config/MailConfig";
 import { getValue, setValue } from "../config/redisConfig";
-import { UpdateBasicInfoSchema, ChangePasswordSchema, UpdateUsernameSchema } from "../dto/user";
+import { UpdateBasicInfoSchema, ChangePasswordSchema, UpdateUsernameSchema, UserAllSchema } from "../dto/user";
 import { CollectSchema, SetCollectSchema } from "../dto/userCollect";
 import UserModel from "../model/user";
 import { v4 as uuidv4 } from "uuid";
@@ -88,6 +88,34 @@ export const resetEmail = withBody(UpdateUsernameSchema, async (ctx, body) => {
     code: 200,
     msg: "更新用户名成功",
   };
+});
+
+export const getUsers = withQuery(UserAllSchema, async (ctx, query) => {
+  const { sort = "created", page, limit, ...field } = query;
+  const item = field?.item;
+  const rawSearch = field?.search;
+  const searchValues = (Array.isArray(rawSearch) ? rawSearch : [rawSearch])
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  let options: Record<string, any> = {};
+  if (item && rawSearch) {
+    if (["name", "username"].includes(item)) {
+      options[item] = { $regex: new RegExp(searchValues[0]) };
+    } else {
+      options[item] = searchValues;
+    }
+    if (item === "roles") {
+      options = { roles: { $in: searchValues } };
+    }
+    if (item === "created") {
+      const [start, end] = searchValues;
+      options = { created: { $gte: dayjs(start).format("YYYY-MM-DD"), $lt: dayjs(end).format("YYYY-MM-DD") } };
+    }
+  }
+  const result = await paginate(UserModel, options, { page, limit });
+  ctx.body = { code: 200, data: result };
 });
 
 export const setCollect = withBody(SetCollectSchema, async (ctx, body) => {
