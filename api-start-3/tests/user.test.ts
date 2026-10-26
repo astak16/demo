@@ -14,7 +14,6 @@ const authHeader = { Authorization: `Bearer ${jwt.sign({ _id: user._id.toString(
 const postBasic = (body: Record<string, unknown>) => request("/user/basic", body, authHeader);
 const postChangePassword = (body: Record<string, unknown>, headers = authHeader) =>
   request("/user/changePassword", body, headers);
-
 describe("POST /user/basic", () => {
   it("requires authentication", async () => {
     const response = await request("/user/basic", {});

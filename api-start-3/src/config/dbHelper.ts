@@ -29,6 +29,7 @@ function removeInternalFields(value: unknown, includeDeleted = false): void {
     const keepDeleted = includeDeleted || includeDeletedField in record;
     if (!keepDeleted) delete record.isDeleted;
     delete record.password;
+    delete record.mobile;
     Object.values(record).forEach((item) => removeInternalFields(item, keepDeleted));
   }
 }

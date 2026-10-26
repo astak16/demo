@@ -2,7 +2,7 @@ import Router from "@koa/router";
 import { getTags, addTag, deleteTag, editTag } from "../../controller/content";
 import { addRole, getRoles, deleteRole, editRole } from "../../controller/admin";
 import { getComments, deleteBatchComment, updateCommentsBatch } from "../../controller/comment";
-import { getUsers } from "../../controller/user";
+import { getUsers, updateUser, deleteUser, addUser } from "../../controller/user";
 
 const router = new Router();
 
@@ -31,5 +31,11 @@ router.post("/deleteComments", deleteBatchComment);
 router.post("/updateCommentsBatch", updateCommentsBatch);
 
 router.get("/users", getUsers);
+
+router.post("/addUser", addUser);
+
+router.post("/deleteUser", deleteUser);
+
+router.post("/updateUser", updateUser);
 
 export default router;
