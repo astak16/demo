@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { type PipelineStage } from "mongoose";
 import PostModel from "./post";
 import UserModel from "./user";
 import dayjs from "dayjs";
@@ -6,6 +6,11 @@ import dayjs from "dayjs";
 const Schema = mongoose.Schema;
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+type CommentSearchOptions = {
+  item?: string;
+  search?: string | readonly string[];
+};
 
 const CommentsSchema = new Schema(
   {
@@ -24,19 +29,18 @@ const CommentsSchema = new Schema(
       // - tid：按帖子标题搜索
       // - uid：按发帖用户姓名搜索
       // - cuid：按评论用户姓名搜索
-      async getCommentsOptions(options: any, _page: number, limit: number) {
+      async getCommentsOptions(options: CommentSearchOptions, _page: number, limit: number) {
         const page = _page - 1;
         const item = options?.item;
         const rawSearch = options?.search;
-        const searchValues = (Array.isArray(rawSearch) ? rawSearch : [rawSearch])
-          .filter((value): value is string => typeof value === "string")
+        const searchValues = (typeof rawSearch === "string" ? [rawSearch] : rawSearch ?? [])
           .map((value) => value.trim())
           .filter(Boolean);
 
-        if (["tid", "cuid", "uid"].includes(item)) {
+        if (["tid", "cuid", "uid"].includes(item ?? "")) {
           const pattern = searchValues.length ? new RegExp(searchValues.map(escapeRegex).join("|"), "i") : undefined;
 
-          const arr: any[] = [
+          const arr: PipelineStage[] = [
             {
               // $lookup 相当于 left join
               $lookup: {

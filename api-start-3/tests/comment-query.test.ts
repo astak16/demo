@@ -102,14 +102,14 @@ describe("comment list query", () => {
     assert.equal(titlePattern.test("aaabxc"), false);
   });
 
-  it("omits text matches when the normalized search list is empty", async (t) => {
+  it("omits text matches when search contains only whitespace", async (t) => {
     let pipeline: any[] = [];
     t.mock.method(CommentModel, "aggregate", (stages: any[]) => {
       pipeline = stages;
       return Promise.resolve([]) as any;
     });
 
-    const response = await CommentModel.getCommentsOptions({ item: "tid", search: ["  ", 42] }, 1, 10);
+    const response = await CommentModel.getCommentsOptions({ item: "tid", search: ["  ", "\t"] }, 1, 10);
 
     assert.deepEqual(response, { data: [], total: 0 });
     assert.equal(pipeline.some((stage) => stage.$match?.["post.title"]), false);
