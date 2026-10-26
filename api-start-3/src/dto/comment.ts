@@ -21,3 +21,7 @@ export const CommentAllSchema = z
     search: z.union([z.string().min(1, "search 不能是空字符串"), z.tuple([z.string().min(1), z.string().min(1)])]).optional(),
   })
   .extend(PaginateSchema.shape);
+
+const commentId = z.string().refine((v) => Types.ObjectId.isValid(v), { message: "Invalid ObjectId" });
+
+export const DeleteCommentSchema = z.object({ _ids: z.array(commentId) });

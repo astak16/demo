@@ -1,7 +1,7 @@
 import { AppContext } from "../../types/types";
 import { withBody, withQuery } from "../common/Validate";
 import logger from "../config/logger";
-import { AddCommentSchema, CommentAllSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
+import { AddCommentSchema, CommentAllSchema, DeleteCommentSchema, EditCommentSchema, SetBestSchema, SetHandSchema } from "../dto/comment";
 import CommentModel from "../model/comment";
 import PostModel from "../model/post";
 import UserModel from "../model/user";
@@ -147,4 +147,13 @@ export const getComments = withQuery(CommentAllSchema, async (ctx, query) => {
   const { item, search, page, limit } = query;
   const { data, total } = await CommentModel.getCommentsOptions({ item, search }, page, limit);
   ctx.body = { code: 200, data: { list: data, total } };
+});
+
+export const deleteBatchComment = withBody(DeleteCommentSchema, async (ctx, body) => {
+  const { _ids } = body;
+  const result = await CommentModel.updateMany({ _id: { $in: _ids } }, { $set: { isDeleted: 1 } });
+  ctx.body =
+    result.modifiedCount > 0
+      ? { code: 200, msg: "删除成功", data: { modifiedCount: result.modifiedCount } }
+      : { code: 500, msg: "没有可删除的评论" };
 });
