@@ -10,6 +10,7 @@ import {
   DeleteUserSchema,
   EditUserSchema,
   AddUserSchema,
+  BatchEditUsersSchema,
 } from "../dto/user";
 import { CollectSchema, SetCollectSchema } from "../dto/userCollect";
 import UserModel from "../model/user";
@@ -17,7 +18,6 @@ import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import bcrypt from "bcrypt";
 import UserCollectModel from "../model/userCollect";
-import { AppContext } from "../../types/types";
 import { paginate } from "../common/paginate";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
@@ -152,6 +152,12 @@ export const updateUser = withBody(EditUserSchema, async (ctx, body) => {
     }
     throw error;
   }
+});
+
+export const updateUserSettings = withBody(BatchEditUsersSchema, async (ctx, body) => {
+  const { _ids, ...field } = body;
+  const res = await UserModel.updateMany({ _id: { $in: _ids } }, field);
+  ctx.body = res.modifiedCount > 0 ? { code: 200, msg: "更新成功", data: res } : { code: 500, msg: "没有可更新的用户" };
 });
 
 export const deleteUser = withBody(DeleteUserSchema, async (ctx, body) => {

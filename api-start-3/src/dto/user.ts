@@ -47,3 +47,5 @@ export const AddUserSchema = z.object({
 });
 
 export const EditUserSchema = AddUserSchema.extend({ _id: userId });
+
+export const BatchEditUsersSchema = AddUserSchema.omit({ username: true, name: true }).extend({ _ids: z.array(userId) });
