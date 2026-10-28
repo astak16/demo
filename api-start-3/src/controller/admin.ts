@@ -1,9 +1,16 @@
 import { AppContext } from "../../types/types";
+import { getMenuData } from "../common/Utils";
 import { withBody } from "../common/Validate";
 import { AddMenuSchema, EditMenuSchema, DeleteMenuSchema } from "../dto/menu";
 import { AddRoleSchema, DeleteRoleSchema, EditRoleSchema } from "../dto/role";
 import MenuModel from "../model/menu";
 import RoleModel from "../model/role";
+import UserModel from "../model/user";
+
+export const getRolesNames = async (ctx: AppContext) => {
+  const result = await RoleModel.find({}, { name: 1, _id: 0 });
+  ctx.body = { code: 200, data: result };
+};
 
 export const addRole = withBody(AddRoleSchema, async (ctx, body) => {
   const result = await RoleModel.create(body);
@@ -63,3 +70,17 @@ export const deleteMenu = withBody(DeleteMenuSchema, async (ctx, body) => {
     ctx.body = { code: 500, msg: "删除失败" };
   }
 });
+
+export const getRoutes = async (ctx: AppContext) => {
+  const userId = ctx.state.user?._id;
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    ctx.body = { code: 500, msg: "没有此用户" };
+    return;
+  }
+  const { roles = [] } = user;
+  const roleList = await RoleModel.find({ role: { $in: roles } }).populate({ path: "menu" });
+  const menus = [...new Map(roleList.flatMap((role) => role.menu ?? []).map((menu) => [String(menu._id), menu])).values()];
+
+  ctx.body = { code: 200, data: menus };
+};

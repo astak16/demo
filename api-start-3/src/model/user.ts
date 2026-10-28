@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import dayjs from "dayjs";
+import Role from "./role";
 
 const { Schema } = mongoose;
 
@@ -9,7 +10,8 @@ const UserSchema = new Schema({
   name: { type: String },
   favs: { type: Number, default: 100 },
   gender: { type: String, default: "" },
-  roles: { type: [String], default: ["user"] },
+  // roles: { type: [String], default: ["user"] },
+  roles: { type: [String], ref: Role.modelName },
   pic: { type: String, default: "/img/avatar.jpeg" },
   mobile: { type: String, match: /^1[3-9](\d{9})$/, default: "" },
   status: { type: String, default: "0" },
