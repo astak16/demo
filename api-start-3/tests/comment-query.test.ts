@@ -122,4 +122,10 @@ describe("comment list query", () => {
       total: 0,
     });
   });
+
+  it("handles missing search options", async (t) => {
+    t.mock.method(CommentModel, "aggregate", async () => [] as any);
+    assert.deepEqual(await CommentModel.getCommentsOptions(undefined as any, 1, 10), { data: [], total: 0 });
+    assert.deepEqual(await CommentModel.getCommentsOptions({ item: "tid" }, 1, 10), { data: [], total: 0 });
+  });
 });
