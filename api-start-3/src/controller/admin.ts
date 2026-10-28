@@ -73,14 +73,21 @@ export const deleteMenu = withBody(DeleteMenuSchema, async (ctx, body) => {
 
 export const getRoutes = async (ctx: AppContext) => {
   const userId = ctx.state.user?._id;
-  const user = await UserModel.findById(userId);
+  const user = await UserModel.findById(userId).select("roles");
   if (!user) {
     ctx.body = { code: 500, msg: "没有此用户" };
     return;
   }
-  const { roles = [] } = user;
-  const roleList = await RoleModel.find({ role: { $in: roles } }).populate({ path: "menu" });
+  const roles = user.roles ?? [];
+  const roleList = await RoleModel.find({ role: { $in: roles } })
+    .select("menu -_id")
+    .populate({
+      path: "menu",
+      select: "title path type sort component hideInBread hideInMenu notCache icon link children",
+    })
+    .lean();
   const menus = [...new Map(roleList.flatMap((role) => role.menu ?? []).map((menu) => [String(menu._id), menu])).values()];
+  const rights = menus.map((menu) => String(menu._id));
 
-  ctx.body = { code: 200, data: menus };
+  ctx.body = { code: 200, data: getMenuData(menus as unknown as Parameters<typeof getMenuData>[0], rights) };
 };
