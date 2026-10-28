@@ -13,7 +13,7 @@ import {
   getRoutes,
 } from "../../controller/admin";
 import { getComments, deleteBatchComment, updateCommentsBatch } from "../../controller/comment";
-import { getUsers, updateUser, deleteUser, addUser, updateUserSettings, checkUsername } from "../../controller/user";
+import { getUsers, updateUser, deleteUser, addUser, updateUserSettings, checkUsername, getStats } from "../../controller/user";
 
 const router = new Router();
 
@@ -64,5 +64,7 @@ router.post("/deleteMenu", deleteMenu);
 router.get("/getRolesNames", getRolesNames);
 
 router.get("/getRoutes", getRoutes);
+
+router.get("/getstat", getStats);
 
 export default router;

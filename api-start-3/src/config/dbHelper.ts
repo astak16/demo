@@ -4,9 +4,11 @@ import logger from "./logger";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import weekday from "dayjs/plugin/weekday";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(weekday);
 
 export async function connectDB() {
   mongoose.connection.on("connected", () => logger.info(`MongoDB: ${DB_NAME}, DB_HOST: ${MONGO_HOSTNAME} connection opened!`));
@@ -55,6 +57,13 @@ export function baseFields(schema: Schema) {
     created: { type: String, default: now },
     updated: { type: String, default: now },
     isDeleted: { type: Number, enum: [0, 1], default: 0 },
+  });
+  schema.pre("aggregate", function () {
+    if (this.options.includeDeleted) return;
+
+    this.pipeline().unshift({
+      $match: { isDeleted: { $in: [0, null] } },
+    });
   });
   schema.pre(
     [

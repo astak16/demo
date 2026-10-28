@@ -20,6 +20,10 @@ import dayjs from "dayjs";
 import bcrypt from "bcrypt";
 import UserCollectModel from "../model/userCollect";
 import { paginate } from "../common/paginate";
+import { AppContext } from "../../types/types";
+import PostModel from "../model/post";
+import CommentModel from "../model/comment";
+import type { PipelineStage } from "mongoose";
 
 export const basic = withBody(UpdateBasicInfoSchema, async (ctx, body) => {
   const { username, ...rest } = body;
@@ -206,3 +210,127 @@ export const getCollectByUid = withQuery(CollectSchema, async (ctx, query) => {
     data: { list, total, hasMore },
   };
 });
+
+export const getStats = async (ctx: AppContext) => {
+  interface CountRow {
+    _id: string;
+    count: number;
+  }
+  interface CatalogCountRow {
+    _id: string | null;
+    count: number;
+  }
+
+  const inforCardData: number[] = [];
+  const time = dayjs().format("YYYY-MM-DD 00:00:00");
+  const userNewCount = await UserModel.find({ created: { $lte: time } }).countDocuments();
+  const postsCount = await PostModel.find().countDocuments();
+  const commentsNewCount = await CommentModel.find({
+    created: { $lte: time },
+  }).countDocuments();
+
+  const starttime = dayjs().weekday(1).format("YYYY-MM-DD 00:00:00");
+  const endtime = dayjs().weekday(8).format("YYYY-MM-DD 00:00:00");
+  const weekEndCount = await CommentModel.find({
+    created: { $gte: starttime, $lte: endtime },
+    isBest: "1",
+  }).countDocuments();
+
+  // const signWeekCount = await SignRecord.find({
+  //   created: { $gte: starttime, $lte: endtime },
+  // }).countDocuments();
+
+  const postWeekCount = await PostModel.find({
+    created: { $gte: starttime, $lte: endtime },
+  }).countDocuments();
+
+  inforCardData.push(userNewCount);
+  inforCardData.push(postsCount);
+  inforCardData.push(commentsNewCount);
+  inforCardData.push(weekEndCount);
+  // inforCardData.push(signWeekCount);
+  inforCardData.push(postWeekCount);
+
+  const postsCatalogCount = await PostModel.aggregate<CatalogCountRow>([
+    { $group: { _id: "$catalog", count: { $sum: 1 } } },
+  ]);
+  const pieData: Record<string, number> = {};
+  postsCatalogCount.forEach((item) => {
+    if (item._id !== null) pieData[item._id] = item.count;
+  });
+
+  const startMonth = dayjs().subtract(5, "M").date(1).format("YYYY-MM-DD 00:00:00");
+  const endMonth = dayjs().add(1, "M").date(1).format("YYYY-MM-DD 00:00:00");
+  const monthRows = await PostModel.aggregate<CountRow>([
+    { $match: { created: { $gte: startMonth, $lt: endMonth } } },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m",
+            date: {
+              $dateFromString: {
+                dateString: "$created",
+                format: "%Y-%m-%d %H:%M:%S",
+                onError: null,
+                onNull: null,
+              },
+            },
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $match: { _id: { $ne: null } } },
+    { $sort: { _id: 1 } },
+  ]);
+  const monthData: Record<string, number> = Object.fromEntries(monthRows.map(({ _id, count }) => [_id, count]));
+
+  const startDay = dayjs().subtract(7, "day").format("YYYY-MM-DD 00:00:00");
+  const aggregateByDay = async (
+    aggregate: (pipeline: PipelineStage[]) => PromiseLike<CountRow[]>,
+  ): Promise<Record<string, number>> => {
+    const result = await aggregate([
+      { $match: { created: { $gte: startDay } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: {
+                $dateFromString: {
+                  dateString: "$created",
+                  format: "%Y-%m-%d %H:%M:%S",
+                  onError: null,
+                  onNull: null,
+                },
+              },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $match: { _id: { $ne: null } } },
+      { $sort: { _id: 1 } },
+    ]);
+    return Object.fromEntries(result.map(({ _id, count }) => [_id, count]));
+  };
+
+  const dailyPipelineModels = [UserModel, PostModel, CommentModel] as const;
+  const [userWeekData, postWeekData, commentsWeekData] = await Promise.all(
+    dailyPipelineModels.map((model) => aggregateByDay((pipeline) => model.aggregate<CountRow>(pipeline))),
+  );
+  // const signWeekData = await _aggregate(SignRecord);
+
+  const dates = Array.from({ length: 7 }, (_, index) =>
+    dayjs().subtract(6 - index, "day").format("YYYY-MM-DD"),
+  );
+  const addData = (counts: Readonly<Record<string, number>>): number[] => dates.map((date) => counts[date] ?? 0);
+  const weekData = {
+    user: addData(userWeekData),
+    post: addData(postWeekData),
+    comments: addData(commentsWeekData),
+  };
+
+  ctx.body = { code: 200, data: { inforCardData, pieData, monthData, weekData } };
+};
