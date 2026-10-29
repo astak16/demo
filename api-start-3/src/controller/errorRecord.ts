@@ -19,6 +19,9 @@ export const getErrorList = withQuery(ErrorSchema, async (ctx, query) => {
   if (method) {
     obj.method = { $regex: method, $options: "i" };
   }
+  if (code) {
+    obj.code = code;
+  }
 
   const { list, total } = await paginate(ErrorRecordModel, obj, { page, limit });
   ctx.body = { code: 200, data: { list, total, methodFilter, codeFilter } };
