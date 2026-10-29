@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import dayjs from "dayjs";
+import "../src/config/dbHelper";
 import type { AppContext } from "../types/types";
 import { getStats } from "../src/controller/user";
 import CommentModel from "../src/model/comment";
