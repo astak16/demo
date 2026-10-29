@@ -14,6 +14,7 @@ import {
 } from "../../controller/admin";
 import { getComments, deleteBatchComment, updateCommentsBatch } from "../../controller/comment";
 import { getUsers, updateUser, deleteUser, addUser, updateUserSettings, checkUsername, getStats } from "../../controller/user";
+import { getErrorList, addError, deleteError } from "../../controller/errorRecord";
 
 const router = new Router();
 
@@ -66,5 +67,11 @@ router.get("/getRolesNames", getRolesNames);
 router.get("/getRoutes", getRoutes);
 
 router.get("/getstat", getStats);
+
+router.get("/getErrors", getErrorList);
+
+router.post("/addError", addError);
+
+router.post("/deleteError", deleteError);
 
 export default router;
