@@ -168,10 +168,15 @@ export const deleteBatchComment = withBody(DeleteCommentSchema, async (ctx, body
 
 export const updateCommentsBatch = withBody(updateCommentsBatchSchema, async (ctx, body) => {
   const { _ids, ...field } = body;
-  console.log("field", field);
   const result = await CommentModel.updateMany({ _id: { $in: _ids } }, { $set: { ...field } });
   ctx.body =
     result.modifiedCount > 0
       ? { code: 200, msg: "更新成功", data: { modifiedCount: result.modifiedCount } }
       : { code: 500, msg: "没有可更新的评论" };
 });
+
+export const getMsgs = async (ctx: AppContext) => {
+  const userId = ctx.state.user!._id;
+  const result = await CommentModel.getMyMsgs(userId);
+  ctx.body = { code: 200, data: result };
+};

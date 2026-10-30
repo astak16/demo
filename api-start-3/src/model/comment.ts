@@ -33,9 +33,7 @@ const CommentsSchema = new Schema(
         const page = _page - 1;
         const item = options?.item;
         const rawSearch = options?.search;
-        const searchValues = (typeof rawSearch === "string" ? [rawSearch] : rawSearch ?? [])
-          .map((value) => value.trim())
-          .filter(Boolean);
+        const searchValues = (typeof rawSearch === "string" ? [rawSearch] : (rawSearch ?? [])).map((value) => value.trim()).filter(Boolean);
 
         if (["tid", "cuid", "uid"].includes(item ?? "")) {
           const pattern = searchValues.length ? new RegExp(searchValues.map(escapeRegex).join("|"), "i") : undefined;
@@ -144,6 +142,28 @@ const CommentsSchema = new Schema(
           return { data, total };
         }
         return { data: [], total: 0 };
+      },
+
+      async getMyMsgs(uid: string) {
+        const filter = {
+          uid,
+          cuid: { $ne: uid },
+          isRead: "0",
+          status: "1",
+        };
+
+        const [list, total] = await Promise.all([
+          this.find(filter)
+            .populate([
+              { path: "tid", select: "_id title content" },
+              { path: "uid", select: "_id name" },
+              { path: "cuid", select: "_id name" },
+            ])
+            .sort({ created: -1 })
+            .exec(),
+          this.countDocuments(filter),
+        ]);
+        return { list, total };
       },
     },
   },
