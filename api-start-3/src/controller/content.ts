@@ -12,6 +12,7 @@ import z from "zod";
 import Post from "../model/post";
 import UserCollectModel from "../model/userCollect";
 import PostHistory from "../model/postHistory";
+import { PaginateSchema } from "../dto/paginate";
 
 export const getPosts = withQuery(FilterPostSchema, async (ctx, query) => {
   const { page, limit, title, catalog, isTop, isEnd, status, tags } = query;
@@ -199,4 +200,27 @@ export const getPostDetail = withQuery(PostDetailSchema, async (ctx, query) => {
     data: { ...post.toJSON(), isFav },
     msg: "查询文章详情成功",
   };
+});
+
+export const getUserPost = withQuery(PaginateSchema, async (ctx, query) => {
+  const userId = ctx.state.user!._id;
+  const { page, limit } = query;
+
+  const { list, total } = await paginate(
+    PostModel,
+    { uid: userId },
+    {
+      page,
+      limit,
+      populate: [
+        { path: "uid", select: "name" },
+        {
+          path: "tags",
+          select: "tagName isDeleted",
+          options: { includeDeleted: true },
+        },
+      ],
+    },
+  );
+  ctx.body = { code: 200, data: { list, total } };
 });
