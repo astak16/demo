@@ -139,10 +139,9 @@ export const getCaller = (trace: string | undefined = new Error().stack) => {
   const stack = trace?.split("\n").slice(1) ?? [];
   for (const frame of stack) {
     if (frame.includes("node_modules") || frame.includes("src/config/logger.ts")) continue;
-    const match = frame.match(/((?:file:\/\/)?\/[^():]+):(\d+):\d+/);
+    const match = frame.match(/(?:file:\/\/)?(\/[^():]+):(\d+):\d+/);
     if (match) {
-      const fileName = match[1].replace(/^file:\/*/, "/");
-      const absoluteFile = path.isAbsolute(fileName) ? fileName : path.resolve(projectRoot, fileName);
+      const absoluteFile = match[1];
       const file = path.relative(projectRoot, absoluteFile).replaceAll("\\", "/");
       if (file.startsWith("../") || path.isAbsolute(file)) return path.basename(absoluteFile) + ":" + match[2];
       return `${file}:${match[2]}`;

@@ -48,6 +48,7 @@ describe("logger formatting and streams", () => {
     assert.equal(getCaller(`Error\n    at ignored (/app/src/config/logger.ts:2:3)\n    at run (${path.join(process.cwd(), "src/index.ts")}:8:4)`), "src/index.ts:8");
     assert.equal(getCaller("Error\n    at run (/tmp/external/file.ts:12:4)"), "file.ts:12");
     assert.equal(getCaller("Error\n    at run (file:///tmp/external/file.ts:13:5)"), "file.ts:13");
+    assert.equal(getCaller("Error\n    at run (anonymous function)"), "unknown:0");
     assert.equal(getCaller("Error\n    at run (node_modules/pkg/index.js:1:2)"), "unknown:0");
     assert.equal(getCaller(null as any), "unknown:0");
     assert.match(getCaller()!, /logger-config.test.ts:/);
