@@ -7,7 +7,7 @@ import CommentModel from "../src/model/comment";
 import CommentHandModel from "../src/model/commentHand";
 import PostModel from "../src/model/post";
 import UserModel from "../src/model/user";
-import { deleteBatchComment, getComments, updateCommentsBatch } from "../src/controller/comment";
+import { deleteBatchComment, getComments, getMsgs, setMsg, updateCommentsBatch } from "../src/controller/comment";
 import { setupApi } from "./helpers/api";
 
 const { request } = setupApi();
@@ -100,6 +100,89 @@ describe("POST /admin/updateCommentsBatch", () => {
     await updateCommentsBatch(ctx, async () => {});
 
     assert.deepEqual(ctx.body, { code: 500, msg: "没有可更新的评论" });
+  });
+});
+
+describe("GET /user/getMsgs", () => {
+  it("returns the unread message list and total", async (t) => {
+    const result = { list: [{ _id: commentId, content: "A reply" }], total: 4 };
+    const lookup = t.mock.method(CommentModel, "getMyMsgs", async () => result);
+
+    const response = await request("/user/getMsgs", undefined, authHeader);
+
+    assert.deepEqual(response.body, { code: 200, data: result });
+    assert.deepEqual(lookup.mock.calls[0].arguments, [uid]);
+  });
+
+  it("covers the getMsgs handler directly", async (t) => {
+    const result = { list: [], total: 0 };
+    const lookup = t.mock.method(CommentModel, "getMyMsgs", async () => result);
+    const ctx = { state: { user: { _id: uid } } } as any;
+
+    await getMsgs(ctx);
+
+    assert.deepEqual(ctx.body, { code: 200, data: result });
+    assert.deepEqual(lookup.mock.calls[0].arguments, [uid]);
+  });
+});
+
+describe("POST /user/setMsg", () => {
+  it("matches the lowercase route and marks one message as read", async (t) => {
+    const update = t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 1 }));
+
+    const response = await request("/user/setmsg", { _id: commentId }, authHeader);
+
+    assert.deepEqual(response.body, { code: 200, data: { _id: commentId }, msg: "更新成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { uid, _id: commentId },
+      { isRead: "1" },
+    ]);
+  });
+
+  it("marks all current user messages as read when no ID is given", async (t) => {
+    const update = t.mock.method(CommentModel, "updateMany", async () => ({ matchedCount: 1 }));
+    const response = await request("/user/setMsg", {}, authHeader);
+
+    assert.deepEqual(response.body, { code: 200, data: {}, msg: "更新成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [{ uid }, { isRead: "1" }]);
+  });
+
+  it("covers the single-message handler directly", async (t) => {
+    const update = t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 1 }));
+    const ctx = { request: { body: { _id: commentId } }, state: { user: { _id: uid } } } as any;
+
+    await setMsg(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, data: { _id: commentId }, msg: "更新成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [{ uid, _id: commentId }, { isRead: "1" }]);
+  });
+
+  it("covers the all-messages handler directly", async (t) => {
+    const update = t.mock.method(CommentModel, "updateMany", async () => ({ matchedCount: 1 }));
+    const ctx = { request: { body: {} }, state: { user: { _id: uid } } } as any;
+
+    await setMsg(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, data: { _id: undefined }, msg: "更新成功" });
+    assert.deepEqual(update.mock.calls[0].arguments, [{ uid }, { isRead: "1" }]);
+  });
+
+  it("reports when a single message was not updated", async (t) => {
+    t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 0 }));
+    const ctx = { request: { body: { _id: commentId } }, state: { user: { _id: uid } } } as any;
+
+    await setMsg(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 500, msg: "更新失败" });
+  });
+
+  it("reports when no messages were marked as read", async (t) => {
+    t.mock.method(CommentModel, "updateMany", async () => ({ matchedCount: 0 }));
+    const ctx = { request: { body: {} }, state: { user: { _id: uid } } } as any;
+
+    await setMsg(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 500, msg: "更新失败" });
   });
 });
 

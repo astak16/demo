@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
-import { addPost } from "../src/controller/content";
+import { addPost, getUserPost } from "../src/controller/content";
 import LinkModel from "../src/model/link";
 import PostModel from "../src/model/post";
 import PostHistory from "../src/model/postHistory";
@@ -81,6 +81,7 @@ describe("GET /public/topWeek", () => {
     assert.deepEqual(response.body, { code: 200, data: posts });
     assert.equal(getTopWeek.mock.callCount(), 1);
   });
+
 });
 
 describe("GET /public/content/detail", () => {
@@ -230,6 +231,47 @@ describe("GET /public/list", () => {
       isDeleted: { $in: [0, null] },
     });
     assert.equal(response.body.data.list[0]._id, postId.toString());
+  });
+});
+
+describe("GET /user/posts", () => {
+  it("returns the current user's paginated posts and total", async (t) => {
+    const rows = [{ _id: "post-3", title: "My post" }];
+    const calls: unknown[][] = [];
+    const query = {
+      sort(value: unknown) { calls.push(["sort", value]); return this; },
+      skip(value: number) { calls.push(["skip", value]); return this; },
+      limit(value: number) { calls.push(["limit", value]); return this; },
+      populate(value: unknown) { calls.push(["populate", value]); return this; },
+      async exec() { return rows; },
+    };
+    const find = t.mock.method(PostModel, "find", (filter: unknown) => {
+      calls.push(["find", filter]);
+      return query as never;
+    });
+    const count = t.mock.method(PostModel, "countDocuments", async () => 3);
+    const ctx = {
+      query: { page: "2", limit: "1" },
+      request: { body: undefined },
+      state: { user: { _id: uid } },
+    } as any;
+
+    await getUserPost(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, data: { list: rows, total: 3 } });
+    assert.deepEqual(find.mock.calls[0].arguments, [{ uid }]);
+    assert.deepEqual(count.mock.calls[0].arguments, [{ uid }]);
+    assert.deepEqual(calls.filter((call) => call[0] !== "find"), [
+      ["sort", { created: -1, _id: -1 }],
+      ["skip", 1],
+      ["limit", 1],
+      ["populate", { path: "uid", select: "name" }],
+      ["populate", {
+        path: "tags",
+        select: "tagName isDeleted",
+        options: { includeDeleted: true },
+      }],
+    ]);
   });
 });
 

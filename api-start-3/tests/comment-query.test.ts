@@ -128,4 +128,36 @@ describe("comment list query", () => {
     assert.deepEqual(await CommentModel.getCommentsOptions(undefined as any, 1, 10), { data: [], total: 0 });
     assert.deepEqual(await CommentModel.getCommentsOptions({ item: "tid" }, 1, 10), { data: [], total: 0 });
   });
+
+  it("returns unread messages and their total", async (t) => {
+    const rows = [{ _id: "comment-1", content: "A reply" }];
+    const calls: unknown[][] = [];
+    const query = {
+      populate(value: unknown) { calls.push(["populate", value]); return this; },
+      sort(value: unknown) { calls.push(["sort", value]); return this; },
+      async exec() { return rows; },
+    };
+    const find = t.mock.method(CommentModel, "find", (filter: unknown) => {
+      calls.push(["find", filter]);
+      return query as never;
+    });
+    const count = t.mock.method(CommentModel, "countDocuments", async () => 4);
+
+    const result = await CommentModel.getMyMsgs("user-1");
+
+    assert.deepEqual(result, { list: rows, total: 4 });
+    assert.deepEqual(find.mock.calls[0].arguments, [{
+      uid: "user-1",
+      cuid: { $ne: "user-1" },
+      isRead: "0",
+      status: "1",
+    }]);
+    assert.deepEqual(calls[1], ["populate", [
+      { path: "tid", select: "_id title content" },
+      { path: "uid", select: "_id name" },
+      { path: "cuid", select: "_id name" },
+    ]]);
+    assert.deepEqual(calls[2], ["sort", { created: -1 }]);
+    assert.deepEqual(count.mock.calls[0].arguments, [find.mock.calls[0].arguments[0]]);
+  });
 });
