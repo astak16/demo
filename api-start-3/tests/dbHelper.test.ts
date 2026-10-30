@@ -14,7 +14,7 @@ describe("MongoDB connection startup", () => {
       if (event === "connected") listener();
       if (event === "error") listener(new Error("connection failed"));
       if (event === "disconnected") listener();
-      return this;
+      return mongoose.connection;
     } as any);
     const connect = t.mock.method(mongoose, "connect", async () => mongoose);
     const info = t.mock.method(logger, "info", () => logger);
@@ -84,13 +84,20 @@ describe("baseFields soft deletion filter", () => {
       filters.push(filter);
       return 0;
     });
+    t.mock.method(Model.collection, "findOne", async (filter: Record<string, unknown>) => {
+      filters.push(filter);
+      return deleted;
+    });
 
     const records = await Model.find({ isDeleted: 1 }).setOptions({ includeDeleted: true });
+    const record = await Model.findOne({ isDeleted: 1 }).setOptions({ includeDeleted: true });
     await Model.countDocuments({ isDeleted: 1 }).setOptions({ includeDeleted: true });
 
     assert.equal(records[0].$locals.includeDeleted, true);
     assert.equal((records[0].toJSON() as any).isDeleted, 1);
-    assert.deepEqual(filters, [{ isDeleted: 1 }, { isDeleted: 1 }]);
+    assert.equal(record?.$locals.includeDeleted, true);
+    assert.equal((record?.toJSON() as any).isDeleted, 1);
+    assert.deepEqual(filters, [{ isDeleted: 1 }, { isDeleted: 1 }, { isDeleted: 1 }]);
   });
 
   it("keeps the deletion marker when serialization explicitly includes deleted data", () => {
@@ -106,9 +113,10 @@ describe("baseFields soft deletion filter", () => {
     const schema = new Schema({ name: String }, {
       toJSON: {
         transform(_doc, ret) {
-          ret.transformed = true;
-          ret.nested = Object.assign(Object.create(null), { isDeleted: 1, password: "hidden" });
-          return ret;
+          const result = ret as Record<string, unknown>;
+          result.transformed = true;
+          result.nested = Object.assign(Object.create(null), { isDeleted: 1, password: "hidden" });
+          return result;
         },
       },
     });
@@ -144,7 +152,9 @@ describe("baseFields soft deletion filter", () => {
   });
 
   it("covers serialization transform decisions directly", () => {
-    const transform = Model.schema.get("toJSON").transform as (doc: any, ret: Record<string, unknown>, options: unknown) => Record<string, unknown>;
+    const toJSON = Model.schema.get("toJSON");
+    assert.ok(toJSON?.transform);
+    const transform = toJSON.transform as (doc: any, ret: Record<string, unknown>, options: unknown) => Record<string, unknown>;
     const retained = transform({ $locals: { includeDeleted: true } }, { isDeleted: 1, password: "secret" }, {});
     assert.equal(retained.isDeleted, 1);
     assert.equal("password" in retained, false);

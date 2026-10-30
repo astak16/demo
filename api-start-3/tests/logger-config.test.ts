@@ -7,6 +7,8 @@ import {
   createStreamSets,
   DailyDateStream,
   formatLogLine,
+  getAccessLogLevel,
+  getAppLogLevel,
   getCaller,
   PrettyConsoleStream,
 } from "../src/config/logger";
@@ -37,16 +39,21 @@ describe("logger formatting and streams", () => {
     assert.match(formatted, /INFO \| api/);
     assert.match(formatted, /\n$/);
     assert.match(formatLogLine(JSON.stringify({ level: 30 })), /\| INFO\n$/);
+    assert.match(formatLogLine(JSON.stringify({ time: null, level: null, msg: null, caller: "" })), /\| INFO\n$/);
     assert.match(formatLogLine(JSON.stringify({ time: "2026-01-02T03:04:05Z", level: 30, msg: "string time" })), /2026-01-02 11:04:05 \| INFO/);
   });
 
-  it("resolves caller locations inside and outside the project", () => {
+  it("resolves caller locations inside and outside the project", (t) => {
     assert.equal(getCaller(`Error\n    at run (${path.join(process.cwd(), "tests/inside.test.ts")}:7:3)`), "tests/inside.test.ts:7");
     assert.equal(getCaller(`Error\n    at ignored (/app/src/config/logger.ts:2:3)\n    at run (${path.join(process.cwd(), "src/index.ts")}:8:4)`), "src/index.ts:8");
     assert.equal(getCaller("Error\n    at run (/tmp/external/file.ts:12:4)"), "file.ts:12");
     assert.equal(getCaller("Error\n    at run (file:///tmp/external/file.ts:13:5)"), "file.ts:13");
     assert.equal(getCaller("Error\n    at run (node_modules/pkg/index.js:1:2)"), "unknown:0");
     assert.equal(getCaller(null as any), "unknown:0");
+    assert.match(getCaller()!, /logger-config.test.ts:/);
+
+    t.mock.method(path, "relative", () => "/outside/file.ts");
+    assert.equal(getCaller(`Error\n    at run (${path.join(process.cwd(), "tests/inside.test.ts")}:14:6)`), "inside.test.ts:14");
   });
 
   it("builds development and production stream sets", () => {
@@ -56,6 +63,12 @@ describe("logger formatting and streams", () => {
     assert.equal(production.accessStreams.length, 1);
     assert.equal(development.streams.length, 3);
     assert.equal(development.accessStreams.length, 2);
+    assert.equal(getAppLogLevel(undefined, false), "info");
+    assert.equal(getAppLogLevel(undefined, true), "debug");
+    assert.equal(getAppLogLevel("warn", false), "debug");
+    assert.equal(getAccessLogLevel(undefined, false), "info");
+    assert.equal(getAccessLogLevel(undefined, true), "debug");
+    assert.equal(getAccessLogLevel("warn", false), "warn");
   });
 
   it("colors every log level, rolls log files, and handles stream errors", async (t) => {

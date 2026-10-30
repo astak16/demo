@@ -54,7 +54,7 @@ describe("application startup", () => {
       exit: ((code?: number) => { exitCode = code; return undefined as any; }) as any,
     });
 
-    assert.deepEqual(logged, ["启动失败:", failure]);
+    assert.deepEqual(logged, [{ err: failure }, "启动失败:"]);
     assert.equal(exitCode, 1);
   });
 

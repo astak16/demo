@@ -92,7 +92,7 @@ export class DailyDateStream extends Writable {
     if (this.currentStream && this.currentDate === date) return;
     if (this.currentStream) {
       await new Promise<void>((resolve, reject) => {
-        this.currentStream?.once("error", reject).end(resolve);
+        this.currentStream!.once("error", reject).end(resolve);
       });
     }
     this.currentDate = date;
@@ -102,7 +102,7 @@ export class DailyDateStream extends Writable {
   override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void) {
     const formattedChunk = chunk.toString().split(/\r?\n/).filter(Boolean).map(formatLogLine).join("");
     this.ensureCurrentStream()
-      .then(() => this.currentStream?.write(formattedChunk, callback))
+      .then(() => this.currentStream!.write(formattedChunk, callback))
       .catch(callback);
   }
 }
@@ -117,16 +117,21 @@ const appLog = new DailyDateStream("app");
 const errorLog = new DailyDateStream("error");
 const accessLog = new DailyDateStream("access");
 
-export function createStreamSets(devMode: boolean) {
-  const streams: pino.StreamEntry[] = [
-    { level: "info", stream: appLog },
-    { level: "error", stream: errorLog },
-  ];
-  if (devMode) streams.push({ level: "info", stream: new PrettyConsoleStream() });
-
-  const accessStreams: pino.StreamEntry[] = [{ level: "info", stream: accessLog }];
-  if (devMode) accessStreams.push({ level: "info", stream: new PrettyConsoleStream() });
-  return { streams, accessStreams }; }
+export const getAppLogLevel = (configuredLevel: string | undefined, devMode: boolean) =>
+  configuredLevel || devMode ? "debug" : "info";
+export const getAccessLogLevel = (configuredLevel: string | undefined, devMode: boolean) =>
+  configuredLevel || (devMode ? "debug" : "info");
+export const createStreamSets = (devMode: boolean) => ({
+  streams: [
+    { level: "info" as const, stream: appLog },
+    { level: "error" as const, stream: errorLog },
+    ...(devMode ? [{ level: "info" as const, stream: new PrettyConsoleStream() }] : []),
+  ] satisfies pino.StreamEntry[],
+  accessStreams: [
+    { level: "info" as const, stream: accessLog },
+    ...(devMode ? [{ level: "info" as const, stream: new PrettyConsoleStream() }] : []),
+  ] satisfies pino.StreamEntry[],
+});
 
 const { streams, accessStreams } = createStreamSets(isDevMode);
 
@@ -148,7 +153,7 @@ export const getCaller = (trace: string | undefined = new Error().stack) => {
 
 export const logger: Logger = pino(
   {
-    level: process.env.LOG_LEVEL || isDevMode ? "debug" : "info",
+    level: getAppLogLevel(process.env.LOG_LEVEL, isDevMode),
     base: { service: "api-start" },
     timestamp: pino.stdTimeFunctions.isoTime,
     mixin: () => ({ caller: getCaller() }),
@@ -158,7 +163,7 @@ export const logger: Logger = pino(
 
 export const accessLogger: Logger = pino(
   {
-    level: process.env.LOG_LEVEL || (isDevMode ? "debug" : "info"),
+    level: getAccessLogLevel(process.env.LOG_LEVEL, isDevMode),
     base: { service: "api-start", logger: "access" },
     timestamp: pino.stdTimeFunctions.isoTime,
     mixin: () => ({ caller: getCaller() }),

@@ -55,7 +55,7 @@ export async function start(dependencies: StartupDependencies = startupDependenc
   try {
     await bootstrap(dependencies);
   } catch (err) {
-    dependencies.logError("启动失败:", err);
+    dependencies.logError({ err }, "启动失败:");
     dependencies.exit(1);
   }
 }
