@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import { basic, changePassword, setCollect, getCollectByUid } from "../../controller/user";
 import { getUserPost } from "../../controller/content";
-import { getMsgs } from "../../controller/comment";
+import { getMsgs, setMsg } from "../../controller/comment";
 
 const router = new Router({ prefix: "/user" });
 
@@ -20,5 +20,7 @@ router.post("/setCollect", setCollect);
 router.get("/collect", getCollectByUid);
 
 router.get("/getMsgs", getMsgs);
+
+router.post("/setMsg", setMsg);
 
 export default router;

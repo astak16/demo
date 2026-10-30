@@ -30,3 +30,5 @@ export const updateCommentsBatchSchema = z.object({
   _ids: z.array(id),
   content: z.string().min(1, "content 不能为空").optional(),
 });
+
+export const SetCommentSchema = z.object({ _id: id.optional() });
