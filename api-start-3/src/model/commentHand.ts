@@ -6,9 +6,9 @@ import CommentModel from "./comment";
 const Schema = mongoose.Schema;
 
 const CommentHandsSchema = new Schema({
-  cid: { type: Schema.Types.ObjectId, ref: CommentModel.modelName },
-  uid: { type: Schema.Types.ObjectId, ref: UserModel.modelName },
-  chuid: { type: Schema.Types.ObjectId, ref: UserModel.modelName },
+  cid: { type: Schema.Types.ObjectId, ref: CommentModel.modelName }, // 评论id
+  uid: { type: Schema.Types.ObjectId, ref: UserModel.modelName }, // 发表评论用户的id
+  chuid: { type: Schema.Types.ObjectId, ref: UserModel.modelName }, // 回复评论用户的id
 });
 
 CommentHandsSchema.index({ cid: 1, uid: 1 }, { unique: true });

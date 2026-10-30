@@ -16,6 +16,8 @@ import PostModel from "../model/post";
 import UserModel from "../model/user";
 import CommentHandModel from "../model/commentHand";
 import { Types } from "mongoose";
+import { PaginateSchema } from "../dto/paginate";
+import { paginate } from "../common/paginate";
 
 const canReply = async (ctx: AppContext) => {
   const _id = ctx.state.user!._id!;
@@ -200,4 +202,22 @@ export const setMsg = withBody(SetCommentSchema, async (ctx, body) => {
       ctx.body = { code: 500, msg: "更新失败" };
     }
   }
+});
+
+export const getHands = withQuery(PaginateSchema, async (ctx, query) => {
+  const userId = ctx.state.user?._id;
+  const { page, limit } = query;
+  const { list, total } = await paginate(
+    CommentHandModel,
+    { uid: userId },
+    {
+      page,
+      limit,
+      populate: [
+        { path: "chuid", select: { _id: 1, name: 1, pic: 1 } },
+        { path: "cid", select: "_id content" },
+      ],
+    },
+  );
+  ctx.body = { code: 200, data: { list, total } };
 });
