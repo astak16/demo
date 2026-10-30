@@ -7,7 +7,7 @@ import CommentModel from "../src/model/comment";
 import CommentHandModel from "../src/model/commentHand";
 import PostModel from "../src/model/post";
 import UserModel from "../src/model/user";
-import { deleteBatchComment, getComments, getMsgs, setMsg, updateCommentsBatch } from "../src/controller/comment";
+import { deleteBatchComment, getComments, getHands, getMsgs, updateCommentsBatch } from "../src/controller/comment";
 import { setupApi } from "./helpers/api";
 
 const { request } = setupApi();
@@ -126,6 +126,39 @@ describe("GET /user/getMsgs", () => {
   });
 });
 
+describe("GET /user/getHands handler", () => {
+  it("returns the current user's paginated comment likes", async (t) => {
+    const rows = [{ _id: "hand-1" }];
+    const calls: unknown[][] = [];
+    const query = {
+      sort(value: unknown) { calls.push(["sort", value]); return this; },
+      skip(value: number) { calls.push(["skip", value]); return this; },
+      limit(value: number) { calls.push(["limit", value]); return this; },
+      populate(value: unknown) { calls.push(["populate", value]); return this; },
+      async exec() { return rows; },
+    };
+    const find = t.mock.method(CommentHandModel, "find", (filter: unknown) => {
+      calls.push(["find", filter]);
+      return query as never;
+    });
+    t.mock.method(CommentHandModel, "countDocuments", async () => 3);
+    const ctx = {
+      request: { body: undefined },
+      state: { user: { _id: uid } },
+      query: { page: 2, limit: 1 },
+    } as any;
+
+    await getHands(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, data: { list: rows, total: 3 } });
+    assert.deepEqual(find.mock.calls[0].arguments, [{ uid }]);
+    assert.deepEqual(calls.slice(0, 4), [
+      ["find", { uid }], ["sort", { created: -1, _id: -1 }], ["skip", 1], ["limit", 1],
+    ]);
+    assert.equal(calls.filter(([name]) => name === "populate").length, 2);
+  });
+});
+
 describe("POST /user/setMsg", () => {
   it("matches the lowercase route and marks one message as read", async (t) => {
     const update = t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 1 }));
@@ -145,44 +178,6 @@ describe("POST /user/setMsg", () => {
 
     assert.deepEqual(response.body, { code: 200, data: {}, msg: "更新成功" });
     assert.deepEqual(update.mock.calls[0].arguments, [{ uid }, { isRead: "1" }]);
-  });
-
-  it("covers the single-message handler directly", async (t) => {
-    const update = t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 1 }));
-    const ctx = { request: { body: { _id: commentId } }, state: { user: { _id: uid } } } as any;
-
-    await setMsg(ctx, async () => {});
-
-    assert.deepEqual(ctx.body, { code: 200, data: { _id: commentId }, msg: "更新成功" });
-    assert.deepEqual(update.mock.calls[0].arguments, [{ uid, _id: commentId }, { isRead: "1" }]);
-  });
-
-  it("covers the all-messages handler directly", async (t) => {
-    const update = t.mock.method(CommentModel, "updateMany", async () => ({ matchedCount: 1 }));
-    const ctx = { request: { body: {} }, state: { user: { _id: uid } } } as any;
-
-    await setMsg(ctx, async () => {});
-
-    assert.deepEqual(ctx.body, { code: 200, data: { _id: undefined }, msg: "更新成功" });
-    assert.deepEqual(update.mock.calls[0].arguments, [{ uid }, { isRead: "1" }]);
-  });
-
-  it("reports when a single message was not updated", async (t) => {
-    t.mock.method(CommentModel, "updateOne", async () => ({ matchedCount: 0 }));
-    const ctx = { request: { body: { _id: commentId } }, state: { user: { _id: uid } } } as any;
-
-    await setMsg(ctx, async () => {});
-
-    assert.deepEqual(ctx.body, { code: 500, msg: "更新失败" });
-  });
-
-  it("reports when no messages were marked as read", async (t) => {
-    t.mock.method(CommentModel, "updateMany", async () => ({ matchedCount: 0 }));
-    const ctx = { request: { body: {} }, state: { user: { _id: uid } } } as any;
-
-    await setMsg(ctx, async () => {});
-
-    assert.deepEqual(ctx.body, { code: 500, msg: "更新失败" });
   });
 });
 

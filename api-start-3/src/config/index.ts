@@ -6,7 +6,7 @@ export const DB_NAME = process.env.DB_NAME || "testdb2";
 
 export const DB_URL = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`;
 
-export const baseUrl = process.env.NODE_ENV === "production" ? "http://localhost:8080" : "http://localhost:8080";
+export const baseUrl = "http://localhost:8080";
 
 export const JWT_SECRET = "abcdefghijklmnopqrstuvwxyz";
 

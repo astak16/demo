@@ -31,7 +31,7 @@ const levelNames: Record<number, string> = {
   60: "FATAL",
 };
 
-const formatLine = (line: string) => {
+export const formatLogLine = (line: string) => {
   try {
     const entry = JSON.parse(line) as Record<string, unknown>;
     const time = formatDateTime(entry.time ?? Date.now());
@@ -50,7 +50,7 @@ const formatLine = (line: string) => {
   }
 };
 
-const colorizeLine = (line: string) => {
+export const colorizeLogLine = (line: string) => {
   const reset = "\u001b[0m";
   const white = "\u001b[37m";
   const levelColor =
@@ -76,7 +76,7 @@ const colorizeLine = (line: string) => {
   return colored + (hasNewline ? "\n" : "");
 };
 
-class DailyDateStream extends Writable {
+export class DailyDateStream extends Writable {
   private readonly type: string;
   private currentDate = "";
   private currentStream: fs.WriteStream | undefined;
@@ -100,16 +100,16 @@ class DailyDateStream extends Writable {
   }
 
   override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-    const formattedChunk = chunk.toString().split(/\r?\n/).filter(Boolean).map(formatLine).join("");
+    const formattedChunk = chunk.toString().split(/\r?\n/).filter(Boolean).map(formatLogLine).join("");
     this.ensureCurrentStream()
       .then(() => this.currentStream?.write(formattedChunk, callback))
       .catch(callback);
   }
 }
 
-class PrettyConsoleStream extends Writable {
+export class PrettyConsoleStream extends Writable {
   override _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-    process.stdout.write(chunk.toString().split(/\r?\n/).filter(Boolean).map(formatLine).map(colorizeLine).join(""), callback);
+    process.stdout.write(chunk.toString().split(/\r?\n/).filter(Boolean).map(formatLogLine).map(colorizeLogLine).join(""), callback);
   }
 }
 
@@ -117,20 +117,21 @@ const appLog = new DailyDateStream("app");
 const errorLog = new DailyDateStream("error");
 const accessLog = new DailyDateStream("access");
 
-const streams: pino.StreamEntry[] = [
-  { level: "info", stream: appLog },
-  { level: "error", stream: errorLog },
-];
+export function createStreamSets(devMode: boolean) {
+  const streams: pino.StreamEntry[] = [
+    { level: "info", stream: appLog },
+    { level: "error", stream: errorLog },
+  ];
+  if (devMode) streams.push({ level: "info", stream: new PrettyConsoleStream() });
 
-if (isDevMode) {
-  streams.push({
-    level: "info",
-    stream: new PrettyConsoleStream(),
-  });
-}
+  const accessStreams: pino.StreamEntry[] = [{ level: "info", stream: accessLog }];
+  if (devMode) accessStreams.push({ level: "info", stream: new PrettyConsoleStream() });
+  return { streams, accessStreams }; }
 
-const getCaller = () => {
-  const stack = new Error().stack?.split("\n").slice(1) ?? [];
+const { streams, accessStreams } = createStreamSets(isDevMode);
+
+export const getCaller = (trace: string | undefined = new Error().stack) => {
+  const stack = trace?.split("\n").slice(1) ?? [];
   for (const frame of stack) {
     if (frame.includes("node_modules") || frame.includes("src/config/logger.ts")) continue;
     const match = frame.match(/((?:file:\/\/)?\/[^():]+):(\d+):\d+/);
@@ -154,15 +155,6 @@ export const logger: Logger = pino(
   },
   pino.multistream(streams),
 );
-
-const accessStreams: pino.StreamEntry[] = [{ level: "info", stream: accessLog }];
-
-if (isDevMode) {
-  accessStreams.push({
-    level: "info",
-    stream: new PrettyConsoleStream(),
-  });
-}
 
 export const accessLogger: Logger = pino(
   {

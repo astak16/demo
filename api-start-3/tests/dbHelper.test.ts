@@ -5,6 +5,29 @@ import "../src/config/dbHelper";
 import PostModel from "../src/model/post";
 import PostTagModel from "../src/model/postTag";
 import UserModel from "../src/model/user";
+import logger from "../src/config/logger";
+import { baseFields, connectDB } from "../src/config/dbHelper";
+
+describe("MongoDB connection startup", () => {
+  it("registers connection logs and connects to the configured database", async (t) => {
+    const on = t.mock.method(mongoose.connection, "on", function (event: string, listener: (...args: any[]) => void) {
+      if (event === "connected") listener();
+      if (event === "error") listener(new Error("connection failed"));
+      if (event === "disconnected") listener();
+      return this;
+    } as any);
+    const connect = t.mock.method(mongoose, "connect", async () => mongoose);
+    const info = t.mock.method(logger, "info", () => logger);
+    const error = t.mock.method(logger, "error", () => logger);
+
+    await connectDB();
+
+    assert.equal(on.mock.callCount(), 3);
+    assert.equal(connect.mock.callCount(), 1);
+    assert.equal(info.mock.callCount(), 2);
+    assert.equal(error.mock.callCount(), 1);
+  });
+});
 
 describe("baseFields soft deletion filter", () => {
   const Model = mongoose.model(`SoftDeleteFilter_${Date.now()}`, new Schema({ name: String }));
@@ -36,21 +59,97 @@ describe("baseFields soft deletion filter", () => {
     ]);
   });
 
+  it("applies base fields when a schema has no prior JSON options", () => {
+    const calls: unknown[][] = [];
+    const schema = {
+      get: () => undefined,
+      set: (...args: unknown[]) => { calls.push(["set", ...args]); },
+      add: (...args: unknown[]) => { calls.push(["add", ...args]); },
+      pre: (...args: unknown[]) => { calls.push(["pre", ...args]); },
+      post: (...args: unknown[]) => { calls.push(["post", ...args]); },
+    };
+    baseFields(schema as any);
+    assert.ok(calls.some(([method]) => method === "set"));
+    assert.ok(calls.some(([method]) => method === "add"));
+  });
+
   it("allows a query to include deleted records", async (t) => {
     const filters: Record<string, unknown>[] = [];
+    const deleted = { name: "archived", isDeleted: 1 };
     t.mock.method(Model.collection, "find", (filter: Record<string, unknown>) => {
       filters.push(filter);
-      return { toArray: async () => [] };
+      return { toArray: async () => [deleted] };
     });
     t.mock.method(Model.collection, "countDocuments", async (filter: Record<string, unknown>) => {
       filters.push(filter);
       return 0;
     });
 
-    await Model.find({ isDeleted: 1 }).setOptions({ includeDeleted: true });
+    const records = await Model.find({ isDeleted: 1 }).setOptions({ includeDeleted: true });
     await Model.countDocuments({ isDeleted: 1 }).setOptions({ includeDeleted: true });
 
+    assert.equal(records[0].$locals.includeDeleted, true);
+    assert.equal((records[0].toJSON() as any).isDeleted, 1);
     assert.deepEqual(filters, [{ isDeleted: 1 }, { isDeleted: 1 }]);
+  });
+
+  it("keeps the deletion marker when serialization explicitly includes deleted data", () => {
+    const doc = new Model({ name: "archived", isDeleted: 1 });
+    const json = doc.toJSON({ includeDeleted: true }) as Record<string, unknown>;
+    assert.equal(json.isDeleted, 1);
+
+    doc.$locals.includeDeleted = true;
+    assert.equal((doc.toJSON({ includeDeleted: false }) as Record<string, unknown>).isDeleted, 1);
+  });
+
+  it("preserves a schema's existing JSON transform", () => {
+    const schema = new Schema({ name: String }, {
+      toJSON: {
+        transform(_doc, ret) {
+          ret.transformed = true;
+          ret.nested = Object.assign(Object.create(null), { isDeleted: 1, password: "hidden" });
+          return ret;
+        },
+      },
+    });
+    const model = mongoose.model(`ExistingTransform_${Date.now()}`, schema);
+    const json = new model({ name: "test" }).toJSON({ includeDeleted: true }) as Record<string, any>;
+    assert.equal(json.transformed, true);
+    assert.equal(json.nested.isDeleted, 1);
+    assert.equal("password" in json.nested, false);
+
+    const noResultSchema = new Schema({ name: String }, {
+      toJSON: { transform() { return undefined; } },
+    });
+    const NoResultModel = mongoose.model(`NoResultTransform_${Date.now()}`, noResultSchema);
+    const fallback = new NoResultModel({ name: "fallback" }).toJSON() as Record<string, unknown>;
+    assert.equal(fallback.name, "fallback");
+  });
+
+  it("adds the soft-delete match to aggregates unless deleted records are requested", async (t) => {
+    const pipelines: unknown[][] = [];
+    t.mock.method(Model.collection, "aggregate", (pipeline: unknown[]) => {
+      pipelines.push(pipeline);
+      return { toArray: async () => [] } as any;
+    });
+
+    await Model.aggregate([{ $match: { name: "active" } }]);
+    await Model.aggregate([{ $match: { name: "archived" } }]).option({ includeDeleted: true });
+
+    assert.deepEqual(pipelines[0], [
+      { $match: { isDeleted: { $in: [0, null] } } },
+      { $match: { name: "active" } },
+    ]);
+    assert.deepEqual(pipelines[1], [{ $match: { name: "archived" } }]);
+  });
+
+  it("covers serialization transform decisions directly", () => {
+    const transform = Model.schema.get("toJSON").transform as (doc: any, ret: Record<string, unknown>, options: unknown) => Record<string, unknown>;
+    const retained = transform({ $locals: { includeDeleted: true } }, { isDeleted: 1, password: "secret" }, {});
+    assert.equal(retained.isDeleted, 1);
+    assert.equal("password" in retained, false);
+    const filtered = transform({ $locals: { includeDeleted: false } }, { isDeleted: 1, password: "secret" }, {});
+    assert.equal("isDeleted" in filtered, false);
   });
 
   it("restricts updates while allowing a soft delete of an active record", async (t) => {
@@ -175,4 +274,5 @@ describe("post tag population", () => {
     assert.equal(output.tags[0].tagName, "Deleted tag");
     assert.equal(output.tags[0].isDeleted, 1);
   });
+
 });

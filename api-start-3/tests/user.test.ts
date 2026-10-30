@@ -45,6 +45,18 @@ describe("POST /user/basic", () => {
     });
   });
 
+  it("does not send confirmation when the username is unchanged", async (t) => {
+    t.mock.method(UserModel, "findById", async () => user);
+    const update = t.mock.method(UserModel, "updateOne", async () => ({ matchedCount: 1 }));
+
+    const response = await postBasic({ username: user.username });
+
+    assert.equal(response.body.code, 200);
+    assert.equal(response.body.msg, "更新基本资料成功");
+    assert.match(response.body.data.key, /^[0-9a-f-]{36}$/i);
+    assert.equal(update.mock.callCount(), 0);
+  });
+
   it("reports when the current user no longer exists", async (t) => {
     t.mock.method(UserModel, "findById", async () => null);
     const response = await postBasic({ name: "New name" });
