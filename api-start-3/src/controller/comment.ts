@@ -187,21 +187,16 @@ export const getMsgs = async (ctx: AppContext) => {
 export const setMsg = withBody(SetCommentSchema, async (ctx, body) => {
   const userId = ctx.state.user!._id;
   const _id = body._id;
-  if (_id) {
-    const result = await CommentModel.updateOne({ uid: userId, _id }, { isRead: "1" });
-    if (result.matchedCount) {
-      ctx.body = { code: 200, data: { _id }, msg: "更新成功" };
-    } else {
-      ctx.body = { code: 500, msg: "更新失败" };
-    }
-  } else {
-    const result = await CommentModel.updateMany({ uid: userId }, { isRead: "1" });
-    if (result.matchedCount) {
-      ctx.body = { code: 200, data: { _id }, msg: "更新成功" };
-    } else {
-      ctx.body = { code: 500, msg: "更新失败" };
-    }
-  }
+  const result = _id
+    ? await CommentModel.updateOne({ uid: userId, _id }, { isRead: "1" })
+    : await CommentModel.updateMany({ uid: userId }, { isRead: "1" });
+  ctx.body = result.matchedCount
+    ? {
+        code: 200,
+        data: { _id },
+        msg: "更新成功",
+      }
+    : { code: 500, msg: "更新失败" };
 });
 
 export const getHands = withQuery(PaginateSchema, async (ctx, query) => {

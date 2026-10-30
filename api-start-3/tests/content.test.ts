@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import "../src/config/dbHelper";
 import { JWT_SECRET } from "../src/config";
-import { addPost, getUserPost } from "../src/controller/content";
+import { addPost, addTag, deletedPost, getTags, getUserPost } from "../src/controller/content";
 import LinkModel from "../src/model/link";
 import PostModel from "../src/model/post";
 import PostHistory from "../src/model/postHistory";
@@ -272,6 +272,66 @@ describe("GET /user/posts", () => {
         options: { includeDeleted: true },
       }],
     ]);
+  });
+});
+
+describe("GET /admin/getTags", () => {
+  it("returns the post tags", async (t) => {
+    const tags = [{ _id: "docker", tagName: "容器" }];
+    const find = t.mock.method(PostTagModel, "find", async () => tags as never);
+    const ctx = {} as Parameters<typeof getTags>[0];
+
+    await getTags(ctx);
+
+    assert.deepEqual(ctx.body, { code: 200, data: tags });
+    assert.deepEqual(find.mock.calls[0].arguments, []);
+  });
+});
+
+describe("deletedPost controller", () => {
+  it("returns the successful deletion count", async (t) => {
+    const postIds = [validEdit._id, "507f1f77bcf86cd799439012"];
+    const update = t.mock.method(PostModel, "updateMany", async () => ({ modifiedCount: 2 } as never));
+    const ctx = {
+      request: { body: { _ids: postIds } },
+      state: { user: { _id: uid } },
+    } as unknown as Parameters<typeof deletedPost>[0];
+
+    await deletedPost(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 200, msg: "删除成功", data: { modifiedCount: 2 } });
+    assert.deepEqual(update.mock.calls[0].arguments, [
+      { _id: { $in: postIds }, uid, isEnd: "0", isDeleted: 0 },
+      { $set: { isDeleted: 1 } },
+    ]);
+  });
+
+  it("reports when no post can be deleted", async (t) => {
+    t.mock.method(PostModel, "updateMany", async () => ({ modifiedCount: 0 } as never));
+    const ctx = {
+      request: { body: { _ids: [validEdit._id] } },
+      state: { user: { _id: uid } },
+    } as unknown as Parameters<typeof deletedPost>[0];
+
+    await deletedPost(ctx, async () => {});
+
+    assert.deepEqual(ctx.body, { code: 500, msg: "没有可删除的文章" });
+  });
+});
+
+describe("addTag controller", () => {
+  it("reports a duplicate tag ID", async (t) => {
+    const duplicate = Object.assign(new Error("duplicate key"), { code: 11000 });
+    t.mock.method(PostTagModel, "create", async () => { throw duplicate; });
+    const ctx = {
+      request: { body: { _id: "docker", tagName: "容器" } },
+      state: {},
+    } as unknown as Parameters<typeof addTag>[0];
+
+    await addTag(ctx, async () => {});
+
+    assert.equal(ctx.status, 200);
+    assert.deepEqual(ctx.body, { code: 500, msg: "标签 ID 已存在" });
   });
 });
 
